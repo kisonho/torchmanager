@@ -1,8 +1,14 @@
 from distutils.core import setup
 
+from pathlib import Path
+this_directory = Path(__file__).parent
+long_description = (this_directory / "README.md").read_text()
+
 setup(name='torchmanager',
       version='0.9.0',
       description='PyTorch training manager',
+      long_description=long_description,
+      long_description_content_type='text/markdown',
       author='Kison Ho',
       author_email='unfit-gothic.0q@icloud.com',
       packages=['torchmanager'],

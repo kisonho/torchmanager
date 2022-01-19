@@ -1,3 +1,6 @@
+LICENSE
+README.md
+pyproject.toml
 setup.py
 lib/__init__.py
 lib/callbacks.py
