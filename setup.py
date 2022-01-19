@@ -9,5 +9,6 @@ setup(name='torchmanager',
       package_dir={
             'torchmanager': 'lib'
       },
+      python_requires=">=3.8",
       url="https://github.com/kisonho/torchmanager.git"
 )
