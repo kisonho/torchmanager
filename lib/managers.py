@@ -64,7 +64,7 @@ class Manager:
         
         # multi gpus support
         use_multi_gpus = torch.cuda.is_available() if use_multi_gpus is True else use_multi_gpus
-        if use_multi_gpus is True: self.model = torch.nn.DataParallel(self.model)
+        if use_multi_gpus is True: self.model = torch.nn.parallel.DataParallel(self.model)
         self.model.to(device)
 
         # on train start
@@ -126,6 +126,8 @@ class Manager:
         # initialize progress bar
         if show_verbose is True:
             progress_bar = tqdm(total=len(dataset))
+        else:
+            progress_bar = None
 
         # batch loop
         for batch, (x_train, y_train) in enumerate(dataset):
@@ -163,12 +165,12 @@ class Manager:
                 c.on_batch_end(batch, summary=summary)
 
             # implement progress bar
-            if show_verbose is True:
+            if progress_bar is not None:
                 progress_bar.set_postfix(summary)
                 progress_bar.update()
 
         # end epoch training
-        if show_verbose is True:
+        if progress_bar is not None:
             progress_bar.close()
 
         # summarize
@@ -198,15 +200,17 @@ class Manager:
         # initialize progress bar
         if show_verbose is True:
             progress_bar = tqdm(total=len(dataset))
+        else:
+            progress_bar = None
 
         # disable auto gradients
         with torch.no_grad():
             # batch loop
             for x_test, y_test in dataset:
                 # move x_train to device
-                x_train: torch.Tensor
+                x_test: torch.Tensor
                 if use_multi_gpus is not True:
-                    x_train = x_train.to(device)
+                    x_test = x_test.to(device)
 
                 # move y_test to gpu
                 y_test: torch.Tensor
@@ -226,11 +230,11 @@ class Manager:
                     metrics_list["loss"].append(loss)
 
                 # implement progress bar
-                if show_verbose is True:
+                if progress_bar is not None:
                     progress_bar.update()
 
             # end epoch training
-            if show_verbose is True:
+            if progress_bar is not None:
                 progress_bar.close()
             
             # summarize
