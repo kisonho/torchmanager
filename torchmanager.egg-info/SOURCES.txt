@@ -1,0 +1,8 @@
+setup.py
+lib/__init__.py
+lib/callbacks.py
+lib/managers.py
+torchmanager.egg-info/PKG-INFO
+torchmanager.egg-info/SOURCES.txt
+torchmanager.egg-info/dependency_links.txt
+torchmanager.egg-info/top_level.txt
