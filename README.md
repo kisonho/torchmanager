@@ -1,4 +1,4 @@
-# **# torchmanager**
+# **torchmanager**
 A Keras like PyTorch training and testing manager
 
 ## The Manager
@@ -13,8 +13,8 @@ class PytorchModel(torch.nn.Module):
 # initialize model, optimizer, loss function, and metrics
 model = PytorchModel(...)
 optimizer = torch.optim.SGD(model.parameters())
-loss_fn = torch.nn.CrossEntropyLoss()
-metrics: Dict[str, Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = {'accuracy': lambda y, y_true: float(y.argmax(dim=1).eq(y_true).to(torch.float32).mean())}
+loss_fn = torchmanager.losses.CrossEntropy()
+metrics: Dict[str, Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = {'accuracy': torchmanager.metrics.SparseCategoricalAccuracy()}
 
 # initialize manager
 manager = torchmanager.Manager(model, optimizer, loss_fn=loss_fn, metrics=metrics)
@@ -39,4 +39,22 @@ manager.fit(training_dataset, epochs=10, val_dataset=val_dataset)
 tensorboard_callback = torchmanager.callbacks.TensorBoard('logs')
 last_ckpt_callback = torchmanager.callbacks.Checkpoint(model, 'last.model')
 manager.fit(..., callbacks_list=[tensorboard_callback, last_ckpt_callback])
+```
+
+## Custom your training loop
+1. Create your own manager class by extending the `Manager` class:
+```
+...
+
+class CustomManager(Manager):
+	...
+```
+
+2. Override the `train_step` method:
+```
+class CustomManager(Manager):
+	...
+	
+	def train_step(x_train: torch.Tensor, y_train: torch.Tensor) -> Dict[str, float]:
+		...
 ```

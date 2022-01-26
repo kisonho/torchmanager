@@ -25,18 +25,18 @@ class Manager:
         - optimizer: A `torch.optim.Optimizer` to train the model
     '''
     # properties
-    __compiled: bool
-    loss_fn: Optional[Union[Loss, Dict[str, Loss]]]
-    metric_fns: Dict[str, Metric]
+    __compiled: bool = False
+    loss_fn: Optional[Union[Loss, Dict[str, Loss]]] = None
+    metrics: Dict[str, Metric] = {}
     model: torch.nn.Module
-    optimizer: Optional[torch.optim.Optimizer]
+    optimizer: Optional[torch.optim.Optimizer] = None
 
     @property
     def compiled_losses(self) -> Loss:
         assert self.loss_fn is not None, "[Training Error]: loss_fn is not given"
         if isinstance(self.loss_fn, dict):
             assert "loss" not in self.loss_fn, "[Loss Error]: Name \'loss\' must not be given in a dictionary of loss_fn."
-            self.metric_fns.update(self.loss_fn)
+            self.metrics.update(self.loss_fn)
             return MultiLosses([l for l in self.loss_fn.values()])
         else:
             return self.loss_fn
@@ -62,17 +62,14 @@ class Manager:
         elif loss_fn is not None:
             self.loss_fn = Loss(loss_fn)
             warnings.warn("[Deprecated Warning]: parsing `loss_fn` as a function was deprecated from v0.9.3, use losses.Loss object instead.", PendingDeprecationWarning)
-        else:
-            self.loss_fn = None
 
         # initialize metrics
-        self.metric_fns = {}
         for name, fn in metrics.items():
             if isinstance(fn, Metric):
-                self.metric_fns[name] = fn
+                self.metrics[name] = fn
             else:
                 warnings.warn("[Deprecated Warning]: parsing a metric in `metrics` as a function was deprecated from v0.9.3, use `metrics.Metric` object instead.", PendingDeprecationWarning)
-                self.metric_fns[name] = Metric(fn)
+                self.metrics[name] = Metric(fn)
 
         # initialize main model and optimizer
         self.model = model
@@ -81,8 +78,6 @@ class Manager:
         # check compiled
         if self.loss_fn is not None and self.optimizer is not None:
             self.__compiled = True
-        else:
-            self.__compiled = False
 
     def fit(self, training_dataset: data.DataLoader, epochs: int=100, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler]=None, show_verbose: bool=False, val_dataset: Optional[data.DataLoader]=None, use_multi_gpus: bool=False, callbacks_list: List[Callback]=[], **kwargs) -> torch.nn.Module:
         '''
@@ -111,7 +106,7 @@ class Manager:
         
         # multi gpus support
         use_multi_gpus = torch.cuda.is_available() if use_multi_gpus is True else use_multi_gpus
-        if use_multi_gpus is True: self.model = torch.nn.parallel.DataParallel(raw_model)
+        if use_multi_gpus is True: self.model = torch.nn.parallel.DataParallel(self.model)
         self.model.to(device)
 
         # on train start
@@ -121,7 +116,7 @@ class Manager:
         # epoch loop
         for epoch in range(epochs):
             # initialize epoch
-            print(f"Training epoch {epoch + 1}/{epochs}")
+            print("Training epoch {}/{}".format(epoch+1, epochs))
 
             # on epoch start
             for c in callbacks_list:
@@ -137,9 +132,9 @@ class Manager:
             # validate
             if val_dataset is not None:
                 val_summary = self.test(val_dataset, use_multi_gpus=use_multi_gpus)
-                print(str(f"Epoch {epoch + 1}/{epochs}:") + str(f"{name}={value:.4f}" for name, value in summary) + str(f"{name}={value:.4f}" for name, value in val_summary))
+                print(f"Epoch {epoch + 1}/{epochs}: loss={summary['loss']:.4f}, acc={summary['accuracy']:.4f}, val_loss={val_summary['loss']:.4f}, val_acc={val_summary['accuracy']:.4f}")
             else:
-                print(f"Epoch {epoch + 1}/{epochs}:" + str(f"{name}={value:.4f}" for name, value in summary))
+                print(f"Epoch {epoch + 1}/{epochs}: loss={summary['loss']:.4f}, acc={summary['accuracy']:.4f}")
                 val_summary = None
 
             # on epoch end
@@ -175,7 +170,7 @@ class Manager:
             - callbacks_list: A `list` of callbacks in `Callback`
         '''
         # initialize
-        for _, m in self.metric_fns.items(): m.reset()
+        for _, m in self.metrics.items(): m.reset()
         self.model.train()
 
         # initialize progress bar
@@ -216,8 +211,7 @@ class Manager:
             progress_bar.close()
 
         # summarize
-        summary = {name: float(fn.result.detach()) for name, fn in self.metric_fns.items()}
-        summary["loss"] = float(self.compiled_losses.result.detach())
+        summary = {name: float(fn.result.detach()) for name, fn in self.metrics.items()}
         return summary
 
     def train_step(self, x_train: torch.Tensor, y_train: torch.Tensor) -> Dict[str, float]:
@@ -232,8 +226,7 @@ class Manager:
         # forward pass
         y = self.model(x_train)
         loss = self.compiled_losses(y, y_train)
-        for _, metric_fn in self.metric_fns.items():
-            metric_fn(y, y_train)
+        for _, fn in self.metrics.items(): fn(y, y_train)
 
         # backward pass
         self.compiled_optimizer.zero_grad()
@@ -241,7 +234,7 @@ class Manager:
         self.compiled_optimizer.step()
 
         # summary result
-        summary = {name: float(fn.result.detach()) for name, fn in self.metric_fns.items()}
+        summary = {name: float(fn.result.detach()) for name, fn in self.metrics.items()}
         summary["loss"] = float(self.compiled_losses.result.detach())
         return summary
 
@@ -255,7 +248,7 @@ class Manager:
         - Returns: A `dict` of validation summary
         '''
         # initialize function
-        for _, m in self.metric_fns.items(): m.reset()
+        for _, m in self.metrics.items(): m.reset()
         cpu = torch.device("cpu")
         gpu = torch.device("cuda")
         device = gpu if torch.cuda.is_available() else cpu
@@ -295,7 +288,7 @@ class Manager:
                 progress_bar.close()
             
             # summarize
-            summary = {name: float(fn.result.detach()) for name, fn in self.metric_fns.items()}
+            summary = {name: float(fn.result.detach()) for name, fn in self.metrics.items()}
             if self.loss_fn is not None:
                 summary["loss"] = float(self.compiled_losses.result.detach())
             return summary
@@ -310,7 +303,7 @@ class Manager:
         '''
         # forward pass
         y = self.model(x_test)
-        for _, fn in self.metric_fns.items(): fn(y, y_test)
+        for _, fn in self.metrics.items(): fn(y, y_test)
 
         if self.loss_fn is not None:
             self.compiled_losses(y, y_test)

@@ -74,12 +74,12 @@ class Checkpoint(Callback):
     '''
     # properties
     ckpt_path: str
-    last_epoch: int
-    loss_fn: Optional[Loss]
-    metrics: Optional[dict[str, Metric]]
+    last_epoch: int = 0
+    loss_fn: Optional[Loss] = None
+    metrics: Optional[dict[str, Metric]] = None
     model: torch.nn.Module
-    optimizer: Optional[torch.optim.Optimizer]
-    save_weights_only: bool
+    optimizer: Optional[torch.optim.Optimizer] = None
+    save_weights_only: bool = False
 
     def __init__(self, model: torch.nn.Module, ckpt_path: str, epoch: int=0, optimizer: Optional[torch.optim.Optimizer]=None, loss_fn: Optional[Loss]=None, metrics: Optional[dict[str, Metric]]=None, save_weights_only: bool=False) -> None:
         '''
@@ -160,7 +160,7 @@ class BestCheckpoint(Checkpoint):
     # properties
     best_score: float
     monitor: str
-    monitor_type: MonitorType
+    monitor_type = MonitorType.MAX
 
     def __init__(self, monitor: str, *args, monitor_type: MonitorType=MonitorType.MAX, **kwargs) -> None:
         '''

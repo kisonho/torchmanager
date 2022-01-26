@@ -4,7 +4,9 @@ pyproject.toml
 setup.py
 lib/__init__.py
 lib/callbacks.py
+lib/losses.py
 lib/managers.py
+lib/metrics.py
 torchmanager.egg-info/PKG-INFO
 torchmanager.egg-info/SOURCES.txt
 torchmanager.egg-info/dependency_links.txt
