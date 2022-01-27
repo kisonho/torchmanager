@@ -137,10 +137,31 @@ class Manager:
             # validate
             if val_dataset is not None:
                 val_summary = self.test(val_dataset, use_multi_gpus=use_multi_gpus)
-                print(str(f"Epoch {epoch + 1}/{epochs}:") + str(f"{name}={value:.4f}" for name, value in summary) + str(f"{name}={value:.4f}" for name, value in val_summary))
+
+                # print epoch info
+                print(f"Epoch {epoch + 1}/{epochs}:", end=" ")
+
+                # print summary info
+                for name, value in summary.items():
+                    print(f"{name}={value:.4f}", end=", ")
+                
+                # print val summary info
+                for i, (name, value) in enumerate(val_summary.items()):
+                    if i > 0: print(", ", end="")
+                    print(f"val_{name}={value:.4f}", end="")
+                print()
+                
             else:
-                print(f"Epoch {epoch + 1}/{epochs}:" + str(f"{name}={value:.4f}" for name, value in summary))
                 val_summary = None
+
+                # print epoch info
+                print(f"Epoch {epoch + 1}/{epochs}:", end=" ")
+
+                # print summary info
+                for i, (name, value) in enumerate(summary.items()):
+                    if i > 0: print(", ")
+                    print(f"{name}={value:.4f}", end="")
+                print()
 
             # on epoch end
             for c in callbacks_list:
