@@ -32,6 +32,15 @@ val_dataset: DataLoader = ...
 manager.fit(training_dataset, epochs=10, val_dataset=val_dataset)
 ```
 
+* Test the model with test method:
+```
+# get dataset
+testing_dataset: DataLoader = ...
+
+# test with test method
+manager.test(testing_dataset)
+```
+
 - There are also some Keras-like callbacks to use:
 ```
 ...
