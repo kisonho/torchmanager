@@ -1,5 +1,5 @@
 # import typing modules
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, Callable, List, Optional
 
 # import required modules
 import torch, warnings
@@ -7,6 +7,9 @@ import torch, warnings
 class Metric(torch.nn.Module):
     '''
     The basic metric class
+
+    * Could be use as a decorator of a function
+    * Metric tensor is released from memory as soon as the result returned
 
     - Parameters:
         - result: The `torch.Tensor` of average metric results
@@ -32,7 +35,7 @@ class Metric(torch.nn.Module):
 
     def __call__(self, input: Any, target: Any) -> torch.Tensor:
         m: torch.Tensor = super().__call__(input, target)
-        self._results.append(m)
+        self._results.append(m.detach())
         return m
 
     def call(self, input: Any, target: Any) -> torch.Tensor:
@@ -59,11 +62,11 @@ class Metric(torch.nn.Module):
 class Accuracy(Metric):
     '''The traditional accuracy metric to compare two `torch.Tensor`'''
     def call(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        return input.eq(target).to(torch.float32).mean().detach()
+        return input.eq(target).to(torch.float32).mean()
 
 class SparseCategoricalAccuracy(Accuracy):
     '''The accuracy metric for normal integer labels'''
-    def call(self, input: torch.Tensor, target: Union[torch.Tensor, int]) -> torch.Tensor:
+    def call(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         '''
         calculate the accuracy
         
@@ -72,8 +75,8 @@ class SparseCategoricalAccuracy(Accuracy):
             - target: The label, or `y_true`, in `Any` kind
         - Returns: The metric in `torch.Tensor`
         '''
-        input = input.argmax(dim=1)
-        return super().forward(input, torch.tensor(target))
+        input = input.argmax(dim=-1)
+        return super().call(input, target)
 
 class CategoricalAccuracy(SparseCategoricalAccuracy):
     '''The accuracy metric for categorical labels'''
@@ -87,4 +90,4 @@ class CategoricalAccuracy(SparseCategoricalAccuracy):
         - Returns: The metric in `torch.Tensor`
         '''
         target = target.argmax(dim=1)
-        return super().forward(input, target)
+        return super().call(input, target)

@@ -8,7 +8,12 @@ import torch
 from .metrics import Metric
 
 class Loss(Metric):
-    '''The main loss function'''
+    '''
+    The main loss function
+
+    * Could be use as a decorator of a function
+    * Loss tensor is stayed in memory until reset is called
+    '''
     def __init__(self, loss_fn: Callable[[Any, Any], torch.Tensor]) -> None:
         '''
         Constructor
@@ -18,8 +23,13 @@ class Loss(Metric):
         '''
         super().__init__(loss_fn)
 
-    def call(self, input: Any, target: Any) -> torch.Tensor:
-        return super().call(input, target)
+    def reset(self) -> None:
+        for t in self._results:
+            t.detach()
+        return super().reset()
+
+    def forward(self, input: Any, target: Any) -> torch.Tensor:
+        return super().forward(input, target)
 
 class CrossEntropy(Loss):
     '''The cross entropy loss'''
@@ -41,7 +51,7 @@ class MultiLosses(Loss):
         return self.__losses
 
     def __init__(self, losses: List[Metric]) -> None:
-        super().__init__(self.call)
+        super().__init__(self.forward)
         self.__losses = losses
 
     def call(self, input: Any, target: Any) -> torch.Tensor:
@@ -50,7 +60,7 @@ class MultiLosses(Loss):
 
         # get all losses
         for fn in self.losses:
-            loss.append(fn.call(input, target))
+            loss.append(fn.forward(input, target))
 
         # sum
         return torch.tensor(loss).sum()

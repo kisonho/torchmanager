@@ -8,7 +8,12 @@ import torch
 from .metrics import Metric
 
 class Loss(Metric):
-    '''The main loss function'''
+    '''
+    The main loss function
+
+    * Could be use as a decorator of a function
+    * Loss tensor is stayed in memory until reset is called
+    '''
     def __init__(self, loss_fn: Callable[[Any, Any], torch.Tensor]) -> None:
         '''
         Constructor

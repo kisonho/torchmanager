@@ -1,9 +1,9 @@
 # import typing modules
 from __future__ import annotations
-from typing import Any, Callable, Dict, List, Optional, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Protocol, Type, Union, runtime_checkable
 
 # import required modules
-import torch, warnings
+import abc, torch, warnings
 from torch.utils import data
 from tqdm import tqdm
 
@@ -12,6 +12,27 @@ from .callbacks import Callback
 from .train import Checkpoint
 from .losses import Loss, MultiLosses
 from .metrics import Metric
+
+@runtime_checkable
+class LrScheduler(Protocol):
+    '''
+    The learning rate scheduler protocol
+
+    - Properties:
+        - verbose: A `bool` flag of if showing messages when updating lr
+    '''
+    @abc.abstractproperty
+    def verbose(self) -> bool:
+        raise NotImplementedError
+
+    @verbose.setter
+    @abc.abstractmethod
+    def verbose(self, verbose: bool) -> None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def step(self) -> None:
+        raise NotImplementedError
 
 class Manager:
     '''
@@ -52,10 +73,10 @@ class Manager:
         Constructor
         
         - Parameters:
-            - loss_fn: A `Loss` object to calculate the loss for single loss or a `dict` of losses in `Loss` with their names in `str` to calculate multiple losses
-            - metrics: A `dict` of metrics with a name in `str` and a `Metric` object to calculate the metric
-            - model: A target `torch.nn.Module` to be trained
-            - optimizer: A `torch.optim.Optimizer` to train the model
+            - loss_fn: An optional `Loss` object to calculate the loss for single loss or a `dict` of losses in `Loss` with their names in `str` to calculate multiple losses
+            - metrics: An optional `dict` of metrics with a name in `str` and a `Metric` object to calculate the metric
+            - model: An optional target `torch.nn.Module` to be trained
+            - optimizer: An optional `torch.optim.Optimizer` to train the model
         '''
         # initialize loss
         if isinstance(loss_fn, Loss) or isinstance(loss_fn, dict):
@@ -84,6 +105,48 @@ class Manager:
             self.__compiled = True
         else:
             self.__compiled = False
+
+    def __compile(self, optimizer: Optional[torch.optim.Optimizer]=None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]]=None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]]={}) -> None:
+        '''
+        Compiles the manager
+        
+        - Parameters:
+            - loss_fn: An optional `Loss` object to calculate the loss for single loss or a `dict` of losses in `Loss` with their names in `str` to calculate multiple losses
+            - metrics: An optional `dict` of metrics with a name in `str` and a `Metric` object to calculate the metric
+            - optimizer: An optional `torch.optim.Optimizer` to train the model
+        '''
+        # initialize loss
+        if isinstance(loss_fn, Loss) or isinstance(loss_fn, dict):
+            self.loss_fn = loss_fn 
+        elif loss_fn is not None:
+            self.loss_fn = Loss(loss_fn)
+            warnings.warn("[Deprecated Warning]: parsing `loss_fn` as a function was deprecated from v0.9.3 and will no longer be available from v1.1.0, use losses.Loss object instead.", DeprecationWarning)
+        else:
+            self.loss_fn = None
+
+        # initialize metrics
+        self.metric_fns = {}
+        for name, fn in metrics.items():
+            if isinstance(fn, Metric):
+                self.metric_fns[name] = fn
+            else:
+                warnings.warn("[Deprecated Warning]: parsing a metric in `metrics` as a function was deprecated from v0.9.3 and will no longer be available from v1.1.0, use `metrics.Metric` object instead.", DeprecationWarning)
+                self.metric_fns[name] = Metric(fn)
+
+        # initialize optimizer
+        self.optimizer = optimizer
+
+    def compile(self, optimizer: torch.optim.Optimizer, loss_fn: Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]], metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]]={}) -> None:
+        '''
+        Compiles the manager
+        
+        - Parameters:
+            - loss_fn: A `Loss` object to calculate the loss for single loss or a `dict` of losses in `Loss` with their names in `str` to calculate multiple losses
+            - metrics: A `dict` of metrics with a name in `str` and a `Metric` object to calculate the metric
+            - optimizer: A `torch.optim.Optimizer` to train the model
+        '''
+        self.__compile(optimizer, loss_fn, metrics)
+        self.__compiled = True
 
     def fit(self, training_dataset: data.DataLoader, epochs: int=100, initial_epoch: int=0, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler]=None, show_verbose: bool=False, val_dataset: Optional[data.DataLoader]=None, device: Optional[torch.device]=None, use_multi_gpus: bool=False, callbacks_list: List[Callback]=[], **kwargs) -> torch.nn.Module:
         '''
@@ -131,9 +194,17 @@ class Manager:
             c.on_train_start()
 
         # go to initial epoch
-        if lr_scheduler is not None and initial_epoch > 0:
+        if isinstance(lr_scheduler, LrScheduler) and initial_epoch > 0:
+            # disable verbose
+            verbose = lr_scheduler.verbose
+            lr_scheduler.verbose = False
+
+            # steps to initial epoch
             for _ in range(initial_epoch):
                 lr_scheduler.step()
+
+            # reset verbose
+            lr_scheduler.verbose = verbose
 
         # epoch loop
         for epoch in range(initial_epoch, epochs):
@@ -196,7 +267,7 @@ class Manager:
         '''
         # load checkpoint
         ckpt = Checkpoint.from_saved(*args, **kwargs)
-        return cls(ckpt.model, ckpt.optimizer, loss_fn=cls.loss_fn, metrics=cls.metric_fns)
+        return cls(ckpt.model, ckpt.optimizer, loss_fn=ckpt.loss_fn, metrics=ckpt.metrics)
 
     def train(self, dataset: data.DataLoader, device: torch.device=torch.device('cpu'), use_multi_gpus: bool=False, show_verbose: bool=False, callbacks_list: List[Callback]=[]) -> Dict[str, float]:
         '''

@@ -1,16 +1,38 @@
 # import typing modules
 from __future__ import annotations
-from typing import Any, Callable, Dict, List, Optional, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Protocol, Type, Union, runtime_checkable
 
 # import required modules
-import torch, warnings
+import abc, torch, warnings
 from torch.utils import data
 from tqdm import tqdm
 
 # import core modules
-from .callbacks import Callback, Checkpoint
+from .callbacks import Callback
+from .train import Checkpoint
 from .losses import Loss, MultiLosses
 from .metrics import Metric
+
+@runtime_checkable
+class LrScheduler(Protocol):
+    '''
+    The learning rate scheduler protocol
+
+    - Properties:
+        - verbose: A `bool` flag of if showing messages when updating lr
+    '''
+    @abc.abstractproperty
+    def verbose(self) -> bool:
+        raise NotImplementedError
+
+    @verbose.setter
+    @abc.abstractmethod
+    def verbose(self, verbose: bool) -> None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def step(self) -> None:
+        raise NotImplementedError
 
 class Manager:
     '''
@@ -25,18 +47,18 @@ class Manager:
         - optimizer: A `torch.optim.Optimizer` to train the model
     '''
     # properties
-    __compiled: bool = False
-    loss_fn: Optional[Union[Loss, Dict[str, Loss]]] = None
-    metrics: Dict[str, Metric] = {}
+    __compiled: bool
+    loss_fn: Optional[Union[Loss, Dict[str, Loss]]]
+    metric_fns: Dict[str, Metric]
     model: torch.nn.Module
-    optimizer: Optional[torch.optim.Optimizer] = None
+    optimizer: Optional[torch.optim.Optimizer]
 
     @property
     def compiled_losses(self) -> Loss:
         assert self.loss_fn is not None, "[Training Error]: loss_fn is not given"
         if isinstance(self.loss_fn, dict):
             assert "loss" not in self.loss_fn, "[Loss Error]: Name \'loss\' must not be given in a dictionary of loss_fn."
-            self.metrics.update(self.loss_fn)
+            self.metric_fns.update(self.loss_fn)
             return MultiLosses([l for l in self.loss_fn.values()])
         else:
             return self.loss_fn
@@ -51,25 +73,28 @@ class Manager:
         Constructor
         
         - Parameters:
-            - loss_fn: A `Loss` object to calculate the loss for single loss or a `dict` of losses in `Loss` with their names in `str` to calculate multiple losses
-            - metrics: A `dict` of metrics with a name in `str` and a `Metric` object to calculate the metric
-            - model: A target `torch.nn.Module` to be trained
-            - optimizer: A `torch.optim.Optimizer` to train the model
+            - loss_fn: An optional `Loss` object to calculate the loss for single loss or a `dict` of losses in `Loss` with their names in `str` to calculate multiple losses
+            - metrics: An optional `dict` of metrics with a name in `str` and a `Metric` object to calculate the metric
+            - model: An optional target `torch.nn.Module` to be trained
+            - optimizer: An optional `torch.optim.Optimizer` to train the model
         '''
         # initialize loss
         if isinstance(loss_fn, Loss) or isinstance(loss_fn, dict):
             self.loss_fn = loss_fn 
         elif loss_fn is not None:
             self.loss_fn = Loss(loss_fn)
-            warnings.warn("[Deprecated Warning]: parsing `loss_fn` as a function was deprecated from v0.9.3, use losses.Loss object instead.", PendingDeprecationWarning)
+            warnings.warn("[Deprecated Warning]: parsing `loss_fn` as a function was deprecated from v0.9.3 and will no longer be available from v1.1.0, use losses.Loss object instead.", DeprecationWarning)
+        else:
+            self.loss_fn = None
 
         # initialize metrics
+        self.metric_fns = {}
         for name, fn in metrics.items():
             if isinstance(fn, Metric):
-                self.metrics[name] = fn
+                self.metric_fns[name] = fn
             else:
-                warnings.warn("[Deprecated Warning]: parsing a metric in `metrics` as a function was deprecated from v0.9.3, use `metrics.Metric` object instead.", PendingDeprecationWarning)
-                self.metrics[name] = Metric(fn)
+                warnings.warn("[Deprecated Warning]: parsing a metric in `metrics` as a function was deprecated from v0.9.3 and will no longer be available from v1.1.0, use `metrics.Metric` object instead.", DeprecationWarning)
+                self.metric_fns[name] = Metric(fn)
 
         # initialize main model and optimizer
         self.model = model
@@ -78,8 +103,52 @@ class Manager:
         # check compiled
         if self.loss_fn is not None and self.optimizer is not None:
             self.__compiled = True
+        else:
+            self.__compiled = False
 
-    def fit(self, training_dataset: data.DataLoader, epochs: int=100, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler]=None, show_verbose: bool=False, val_dataset: Optional[data.DataLoader]=None, use_multi_gpus: bool=False, callbacks_list: List[Callback]=[], **kwargs) -> torch.nn.Module:
+    def __compile(self, optimizer: Optional[torch.optim.Optimizer]=None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]]=None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]]={}) -> None:
+        '''
+        Compiles the manager
+        
+        - Parameters:
+            - loss_fn: An optional `Loss` object to calculate the loss for single loss or a `dict` of losses in `Loss` with their names in `str` to calculate multiple losses
+            - metrics: An optional `dict` of metrics with a name in `str` and a `Metric` object to calculate the metric
+            - optimizer: An optional `torch.optim.Optimizer` to train the model
+        '''
+        # initialize loss
+        if isinstance(loss_fn, Loss) or isinstance(loss_fn, dict):
+            self.loss_fn = loss_fn 
+        elif loss_fn is not None:
+            self.loss_fn = Loss(loss_fn)
+            warnings.warn("[Deprecated Warning]: parsing `loss_fn` as a function was deprecated from v0.9.3 and will no longer be available from v1.1.0, use losses.Loss object instead.", DeprecationWarning)
+        else:
+            self.loss_fn = None
+
+        # initialize metrics
+        self.metric_fns = {}
+        for name, fn in metrics.items():
+            if isinstance(fn, Metric):
+                self.metric_fns[name] = fn
+            else:
+                warnings.warn("[Deprecated Warning]: parsing a metric in `metrics` as a function was deprecated from v0.9.3 and will no longer be available from v1.1.0, use `metrics.Metric` object instead.", DeprecationWarning)
+                self.metric_fns[name] = Metric(fn)
+
+        # initialize optimizer
+        self.optimizer = optimizer
+
+    def compile(self, optimizer: torch.optim.Optimizer, loss_fn: Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]], metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]]={}) -> None:
+        '''
+        Compiles the manager
+        
+        - Parameters:
+            - loss_fn: A `Loss` object to calculate the loss for single loss or a `dict` of losses in `Loss` with their names in `str` to calculate multiple losses
+            - metrics: A `dict` of metrics with a name in `str` and a `Metric` object to calculate the metric
+            - optimizer: A `torch.optim.Optimizer` to train the model
+        '''
+        self.__compile(optimizer, loss_fn, metrics)
+        self.__compiled = True
+
+    def fit(self, training_dataset: data.DataLoader, epochs: int=100, initial_epoch: int=0, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler]=None, show_verbose: bool=False, val_dataset: Optional[data.DataLoader]=None, device: Optional[torch.device]=None, use_multi_gpus: bool=False, callbacks_list: List[Callback]=[], **kwargs) -> torch.nn.Module:
         '''
         Training algorithm
 
@@ -90,33 +159,57 @@ class Manager:
             - is_dynamic_pruning: A `bool` flag of if using dynamic pruning
             - show_verbose: A `bool` flag of if showing progress bar
             - val_dataset: An optional validation `data.DataLoader`
+            - device: An optional `torch.device` where the data is moved to, gpu will be used when available if not specified.
             - use_multi_gpus: A `bool` flag of if using multi gpus
             - callbacks_list: A `list` of callbacks in `Callback`
             - **kwargs: Additional keyword arguments that will be passed to `train_step` method. If given, `train` method must be overriden to accept these arguments.
         - Returns: A trained `torch.nn.Module`
         '''
-        # ensure compiled
+        # ensure compiled and epochs
         assert self.__compiled is True, "[Training Error]: Manager has not yet been compiled. Either loss_fn or optimizer, or both, are not given."
+        assert epochs > 0, f"[Training Error]: The epochs must be a positive integer, got {epochs}."
+        assert initial_epoch >= 0, f"[Training Error]: The initial_epoch must be a non_negative integer, got {initial_epoch}."
+        assert initial_epoch < epochs, f"[Training Error]: The initial_epoch must be smaller than total epochs, got epochs={epochs} but initial_epoch={initial_epoch}."
 
-        # initialize# initialize device
+        # initialize device
         cpu = torch.device("cpu")
-        gpu = torch.device("cuda")
-        device = gpu if torch.cuda.is_available() else cpu
-        raw_model = self.model
+        if device is None:
+            gpu = torch.device("cuda")
+            device = gpu if torch.cuda.is_available() else cpu
+        else:
+            warnings.warn(f"[Device Warning]: Using specified device {device}.", ResourceWarning)
         
         # multi gpus support
-        use_multi_gpus = torch.cuda.is_available() if use_multi_gpus is True else use_multi_gpus
-        if use_multi_gpus is True: self.model = torch.nn.parallel.DataParallel(self.model)
+        raw_model = self.model
+        if use_multi_gpus is True:
+            if torch.cuda.is_available():
+                self.model = torch.nn.parallel.DataParallel(raw_model)
+            else:
+                use_multi_gpus = False
+                warnings.warn(f"[Device Warning]: The use_multi_gpus flag is set to True, but CUDA is not available.", ResourceWarning)
         self.model.to(device)
 
         # on train start
         for c in callbacks_list:
             c.on_train_start()
 
+        # go to initial epoch
+        if isinstance(lr_scheduler, LrScheduler) and initial_epoch > 0:
+            # disable verbose
+            verbose = lr_scheduler.verbose
+            lr_scheduler.verbose = False
+
+            # steps to initial epoch
+            for _ in range(initial_epoch):
+                lr_scheduler.step()
+
+            # reset verbose
+            lr_scheduler.verbose = verbose
+
         # epoch loop
-        for epoch in range(epochs):
+        for epoch in range(initial_epoch, epochs):
             # initialize epoch
-            print("Training epoch {}/{}".format(epoch+1, epochs))
+            print(f"Training epoch {epoch + 1}/{epochs}")
 
             # on epoch start
             for c in callbacks_list:
@@ -132,16 +225,36 @@ class Manager:
             # validate
             if val_dataset is not None:
                 val_summary = self.test(val_dataset, use_multi_gpus=use_multi_gpus)
-                print(f"Epoch {epoch + 1}/{epochs}: loss={summary['loss']:.4f}, acc={summary['accuracy']:.4f}, val_loss={val_summary['loss']:.4f}, val_acc={val_summary['accuracy']:.4f}")
+
+                # print epoch info
+                print(f"Epoch {epoch + 1}/{epochs}:", end=" ")
+
+                # print summary info
+                for name, value in summary.items():
+                    print(f"{name}={value:.4f}", end=", ")
+                
+                # print val summary info
+                for i, (name, value) in enumerate(val_summary.items()):
+                    if i > 0: print(", ", end="")
+                    print(f"val_{name}={value:.4f}", end="")
+                print()
             else:
-                print(f"Epoch {epoch + 1}/{epochs}: loss={summary['loss']:.4f}, acc={summary['accuracy']:.4f}")
                 val_summary = None
+
+                # print epoch info
+                print(f"Epoch {epoch + 1}/{epochs}:", end=" ")
+
+                # print summary info
+                for i, (name, value) in enumerate(summary.items()):
+                    if i > 0: print(", ")
+                    print(f"{name}={value:.4f}", end="")
+                print()
 
             # on epoch end
             for c in callbacks_list:
                 c.on_epoch_end(epoch, summary=summary, val_summary=val_summary)
 
-        # load best model
+        # remove model from gpu
         self.model = raw_model.to(cpu)
         return self.model
 
@@ -150,13 +263,11 @@ class Manager:
         '''
         Method to load a manager from a saved `Checkpoint`. The manager will not be compiled with a loss function and its metrics.
 
-        - Parameters:
-            ckpt_path: A `str` of checkpoint path
         - Returns: A loaded `Manager`
         '''
         # load checkpoint
         ckpt = Checkpoint.from_saved(*args, **kwargs)
-        return cls(ckpt.model, ckpt.optimizer)
+        return cls(ckpt.model, ckpt.optimizer, loss_fn=ckpt.loss_fn, metrics=ckpt.metrics)
 
     def train(self, dataset: data.DataLoader, device: torch.device=torch.device('cpu'), use_multi_gpus: bool=False, show_verbose: bool=False, callbacks_list: List[Callback]=[]) -> Dict[str, float]:
         '''
@@ -170,7 +281,8 @@ class Manager:
             - callbacks_list: A `list` of callbacks in `Callback`
         '''
         # initialize
-        for _, m in self.metrics.items(): m.reset()
+        self.compiled_losses.reset()
+        for _, m in self.metric_fns.items(): m.reset()
         self.model.train()
 
         # initialize progress bar
@@ -186,13 +298,12 @@ class Manager:
                 c.on_batch_start(batch)
 
             # move x_train to gpu
-            x_train: torch.Tensor
-            if use_multi_gpus is not True:
+            if use_multi_gpus is not True and isinstance(x_train, torch.Tensor):
                 x_train = x_train.to(device)
 
             # move y_train to gpu
-            y_train: torch.Tensor
-            y_train = y_train.to(device)
+            if isinstance(y_train, torch.Tensor):
+                y_train = y_train.to(device)
 
             # train for one step
             summary = self.train_step(x_train, y_train)
@@ -211,22 +322,25 @@ class Manager:
             progress_bar.close()
 
         # summarize
-        summary = {name: float(fn.result.detach()) for name, fn in self.metrics.items()}
+        summary = {name: float(fn.result.detach()) for name, fn in self.metric_fns.items()}
+        summary["loss"] = float(self.compiled_losses.result.detach())
+        if torch.cuda.is_available(): torch.cuda.empty_cache()
         return summary
 
-    def train_step(self, x_train: torch.Tensor, y_train: torch.Tensor) -> Dict[str, float]:
+    def train_step(self, x_train: Any, y_train: Any) -> Dict[str, float]:
         '''
         A single training step
 
         - Parameters:
-            - x_train: The training data in `torch.Tensor`
-            - y_train: The training label in `torch.Tensor`
+            - x_train: The training data
+            - y_train: The training label
         - Returns: A summary of `dict` with keys as `str` and values as `float`
         '''
         # forward pass
         y = self.model(x_train)
         loss = self.compiled_losses(y, y_train)
-        for _, fn in self.metrics.items(): fn(y, y_train)
+        for _, metric_fn in self.metric_fns.items():
+            metric_fn(y, y_train)
 
         # backward pass
         self.compiled_optimizer.zero_grad()
@@ -234,11 +348,11 @@ class Manager:
         self.compiled_optimizer.step()
 
         # summary result
-        summary = {name: float(fn.result.detach()) for name, fn in self.metrics.items()}
+        summary = {name: float(fn.result.detach()) for name, fn in self.metric_fns.items()}
         summary["loss"] = float(self.compiled_losses.result.detach())
         return summary
 
-    def test(self, dataset: data.DataLoader, use_multi_gpus: bool=False, show_verbose: bool=False) -> Dict[str, float]:
+    def test(self, dataset: data.DataLoader, device: Optional[torch.device]=None, use_multi_gpus: bool=False, show_verbose: bool=False) -> Dict[str, float]:
         '''
         Test target model
 
@@ -248,14 +362,27 @@ class Manager:
         - Returns: A `dict` of validation summary
         '''
         # initialize function
-        for _, m in self.metrics.items(): m.reset()
+        self.compiled_losses.reset()
+        for _, m in self.metric_fns.items(): m.reset()
+
+        # find available device
         cpu = torch.device("cpu")
-        gpu = torch.device("cuda")
-        device = gpu if torch.cuda.is_available() else cpu
-        use_multi_gpus = torch.cuda.is_available() if use_multi_gpus is True else use_multi_gpus
+        if device is None:
+            gpu = torch.device("cuda")
+            device = gpu if torch.cuda.is_available() else cpu
+            use_multi_gpus = torch.cuda.is_available() if use_multi_gpus is True else use_multi_gpus
+        else:
+            warnings.warn(f"[Device Warning]: Using specified device {device}.", ResourceWarning)
+
+        # multi gpu support
+        if use_multi_gpus is True and not isinstance(self.model, torch.nn.parallel.DataParallel):
+            raw_model = self.model
+            self.model = torch.nn.parallel.DataParallel(self.model)
+        else: raw_model = None
 
         # set module status
         self.model.eval()
+        self.model.to(device)
 
         # initialize progress bar
         if show_verbose is True:
@@ -268,13 +395,12 @@ class Manager:
             # batch loop
             for x_test, y_test in dataset:
                 # move x_train to device
-                x_test: torch.Tensor
-                if use_multi_gpus is not True:
+                if use_multi_gpus is not True and isinstance(x_test, torch.Tensor):
                     x_test = x_test.to(device)
 
                 # move y_test to gpu
-                y_test: torch.Tensor
-                y_test = y_test.to(device)
+                if isinstance(y_test, torch.Tensor):
+                    y_test = y_test.to(device)
 
                 # test for one step
                 self.test_step(x_test, y_test)
@@ -288,12 +414,16 @@ class Manager:
                 progress_bar.close()
             
             # summarize
-            summary = {name: float(fn.result.detach()) for name, fn in self.metrics.items()}
+            summary = {name: float(fn.result.detach()) for name, fn in self.metric_fns.items()}
             if self.loss_fn is not None:
                 summary["loss"] = float(self.compiled_losses.result.detach())
+
+            # reset model
+            if raw_model is not None:
+                self.model = raw_model.to(cpu)
             return summary
 
-    def test_step(self, x_test: torch.Tensor, y_test: torch.Tensor) -> None:
+    def test_step(self, x_test: Any, y_test: Any) -> None:
         '''
         A single testing step
 
@@ -303,7 +433,7 @@ class Manager:
         '''
         # forward pass
         y = self.model(x_test)
-        for _, fn in self.metrics.items(): fn(y, y_test)
+        for _, fn in self.metric_fns.items(): fn(y, y_test)
 
         if self.loss_fn is not None:
             self.compiled_losses(y, y_test)
