@@ -171,6 +171,6 @@ class TensorBoard(Callback):
         for key in summary.keys():
             result: Dict[str, float] = {}
             result["train"] = summary[key]
-            if val_summary is not None:
+            if val_summary is not None and key in val_summary:
                 result["val"] = val_summary[key]
             self.writer.add_scalars(key, result, epoch + 1)

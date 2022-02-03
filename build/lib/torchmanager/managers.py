@@ -52,10 +52,10 @@ class Manager:
     metric_fns: Dict[str, Metric]
     model: torch.nn.Module
     optimizer: Optional[torch.optim.Optimizer]
-
+    
     @property
     def compiled_losses(self) -> Loss:
-        assert self.loss_fn is not None, "[Training Error]: loss_fn is not given"
+        assert self.loss_fn is not None, "[Training Error]: loss_fn is not given, compiles the manager with loss_fn first."
         if isinstance(self.loss_fn, dict):
             assert "loss" not in self.loss_fn, "[Loss Error]: Name \'loss\' must not be given in a dictionary of loss_fn."
             self.metric_fns.update(self.loss_fn)
