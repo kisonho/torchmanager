@@ -155,7 +155,7 @@ class Manager:
         - Parameters:
             - training_dataset: The `data.DataLoader` for training dataset
             - epochs: The `int` number of training epochs
-            - lr_scheduelr: An optioanl `torch.optim.lr_scheduler._LRScheduler` for optimizer
+            - lr_scheduelr: An optioanl `torch.optim.lr_scheduler._LRScheduler` to update the lr per epoch
             - is_dynamic_pruning: A `bool` flag of if using dynamic pruning
             - show_verbose: A `bool` flag of if showing progress bar
             - val_dataset: An optional validation `data.DataLoader`
@@ -337,13 +337,13 @@ class Manager:
         - Returns: A summary of `dict` with keys as `str` and values as `float`
         '''
         # forward pass
+        self.compiled_optimizer.zero_grad()
         y = self.model(x_train)
         loss = self.compiled_losses(y, y_train)
         for _, metric_fn in self.metric_fns.items():
             metric_fn(y, y_train)
 
         # backward pass
-        self.compiled_optimizer.zero_grad()
         loss.backward()
         self.compiled_optimizer.step()
 

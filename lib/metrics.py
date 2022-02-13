@@ -1,5 +1,4 @@
 # import typing modules
-from turtle import forward
 from typing import Any, Callable, Iterable, List, Optional
 
 # import required modules
@@ -67,12 +66,12 @@ class Accuracy(Metric):
 
 class MIoU(Metric):
     """The mIoU metric for segmentation"""
-    __conf_mat: torch.Tensor
+    __conf_mat: torch.nn.parameter.Parameter
     __num_classes: int
 
     def __init__(self, num_classes: int) -> None:
         super().__init__()
-        self.__conf_mat = torch.zeros((num_classes, num_classes))
+        self.__conf_mat = torch.nn.parameter.Parameter(torch.zeros((num_classes, num_classes)))
         self.__num_classes = num_classes
 
     def _fast_hist(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
@@ -89,8 +88,11 @@ class MIoU(Metric):
 
     def forward(self, input: Iterable[torch.Tensor], target: Iterable[torch.Tensor]) -> torch.Tensor:
         # add confusion metrics
-        for y_pred, y_true in zip(input, target):
-            self.__conf_mat += self._fast_hist(y_pred.flatten(), y_true.flatten())
+        with torch.no_grad():
+            for y_pred, y_true in zip(input, target):
+                y_pred = y_pred.argmax(0).to(y_true.dtype)
+                conf_mat = torch.add(self.__conf_mat, self._fast_hist(y_pred.flatten(), y_true.flatten()))
+                self.__conf_mat.copy_(conf_mat)
         
         # calculate mean IoU
         hist = self.__conf_mat
@@ -103,7 +105,18 @@ class MIoU(Metric):
         super().reset()
 
 class SparseCategoricalAccuracy(Accuracy):
-    """The accuracy metric for normal integer labels"""
+    """
+    The accuracy metric for normal integer labels
+    
+    - Properties:
+        - dim: An `int` of the probability dim index for the input
+    """
+    dim: int
+
+    def __init__(self, dim: int = -1) -> None:
+        super().__init__()
+        self.dim = dim
+
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """
         calculate the accuracy
@@ -113,7 +126,7 @@ class SparseCategoricalAccuracy(Accuracy):
             - target: The label, or `y_true`, in `Any` kind
         - Returns: The metric in `torch.Tensor`
         """
-        input = input.argmax(dim=-1)
+        input = input.argmax(dim=self.dim)
         return super().forward(input, target)
 
 class CategoricalAccuracy(SparseCategoricalAccuracy):
@@ -129,3 +142,11 @@ class CategoricalAccuracy(SparseCategoricalAccuracy):
         """
         target = target.argmax(dim=1)
         return super().forward(input, target)
+
+def metric(fn: Callable[[Any, Any], torch.Tensor]) -> Metric:
+    """
+    The metric wrapping function that wrap a function into a metric
+
+    * Use as a decorator
+    """
+    return Metric(fn)

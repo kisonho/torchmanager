@@ -96,3 +96,11 @@ class MultiLosses(Loss):
 
         # sum
         return torch.tensor(loss).sum()
+
+def loss(fn: Callable[[Any, Any], torch.Tensor]) -> Loss:
+    """
+    The loss wrapping function that wrap a function into a loss
+
+    * Use as a decorator
+    """
+    return Loss(fn)
