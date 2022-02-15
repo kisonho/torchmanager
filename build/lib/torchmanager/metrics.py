@@ -2,7 +2,7 @@
 from typing import Any, Callable, Iterable, List, Optional
 
 # import required modules
-import torch, warnings
+import abc, torch, warnings
 
 class Metric(torch.nn.Module):
     """
@@ -15,7 +15,7 @@ class Metric(torch.nn.Module):
         - result: The `torch.Tensor` of average metric results
     """
     # properties
-    __metric_fn: Optional[Callable[[Any, Any], torch.Tensor]]
+    _metric_fn: Optional[Callable[[Any, Any], torch.Tensor]]
     _results: List[torch.Tensor]
 
     @property
@@ -31,7 +31,7 @@ class Metric(torch.nn.Module):
         """
         super().__init__()
         self._results = []
-        self.__metric_fn = metric_fn
+        self._metric_fn = metric_fn
 
     def __call__(self, input: Any, target: Any) -> torch.Tensor:
         m: torch.Tensor = super().__call__(input, target)
@@ -48,8 +48,8 @@ class Metric(torch.nn.Module):
         - Returns: The metric in `torch.Tensor`
         """
         warnings.warn("[Pending Deprecation Warning]: The call method will be deprecated from v1.1.0, override the forward method instead.", PendingDeprecationWarning)
-        if self.__metric_fn is not None:
-            return self.__metric_fn(input, target)
+        if self._metric_fn is not None:
+            return self._metric_fn(input, target)
         else: raise NotImplementedError("[Metric Error]: metric_fn is not given.")
     
     def reset(self) -> None:
@@ -64,14 +64,12 @@ class Accuracy(Metric):
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         return input.eq(target).to(torch.float32).mean()
 
-class MIoU(Metric):
+class ConfusionMetrics(Metric):
     """The mIoU metric for segmentation"""
-    __conf_mat: torch.nn.parameter.Parameter
     __num_classes: int
 
     def __init__(self, num_classes: int) -> None:
         super().__init__()
-        self.__conf_mat = torch.nn.parameter.Parameter(torch.zeros((num_classes, num_classes)))
         self.__num_classes = num_classes
 
     def _fast_hist(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
@@ -86,23 +84,32 @@ class MIoU(Metric):
         hist = torch.bincount(self.__num_classes * target[mask].to(torch.int64) + input[mask], minlength=self.__num_classes ** 2).reshape(self.__num_classes, self.__num_classes)
         return hist
 
-    def forward(self, input: Iterable[torch.Tensor], target: Iterable[torch.Tensor]) -> torch.Tensor:
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        # initialize metrics
+        conf_mat = torch.zeros((self.__num_classes, self.__num_classes), device=input.device)
+
         # add confusion metrics
-        with torch.no_grad():
-            for y_pred, y_true in zip(input, target):
-                y_pred = y_pred.argmax(0).to(y_true.dtype)
-                conf_mat = torch.add(self.__conf_mat, self._fast_hist(y_pred.flatten(), y_true.flatten()))
-                self.__conf_mat.copy_(conf_mat)
+        for y_pred, y_true in zip(input, target):
+            y_pred: torch.Tensor
+            y_true: torch.Tensor
+            conf_mat += self._fast_hist(y_pred.flatten(), y_true.flatten())
         
         # calculate mean IoU
-        hist = self.__conf_mat
+        return conf_mat
+
+class MIoU(ConfusionMetrics):
+    """The mIoU metric for segmentation"""
+    def __init__(self, num_classes: int) -> None:
+        super().__init__(num_classes)
+
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        # argmax for input
+        input = input.argmax(1).to(target.dtype)
+        
+        # calculate mean IoU
+        hist = super().forward(input, target)
         iou = torch.diag(hist) / (hist.sum(1) + hist.sum(0) - torch.diag(hist))
         return iou.mean()
-
-    def reset(self) -> None:
-        with torch.no_grad():
-            self.__conf_mat.copy_(torch.zeros_like(self.__conf_mat))
-        super().reset()
 
 class SparseCategoricalAccuracy(Accuracy):
     """
@@ -140,7 +147,7 @@ class CategoricalAccuracy(SparseCategoricalAccuracy):
             - target: The onehot label, or `y_true`, in `Any` kind
         - Returns: The metric in `torch.Tensor`
         """
-        target = target.argmax(dim=1)
+        target = target.argmax(dim=self.dim)
         return super().forward(input, target)
 
 def metric(fn: Callable[[Any, Any], torch.Tensor]) -> Metric:

@@ -59,9 +59,8 @@ class Manager:
         if isinstance(self.loss_fn, dict):
             assert "loss" not in self.loss_fn, "[Loss Error]: Name \'loss\' must not be given in a dictionary of loss_fn."
             self.metric_fns.update(self.loss_fn)
-            return MultiLosses([l for l in self.loss_fn.values()])
-        else:
-            return self.loss_fn
+            self.loss_fn = MultiLosses([l for l in self.loss_fn.values()])
+        return self.loss_fn
 
     @property
     def compiled_optimizer(self) -> torch.optim.Optimizer:
@@ -188,6 +187,8 @@ class Manager:
                 use_multi_gpus = False
                 warnings.warn(f"[Device Warning]: The use_multi_gpus flag is set to True, but CUDA is not available.", ResourceWarning)
         self.model.to(device)
+        self.compiled_losses.to(device)
+        for m in self.metric_fns.values(): m.to(device)
 
         # on train start
         for c in callbacks_list:

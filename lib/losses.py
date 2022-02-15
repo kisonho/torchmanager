@@ -40,8 +40,8 @@ class CrossEntropy(Loss):
         super().__init__(loss_fn)
 
     def forward(self, input: Any, target: Any) -> torch.Tensor:
-        assert self.__metric_fn is not None, "[Loss Error]: Crossentropy loss has not been initialized."
-        return self.__metric_fn(input, target)
+        assert self._metric_fn is not None, "[Loss Error]: Crossentropy loss has not been initialized."
+        return self._metric_fn(input, target)
 
 class FocalCrossEntropy(Loss):
     """The focal cross entropy loss"""

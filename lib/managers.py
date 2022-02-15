@@ -349,7 +349,12 @@ class Manager:
         self.compiled_optimizer.step()
 
         # summary result
-        summary = {name: float(fn.result.detach()) for name, fn in self.metric_fns.items()}
+        summary: dict[str, float] = {}
+        for name, fn in self.metric_fns.items():
+            try: summary[name] = float(fn.result.detach())
+            except:
+                print(f"[Runtime Error]: Metrics {name} failed.")
+                raise
         summary["loss"] = float(self.compiled_losses.result.detach())
         return summary
 
