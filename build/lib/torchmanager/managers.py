@@ -14,7 +14,7 @@ from .losses import Loss, MultiLosses
 from .metrics import Metric
 
 @runtime_checkable
-class LrScheduler(Protocol):
+class _VerboseControllable(Protocol):
     '''
     The learning rate scheduler protocol
 
@@ -28,10 +28,6 @@ class LrScheduler(Protocol):
     @verbose.setter
     @abc.abstractmethod
     def verbose(self, verbose: bool) -> None:
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def step(self) -> None:
         raise NotImplementedError
 
 class Manager:
@@ -57,10 +53,14 @@ class Manager:
     def compiled_losses(self) -> Loss:
         assert self.loss_fn is not None, "[Training Error]: loss_fn is not given, compiles the manager with loss_fn first."
         if isinstance(self.loss_fn, dict):
-            assert "loss" not in self.loss_fn, "[Loss Error]: Name \'loss\' must not be given in a dictionary of loss_fn."
-            self.metric_fns.update(self.loss_fn)
+            loss_fn = {f"loss_{name}": fn for name, fn in self.loss_fn.items()}
+            self.metric_fns.update(loss_fn)
             self.loss_fn = MultiLosses([l for l in self.loss_fn.values()])
         return self.loss_fn
+
+    @property
+    def compiled_metrics(self) -> Dict[str, Metric]:
+        return {name: m for name, m in self.metric_fns.items() if "loss" not in name}
 
     @property
     def compiled_optimizer(self) -> torch.optim.Optimizer:
@@ -187,7 +187,16 @@ class Manager:
                 use_multi_gpus = False
                 warnings.warn(f"[Device Warning]: The use_multi_gpus flag is set to True, but CUDA is not available.", ResourceWarning)
         self.model.to(device)
-        self.compiled_losses.to(device)
+
+        # move losses to device
+        if isinstance(self.loss_fn, dict):
+            for l in self.loss_fn.values(): l.to(device)
+        elif isinstance(self.loss_fn, MultiLosses):
+            for l in self.loss_fn.losses: l.to(device)
+        else:
+            self.compiled_losses.to(device)
+
+        # move metrics to device
         for m in self.metric_fns.values(): m.to(device)
 
         # on train start
@@ -195,8 +204,9 @@ class Manager:
             c.on_train_start()
 
         # go to initial epoch
-        if isinstance(lr_scheduler, LrScheduler) and initial_epoch > 0:
+        if lr_scheduler is not None and initial_epoch > 0:
             # disable verbose
+            assert isinstance(lr_scheduler, _VerboseControllable), "[Runtime Error]: lr_scheduler does not performs to the VerboseControllable protocol."
             verbose = lr_scheduler.verbose
             lr_scheduler.verbose = False
 
@@ -338,19 +348,23 @@ class Manager:
         - Returns: A summary of `dict` with keys as `str` and values as `float`
         '''
         # forward pass
+        summary: dict[str, float] = {}
         self.compiled_optimizer.zero_grad()
         y = self.model(x_train)
         loss = self.compiled_losses(y, y_train)
-        for _, metric_fn in self.metric_fns.items():
-            metric_fn(y, y_train)
+
+        # forward metrics
+        for name, fn in self.compiled_metrics.items():
+            fn(y, y_train)
 
         # backward pass
         loss.backward()
         self.compiled_optimizer.step()
 
         # summary result
-        summary = {name: float(fn.result.detach()) for name, fn in self.metric_fns.items()}
         summary["loss"] = float(self.compiled_losses.result.detach())
+        for name, fn in self.metric_fns.items():
+            summary[name] = float(fn.result.detach())
         return summary
 
     def test(self, dataset: data.DataLoader, device: Optional[torch.device]=None, use_multi_gpus: bool=False, show_verbose: bool=False) -> Dict[str, float]:
@@ -404,10 +418,11 @@ class Manager:
                     y_test = y_test.to(device)
 
                 # test for one step
-                self.test_step(x_test, y_test)
+                step_summary = self.test_step(x_test, y_test)
 
                 # implement progress bar
                 if progress_bar is not None:
+                    progress_bar.set_postfix(step_summary)
                     progress_bar.update()
 
             # end epoch training
@@ -415,7 +430,12 @@ class Manager:
                 progress_bar.close()
             
             # summarize
-            summary = {name: float(fn.result.detach()) for name, fn in self.metric_fns.items()}
+            summary: dict[str, float] = {}
+            for name, fn in self.metric_fns.items():
+                try: summary[name] = float(fn.result.detach())
+                except:
+                    print(f"[Runtime Error]: Cannot fetrch metric '{name}'.")
+                    raise
             if self.loss_fn is not None:
                 summary["loss"] = float(self.compiled_losses.result.detach())
 
@@ -424,7 +444,7 @@ class Manager:
                 self.model = raw_model.to(cpu)
             return summary
 
-    def test_step(self, x_test: Any, y_test: Any) -> None:
+    def test_step(self, x_test: Any, y_test: Any) -> dict[str, float]:
         '''
         A single testing step
 
@@ -432,9 +452,23 @@ class Manager:
             - x_train: The testing data in `torch.Tensor`
             - y_train: The testing label in `torch.Tensor`
         '''
+        # initialize
+        summary: dict[str, float] = {}
+
         # forward pass
         y = self.model(x_test)
-        for _, fn in self.metric_fns.items(): fn(y, y_test)
 
+        # forward metrics
+        for name, fn in self.compiled_metrics.items():
+            try:
+                fn(y, y_test)
+                summary[name] = float(fn.result.detach())
+            except:
+                print(f"[Runtime Error]: Cannot fetrch metric '{name}'.")
+                raise
+
+        # forward loss
         if self.loss_fn is not None:
             self.compiled_losses(y, y_test)
+            summary["loss"] = float(self.compiled_losses.result.detach())
+        return summary

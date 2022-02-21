@@ -2,7 +2,7 @@
 from typing import Any, Callable, Iterable, List, Optional
 
 # import required modules
-import abc, torch, warnings
+import torch, warnings
 
 class Metric(torch.nn.Module):
     """
@@ -109,7 +109,7 @@ class MIoU(ConfusionMetrics):
         # calculate mean IoU
         hist = super().forward(input, target)
         iou = torch.diag(hist) / (hist.sum(1) + hist.sum(0) - torch.diag(hist))
-        return iou.mean()
+        return iou.nanmean()
 
 class SparseCategoricalAccuracy(Accuracy):
     """
