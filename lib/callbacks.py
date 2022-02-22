@@ -1,7 +1,7 @@
 # import typing modules
 from __future__ import annotations
 import os
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 from enum import Enum
 
 # import required modules
@@ -165,6 +165,17 @@ class TensorBoard(Callback):
         '''
         super().__init__()
         self._writer = SummaryWriter(log_dir)
+
+    def add_graph(self, model: torch.nn.Module, input_shape: Optional[Tuple[int, ...]] = None) -> None:
+        '''
+        Add graph to TensorBoard
+
+        - Parameters:
+            - model: A `torch.nn.Module` to add
+            - input_shape: An optional `tuple` of in `int` for the inputs
+        '''
+        inputs = torch.randn(input_shape) if input_shape is not None else None
+        self._writer.add_graph(model, input_to_model=inputs)
 
     def on_epoch_end(self, epoch: int, summary: Dict[str, float]={}, val_summary: Optional[Dict[str, float]]=None) -> None:
         # write results to Tensorboard
