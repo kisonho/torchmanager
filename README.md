@@ -1,6 +1,9 @@
 # **torchmanager**
 A Keras like PyTorch training and testing manager
 
+## Installation
+`pip install torchmanager`
+
 ## The Manager
 - Initialize the manager with target model,  optimizer, loss function, and metrics:
 ```
@@ -14,7 +17,7 @@ class PytorchModel(torch.nn.Module):
 model = PytorchModel(...)
 optimizer = torch.optim.SGD(model.parameters())
 loss_fn = torchmanager.losses.CrossEntropy()
-metrics: Dict[str, Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = {'accuracy': torchmanager.metrics.SparseCategoricalAccuracy()}
+metrics = {'accuracy': torchmanager.metrics.SparseCategoricalAccuracy()}
 
 # initialize manager
 manager = torchmanager.Manager(model, optimizer, loss_fn=loss_fn, metrics=metrics)
@@ -32,12 +35,21 @@ val_dataset: DataLoader = ...
 manager.fit(training_dataset, epochs=10, val_dataset=val_dataset)
 ```
 
+* Test the model with test method:
+```
+# get dataset
+testing_dataset: DataLoader = ...
+
+# test with test method
+manager.test(testing_dataset)
+```
+
 - There are also some Keras-like callbacks to use:
 ```
 ...
 
 tensorboard_callback = torchmanager.callbacks.TensorBoard('logs')
-last_ckpt_callback = torchmanager.callbacks.Checkpoint(model, 'last.model')
+last_ckpt_callback = torchmanager.callbacks.LastCheckpoint(model, 'last.model')
 manager.fit(..., callbacks_list=[tensorboard_callback, last_ckpt_callback])
 ```
 
