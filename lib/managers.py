@@ -1,6 +1,6 @@
 # import typing modules
 from __future__ import annotations
-from typing import Any, Callable, Dict, List, Optional, Protocol, Type, Union, runtime_checkable
+from typing import Any, Callable, Dict, Iterable, List, Optional, Protocol, Type, Union, runtime_checkable
 
 # import required modules
 import abc, torch, warnings
@@ -12,6 +12,17 @@ from .losses import Loss, MultiLosses
 from .metrics import Metric
 from .train import Checkpoint
 from .train.callbacks import Callback
+
+
+@runtime_checkable
+class _DeviceMovable(Protocol):
+    """
+    The device movable protocol
+    """
+    @abc.abstractmethod
+    def to(self, device: torch.device) -> Any:
+        raise NotImplementedError
+
 
 @runtime_checkable
 class _VerboseControllable(Protocol):
@@ -29,6 +40,17 @@ class _VerboseControllable(Protocol):
     @abc.abstractmethod
     def verbose(self, verbose: bool) -> None:
         raise NotImplementedError
+
+
+def __move_to_device(target: Any, device: torch.device) -> Any:
+    """Move a target variable to device"""
+    if isinstance(target, _DeviceMovable):
+        return target.to(device)
+    elif isinstance(target, Iterable):
+        for t in target:
+            if isinstance(t, _DeviceMovable):
+                t.to(device)
+    return target
 
 class Manager:
     '''
@@ -308,13 +330,10 @@ class Manager:
             for c in callbacks_list:
                 c.on_batch_start(batch)
 
-            # move x_train to gpu
-            if use_multi_gpus is not True and isinstance(x_train, torch.Tensor):
-                x_train = x_train.to(device)
-
-            # move y_train to gpu
-            if isinstance(y_train, torch.Tensor):
-                y_train = y_train.to(device)
+            # move x_train and y_train to device
+            if use_multi_gpus is not True:
+                x_train = __move_to_device(x_train, device)
+            y_train = __move_to_device(y_train, device)
 
             # train for one step
             summary = self.train_step(x_train, y_train)
@@ -411,13 +430,10 @@ class Manager:
         with torch.no_grad():
             # batch loop
             for x_test, y_test in dataset:
-                # move x_train to device
+                # move x_test, y_test to device
                 if use_multi_gpus is not True and isinstance(x_test, torch.Tensor):
-                    x_test = x_test.to(device)
-
-                # move y_test to gpu
-                if isinstance(y_test, torch.Tensor):
-                    y_test = y_test.to(device)
+                    x_test = __move_to_device(x_test, device)
+                y_test = __move_to_device(y_test, device)
 
                 # test for one step
                 step_summary = self.test_step(x_test, y_test)

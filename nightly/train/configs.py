@@ -3,10 +3,7 @@ from __future__ import annotations
 from typing import Any, Optional, Type
 
 # import required modules
-import abc, argparse, os
-
-# import core modules
-from ...lib.train.callbacks import TensorBoard
+import abc, argparse
 
 class Config(abc.ABC):
     """An abstract configuration class"""
