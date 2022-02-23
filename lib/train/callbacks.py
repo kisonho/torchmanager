@@ -9,7 +9,7 @@ import sys, torch, warnings
 from torch.utils.tensorboard.writer import SummaryWriter
 
 # import core modules
-from .train import Checkpoint as Ckpt
+from . import Checkpoint as Ckpt
 
 class Callback():
     '''
@@ -72,10 +72,8 @@ class LastCheckpoint(Callback):
 
         - Parameters:
             - model: A target `torch.nn.Module`
-            - epoch: An `int` of epoch index
-            - optimizer: An optional `torch.optim.Optimizer` to be recorded
-            - loss_fn: An optional `Loss` to be recorded
-            - metrics: An optional `dict` of the metrics with key in `str` and value in `Metric` to be recorded
+            - ckpt_path: A `str` of the checkpoint path
+            - **kwargs: Other arguments in `Checkpoint` constructor
         '''
         super().__init__()
         self._checkpoint = Ckpt(model, **kwargs)

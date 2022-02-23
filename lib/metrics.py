@@ -1,8 +1,8 @@
 # import typing modules
-from typing import Any, Callable, Iterable, List, Optional
+from typing import Any, Callable, List, Optional
 
 # import required modules
-import torch, warnings
+import torch
 
 class Metric(torch.nn.Module):
     """
@@ -41,13 +41,14 @@ class Metric(torch.nn.Module):
     def call(self, input: Any, target: Any) -> torch.Tensor:
         """
         Forward the current result method
+
+        * This method will be deprecated from v1.1.0, override the forward method instead."
         
         - Parameters:
             - input: The prediction, or `y_pred`, in `Any` kind
             - target: The label, or `y_true`, in `Any` kind
         - Returns: The metric in `torch.Tensor`
         """
-        warnings.warn("[Pending Deprecation Warning]: The call method will be deprecated from v1.1.0, override the forward method instead.", PendingDeprecationWarning)
         if self._metric_fn is not None:
             return self._metric_fn(input, target)
         else: raise NotImplementedError("[Metric Error]: metric_fn is not given.")

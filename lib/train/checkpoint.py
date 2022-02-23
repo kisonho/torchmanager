@@ -5,10 +5,6 @@ from typing import Any, Dict, Optional, OrderedDict, Type
 # import required modules
 import torch
 
-# import core modules
-from .losses import Loss
-from .metrics import Metric
-
 class Checkpoint:
     '''
     The callback to save the latest checkpoint for each epoch
@@ -23,13 +19,13 @@ class Checkpoint:
     '''
     # properties
     last_epoch: int
-    loss_fn: Optional[Loss]
-    metrics: Dict[str, Metric]
+    loss_fn: Optional[torch.nn.Module]
+    metrics: Dict[str, torch.nn.Module]
     model: torch.nn.Module
     optimizer: Optional[torch.optim.Optimizer]
     save_weights_only: bool
 
-    def __init__(self, model: torch.nn.Module, last_epoch: int=0, optimizer: Optional[torch.optim.Optimizer]=None, loss_fn: Optional[Loss]=None, metrics: Optional[Dict[str, Metric]]=None, save_weights_only: bool=False) -> None:
+    def __init__(self, model: torch.nn.Module, last_epoch: int=0, optimizer: Optional[torch.optim.Optimizer]=None, loss_fn: Optional[torch.nn.Module]=None, metrics: Optional[Dict[str, torch.nn.Module]]=None, save_weights_only: bool=False) -> None:
         '''
         Constructor
 
@@ -37,8 +33,8 @@ class Checkpoint:
             - model: A target `torch.nn.Module`
             - epoch: An `int` of epoch index
             - optimizer: An optional `torch.optim.Optimizer` to be recorded
-            - loss_fn: An optional `Loss` to be recorded
-            - metrics: An optional `dict` of the metrics with key in `str` and value in `Metric` to be recorded
+            - loss_fn: An optional `torch.nn.Module` for loss function to be recorded
+            - metrics: An optional `dict` of the metrics with key in `str` and value in `torch.nn.Module` to be recorded
         '''
         super().__init__()
         self.last_epoch = last_epoch
