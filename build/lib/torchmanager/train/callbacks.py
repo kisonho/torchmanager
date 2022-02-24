@@ -9,7 +9,7 @@ import sys, torch, warnings
 from torch.utils.tensorboard.writer import SummaryWriter
 
 # import core modules
-from . import Checkpoint as Ckpt
+from .checkpoint import Checkpoint as Ckpt
 
 class Callback():
     '''

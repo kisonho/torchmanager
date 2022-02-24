@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Optional, Type
 
 # import required modules
-import abc, argparse
+import abc, argparse, logging, os
 
 class Config(abc.ABC):
     """An abstract configuration class"""
@@ -47,19 +47,35 @@ class ExperimentConfig(Config):
         - use_multi_gpus: A `bool` flag of if using multi gpus
     """
     experiment: Optional[str] = None
+    monitor: Optional[str] = None
     show_verbose: bool = False
     use_multi_gpus: bool = False
 
-    def __init__(self, show_verbose: bool = False, use_multi_gpus: bool = False, experiment: str = "None") -> None:
+    def __init__(self, show_verbose: bool = False, use_multi_gpus: bool = False, experiment: str = "None", monitor: str = "None") -> None:
+        # initialize properties
         self.show_verbose = show_verbose
         self.use_multi_gpus = use_multi_gpus
+        self.monitor = None if monitor.lower() == "none" else monitor
+
+        # check experiment
         if experiment.lower() != "none":
+            # initialize experiment
             self.experiment = f"{experiment}.exp" if not experiment.endswith(".exp") else experiment
+
+            # initialize log
+            log_path = os.path.join("logs", self.experiment.replace(".exp", ".log"))
+            logging.basicConfig(level=logging.INFO, filename=log_path, format="%(asctime)s %(name)-12s: %(levelname)-8s %(message)s")
+            console = logging.StreamHandler()
+            console.setLevel(logging.INFO)
+            formatter = logging.Formatter('%(message)s')
+            console.setFormatter(formatter)
+            logging.getLogger().addHandler(console)
 
     @staticmethod
     def set_arguments(parser: argparse.ArgumentParser) -> argparse._ArgumentGroup:
         exp_args = parser.add_argument_group("Experiment arguments")
         exp_args.add_argument("--experiment", type=str, default="None", help="Name of experiment, default is \'None\'.")
+        exp_args.add_argument("--monitor", type=str, default="None", help="Name of the monitored metrics, default is \'None\'.")
         exp_args.add_argument("--use_multi_gpus", action="store_true", default=False, help="Flag to use multi gpus.")
         exp_args.add_argument("--show_verbose", action="store_true", default=False, help="Flag to show verbose.")
         return exp_args
