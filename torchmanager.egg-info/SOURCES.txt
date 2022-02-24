@@ -7,7 +7,11 @@ lib/callbacks.py
 lib/losses.py
 lib/managers.py
 lib/metrics.py
-lib/train.py
+lib/train/__init__.py
+lib/train/checkpoint.py
+nightly/__init__.py
+nightly/callbacks.py
+nightly/managers.py
 torchmanager.egg-info/PKG-INFO
 torchmanager.egg-info/SOURCES.txt
 torchmanager.egg-info/dependency_links.txt
