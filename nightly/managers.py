@@ -1,10 +1,10 @@
 # import required modules
-import logging
 import os, torch, uuid
 from typing import Iterable
 
 # import core modules
 from .train import configs
+from torchmanager import callbacks
 from torchmanager.managers import * # type: ignore
 
 class NightlyManager(Manager):
@@ -55,7 +55,6 @@ class NightlyManager(Manager):
             best_ckpt_dir = os.path.join(experiment_dir, "best.model")
             data_dir = os.path.join(experiment_dir, "data")
             last_ckpt_dir = os.path.join(experiment_dir, "last.model")
-            log_path = os.path.join("experiments", config.experiment, f"{str(uuid.uuid4())}.log")
             os.makedirs(experiment_dir, exist_ok=True)
 
             # add callbacks
