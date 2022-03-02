@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 # import core modules
 from .callbacks import Callback
-from .losses import Loss, MultiLosses, MultiOutputLosses
+from .losses import Loss, MultiLosses, MultiOutputsLosses
 from .metrics import Metric
 from .train import Checkpoint
 
@@ -106,8 +106,8 @@ class Manager:
         '''
         # initialize loss
         if isinstance(loss_fn, Loss) or isinstance(loss_fn, dict):
-            if isinstance(loss_fn, MultiOutputLosses):
-                loss_fn_mapping = {f"loss_{name}": fn for name, fn in loss_fn.losses.items()}
+            if isinstance(loss_fn, MultiOutputsLosses):
+                loss_fn_mapping: Dict[str, Metric] = {f"loss_{name}": fn for name, fn in loss_fn.losses.items()} # type: ignore
                 self.metric_fns.update(loss_fn_mapping)
             self.loss_fn = loss_fn 
         elif loss_fn is not None:
