@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 # import core modules
 from .callbacks import Callback
-from .losses import Loss, MultiLosses
+from .losses import Loss, MultiLosses, MultiOutputLosses
 from .metrics import Metric
 from .train import Checkpoint
 
@@ -46,6 +46,10 @@ def _move_to_device(target: Any, device: torch.device) -> Any:
     """Move a target variable to device"""
     if isinstance(target, _DeviceMovable):
         return target.to(device)
+    elif isinstance(target, dict):
+        for t in target.values():
+            if isinstance(t, _DeviceMovable):
+                t.to(device)
     elif isinstance(target, Iterable):
         for t in target:
             if isinstance(t, _DeviceMovable):
@@ -102,6 +106,9 @@ class Manager:
         '''
         # initialize loss
         if isinstance(loss_fn, Loss) or isinstance(loss_fn, dict):
+            if isinstance(loss_fn, MultiOutputLosses):
+                loss_fn_mapping = {f"loss_{name}": fn for name, fn in loss_fn.losses.items()}
+                self.metric_fns.update(loss_fn_mapping)
             self.loss_fn = loss_fn 
         elif loss_fn is not None:
             self.loss_fn = Loss(loss_fn)
