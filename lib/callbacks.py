@@ -11,7 +11,7 @@ from torch.utils.tensorboard.writer import SummaryWriter
 # import core modules
 from .train.checkpoint import Checkpoint as Ckpt
 
-class Callback():
+class Callback:
     '''
     A training callback
     '''
@@ -63,6 +63,12 @@ class Callback():
         pass
 
 class LastCheckpoint(Callback):
+    """
+    The callback to save the last checkpoint during training
+
+    - Properties:
+        - ckpt_path: A `str` of checkpoint path
+    """
     _checkpoint: Ckpt
     ckpt_path: str
 

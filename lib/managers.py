@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 # import core modules
 from .callbacks import Callback
-from .losses import Loss, MultiLosses
+from .losses import Loss, MultiLosses, MultiOutputLosses
 from .metrics import Metric
 from .train import Checkpoint
 
@@ -46,6 +46,10 @@ def _move_to_device(target: Any, device: torch.device) -> Any:
     """Move a target variable to device"""
     if isinstance(target, _DeviceMovable):
         return target.to(device)
+    elif isinstance(target, dict):
+        for t in target.values():
+            if isinstance(t, _DeviceMovable):
+                t.to(device)
     elif isinstance(target, Iterable):
         for t in target:
             if isinstance(t, _DeviceMovable):
@@ -102,6 +106,9 @@ class Manager:
         '''
         # initialize loss
         if isinstance(loss_fn, Loss) or isinstance(loss_fn, dict):
+            if isinstance(loss_fn, MultiOutputLosses):
+                loss_fn_mapping = {f"loss_{name}": fn for name, fn in loss_fn.losses.items()}
+                self.metric_fns.update(loss_fn_mapping)
             self.loss_fn = loss_fn 
         elif loss_fn is not None:
             self.loss_fn = Loss(loss_fn)
@@ -256,10 +263,6 @@ class Manager:
             # train for one epoch
             summary = self.train(training_dataset, device=device, use_multi_gpus=use_multi_gpus, show_verbose=show_verbose, callbacks_list=callbacks_list, **kwargs)
 
-            # step lr scheduler
-            if lr_scheduler is not None:
-                lr_scheduler.step()
-
             # validate
             val_message = f"Epoch {epoch + 1}/{epochs}: "
             if val_dataset is not None:
@@ -282,6 +285,20 @@ class Manager:
                     if i > 0: val_message += ", "
                     val_message += f"{name}={value:.4f}"
                 logger.info(val_message)
+
+            # step lr scheduler
+            if lr_scheduler is not None:
+                # update lr
+                lr_scheduler.step()
+                lr_list = lr_scheduler.get_last_lr()
+                lr_summary: Dict[str, float] = {}
+
+                # update summary
+                if len(lr_list) > 1:
+                    for i, lr in enumerate(lr_list):
+                        lr_summary[f'lr_{i}'] = lr
+                else: lr_summary['lr'] = lr_list[0]
+                summary.update(lr_summary)
 
             # on epoch end
             for c in callbacks_list:
@@ -312,6 +329,7 @@ class Manager:
             - use_multi_gpus: A `bool` flag of if using multi gpus
             - show_verbose: A `bool` flag of if showing progress bar
             - callbacks_list: A `list` of callbacks in `Callback`
+        - Returns: A summary of `dict` with keys as `str` and values as `float`
         '''
         # initialize
         self.compiled_losses.reset()
@@ -463,6 +481,7 @@ class Manager:
         - Parameters:
             - x_train: The testing data in `torch.Tensor`
             - y_train: The testing label in `torch.Tensor`
+        - Returns: A `dict` of validation summary
         '''
         # initialize
         summary: dict[str, float] = {}

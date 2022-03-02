@@ -98,6 +98,12 @@ class ConfusionMetrics(Metric):
         # calculate mean IoU
         return conf_mat
 
+class MAE(Metric):
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        error = input - target
+        error = error.abs()
+        return error.mean()
+
 class MIoU(ConfusionMetrics):
     """The mIoU metric for segmentation"""
     def __init__(self, num_classes: int) -> None:
