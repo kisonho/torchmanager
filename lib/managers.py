@@ -380,7 +380,7 @@ class Manager:
         - Returns: A summary of `dict` with keys as `str` and values as `float`
         """
         # forward pass
-        summary: dict[str, float] = {}
+        summary: Dict[str, float] = {}
         self.compiled_optimizer.zero_grad()
         y = self.model(x_train)
         loss = self.compiled_losses(y, y_train)
@@ -458,7 +458,7 @@ class Manager:
                 progress_bar.close()
             
             # summarize
-            summary: dict[str, float] = {}
+            summary: Dict[str, float] = {}
             for name, fn in self.metric_fns.items():
                 try: summary[name] = float(fn.result.detach())
                 except Exception as metric_error:
@@ -472,7 +472,7 @@ class Manager:
                 self.model = raw_model.to(cpu)
             return summary
 
-    def test_step(self, x_test: Any, y_test: Any) -> dict[str, float]:
+    def test_step(self, x_test: Any, y_test: Any) -> Dict[str, float]:
         """
         A single testing step
 
@@ -482,7 +482,7 @@ class Manager:
         - Returns: A `dict` of validation summary
         """
         # initialize
-        summary: dict[str, float] = {}
+        summary: Dict[str, float] = {}
 
         # forward pass
         y = self.model(x_test)
