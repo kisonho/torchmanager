@@ -43,6 +43,7 @@ class ExperimentConfig(Config):
     
     - Properties:
         - experiment: An optional `str` of experiment name
+        - monitor: A `str` of the best checkpoint monitor
         - show_verbose: A `bool` flag of if showing the progress bar
         - use_multi_gpus: A `bool` flag of if using multi gpus
     """
@@ -86,6 +87,7 @@ class TrainingConfig(ExperimentConfig):
     Configurations for training
 
     - Properties:
+        - default_lr_scheduler: An optional `torch.optim.lr_scheduler._LRScheduler` for default lr scheduler when lr_decay is non-positive
         - epochs: An `int` of total training epochs
         - initial_epoch: An `int` of the starting epoch index
         - lr_decay: A `float` of the learning rate decay rate
