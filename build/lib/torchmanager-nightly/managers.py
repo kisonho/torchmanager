@@ -1,10 +1,10 @@
 # import required modules
-import logging
 import os, torch, uuid
 from typing import Iterable
 
 # import core modules
 from .train import configs
+from torchmanager import callbacks
 from torchmanager.managers import * # type: ignore
 
 class NightlyManager(Manager):
@@ -55,7 +55,6 @@ class NightlyManager(Manager):
             best_ckpt_dir = os.path.join(experiment_dir, "best.model")
             data_dir = os.path.join(experiment_dir, "data")
             last_ckpt_dir = os.path.join(experiment_dir, "last.model")
-            log_path = os.path.join("experiments", config.experiment, f"{str(uuid.uuid4())}.log")
             os.makedirs(experiment_dir, exist_ok=True)
 
             # add callbacks
@@ -65,14 +64,6 @@ class NightlyManager(Manager):
             if config.monitor is not None:
                 best_ckpt_callback = callbacks.BestCheckpoint(config.monitor, self.model, best_ckpt_dir)
                 callbacks_list.append(best_ckpt_callback)
-
-            # initialize log
-            logging.basicConfig(level=logging.INFO, filename=log_path, format="%(asctime)s %(name)-12s: %(levelname)-8s %(message)s")
-            console = logging.StreamHandler()
-            console.setLevel(logging.INFO)
-            formatter = logging.Formatter('%(message)s')
-            console.setFormatter(formatter)
-            logging.getLogger().addHandler(console)
 
         # initialize learning rate scheduler
         lr_scheduler = torch.optim.lr_scheduler.StepLR(self.compiled_optimizer, step_size=config.lr_decay_step, gamma=config.lr_decay) if config.lr_decay > 0 else None
