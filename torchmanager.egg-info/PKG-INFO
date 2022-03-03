@@ -1,7 +1,7 @@
 Metadata-Version: 2.1
 Name: torchmanager
-Version: 1.0.1b2
-Summary: PyTorch training manager (v1.0.1 Beta2)
+Version: 1.0.1
+Summary: PyTorch training manager (v1.0.1)
 Home-page: https://github.com/kisonho/torchmanager.git
 Author: Kison Ho
 Author-email: unfit-gothic.0q@icloud.com

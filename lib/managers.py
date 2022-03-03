@@ -1,6 +1,7 @@
 # import typing modules
 from __future__ import annotations
 from typing import Any, Callable, Dict, Iterable, List, Optional, Protocol, Type, Union, runtime_checkable
+from enum import Enum
 
 # import required modules
 import abc, logging, torch, warnings
@@ -9,7 +10,7 @@ from tqdm import tqdm
 
 # import core modules
 from .callbacks import Callback
-from .losses import Loss, MultiLosses, MultiOutputLosses
+from .losses import Loss, MultiLosses, MultiOutputsLosses
 from .metrics import Metric
 from .train import Checkpoint
 
@@ -26,12 +27,12 @@ class _DeviceMovable(Protocol):
 
 @runtime_checkable
 class _VerboseControllable(Protocol):
-    '''
+    """
     The learning rate scheduler protocol
 
     - Properties:
         - verbose: A `bool` flag of if showing messages when updating lr
-    '''
+    """
     @abc.abstractproperty
     def verbose(self) -> bool:
         raise NotImplementedError
@@ -57,8 +58,15 @@ def _move_to_device(target: Any, device: torch.device) -> Any:
     return target
 
 
+class VerboseType(Enum):
+    ALL = -1
+    NONE = 0
+    LOSS = 1
+    METRICS = 2
+
+
 class Manager:
-    '''
+    """
     A training manager
 
     - Properties:
@@ -68,10 +76,10 @@ class Manager:
         - metrics: A `dict` of metrics with a name in `str` and a `Callable` method that takes the truth and predictions in `torch.Tensor` and returns a loss `torch.Tensor`
         - model: A target `torch.nn.Module` to be trained
         - optimizer: A `torch.optim.Optimizer` to train the model
-    '''
+    """
     # properties
     __compiled: bool
-    loss_fn: Optional[Union[Loss, Dict[str, Loss]]]
+    loss_fn: Optional[Loss]
     metric_fns: Dict[str, Metric]
     model: torch.nn.Module
     optimizer: Optional[torch.optim.Optimizer]
@@ -79,10 +87,6 @@ class Manager:
     @property
     def compiled_losses(self) -> Loss:
         assert self.loss_fn is not None, "[Training Error]: loss_fn is not given, compiles the manager with loss_fn first."
-        if isinstance(self.loss_fn, dict):
-            loss_fn = {f"loss_{name}": fn for name, fn in self.loss_fn.items()}
-            self.metric_fns.update(loss_fn)
-            self.loss_fn = MultiLosses([l for l in self.loss_fn.values()])
         return self.loss_fn
 
     @property
@@ -95,7 +99,7 @@ class Manager:
         return self.optimizer
     
     def __init__(self, model: torch.nn.Module, optimizer: Optional[torch.optim.Optimizer]=None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]]=None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]]={}) -> None:
-        '''
+        """
         Constructor
         
         - Parameters:
@@ -103,31 +107,13 @@ class Manager:
             - metrics: An optional `dict` of metrics with a name in `str` and a `Metric` object to calculate the metric
             - model: An optional target `torch.nn.Module` to be trained
             - optimizer: An optional `torch.optim.Optimizer` to train the model
-        '''
-        # initialize loss
-        if isinstance(loss_fn, Loss) or isinstance(loss_fn, dict):
-            if isinstance(loss_fn, MultiOutputLosses):
-                loss_fn_mapping = {f"loss_{name}": fn for name, fn in loss_fn.losses.items()}
-                self.metric_fns.update(loss_fn_mapping)
-            self.loss_fn = loss_fn 
-        elif loss_fn is not None:
-            self.loss_fn = Loss(loss_fn)
-            warnings.warn("[Pending Deprecated Warning]: parsing `loss_fn` as a function was deprecated from v0.9.3 and will no longer be available from v1.1.0, use losses.Loss object instead.", PendingDeprecationWarning)
-        else:
-            self.loss_fn = None
-
-        # initialize metrics
+        """
+        # initialize
         self.metric_fns = {}
-        for name, fn in metrics.items():
-            if isinstance(fn, Metric):
-                self.metric_fns[name] = fn
-            else:
-                warnings.warn("[Pending Deprecated Warning]: parsing a metric in `metrics` as a function was deprecated from v0.9.3 and will no longer be available from v1.1.0, use `metrics.Metric` object instead.", PendingDeprecationWarning)
-                self.metric_fns[name] = Metric(fn)
-
-        # initialize main model and optimizer
         self.model = model
-        self.optimizer = optimizer
+
+        # compile
+        self.__compile(optimizer, loss_fn, metrics)
 
         # check compiled
         if self.loss_fn is not None and self.optimizer is not None:
@@ -136,25 +122,28 @@ class Manager:
             self.__compiled = False
 
     def __compile(self, optimizer: Optional[torch.optim.Optimizer]=None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]]=None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]]={}) -> None:
-        '''
+        """
         Compiles the manager
         
         - Parameters:
             - loss_fn: An optional `Loss` object to calculate the loss for single loss or a `dict` of losses in `Loss` with their names in `str` to calculate multiple losses
             - metrics: An optional `dict` of metrics with a name in `str` and a `Metric` object to calculate the metric
             - optimizer: An optional `torch.optim.Optimizer` to train the model
-        '''
+        """
         # initialize loss
-        if isinstance(loss_fn, Loss) or isinstance(loss_fn, dict):
-            self.loss_fn = loss_fn 
+        if isinstance(loss_fn, MultiOutputsLosses):
+            loss_fn_mapping: Dict[str, Loss] = {f"{name}_loss": fn for name, fn in loss_fn.losses.items()} # type: ignore
+            self.metric_fns.update(loss_fn_mapping)
+        elif isinstance(loss_fn, dict):
+            loss_fn_mapping: Dict[str, Loss] = {f"{name}_loss": fn for name, fn in loss_fn.items()}
+            self.metric_fns.update(loss_fn_mapping)
+            loss_fn = MultiLosses([l for l in loss_fn_mapping.values()])
         elif loss_fn is not None:
-            self.loss_fn = Loss(loss_fn)
+            loss_fn = Loss(loss_fn)
             warnings.warn("[Deprecated Warning]: parsing `loss_fn` as a function was deprecated from v0.9.3 and will no longer be available from v1.1.0, use losses.Loss object instead.", DeprecationWarning)
-        else:
-            self.loss_fn = None
+        self.loss_fn = loss_fn
 
         # initialize metrics
-        self.metric_fns = {}
         for name, fn in metrics.items():
             if isinstance(fn, Metric):
                 self.metric_fns[name] = fn
@@ -166,19 +155,19 @@ class Manager:
         self.optimizer = optimizer
 
     def compile(self, optimizer: torch.optim.Optimizer, loss_fn: Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]], metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]]={}) -> None:
-        '''
+        """
         Compiles the manager
         
         - Parameters:
             - loss_fn: A `Loss` object to calculate the loss for single loss or a `dict` of losses in `Loss` with their names in `str` to calculate multiple losses
             - metrics: A `dict` of metrics with a name in `str` and a `Metric` object to calculate the metric
             - optimizer: A `torch.optim.Optimizer` to train the model
-        '''
+        """
         self.__compile(optimizer, loss_fn, metrics)
         self.__compiled = True
 
-    def fit(self, training_dataset: data.DataLoader, epochs: int=100, initial_epoch: int=0, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler]=None, show_verbose: bool=False, val_dataset: Optional[data.DataLoader]=None, device: Optional[torch.device]=None, use_multi_gpus: bool=False, callbacks_list: List[Callback]=[], **kwargs) -> torch.nn.Module:
-        '''
+    def fit(self, training_dataset: data.DataLoader, epochs: int=100, initial_epoch: int=0, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler]=None, val_dataset: Optional[data.DataLoader]=None, device: Optional[torch.device]=None, use_multi_gpus: bool=False, callbacks_list: List[Callback]=[], **kwargs) -> torch.nn.Module:
+        """
         Training algorithm
 
         - Parameters:
@@ -186,14 +175,13 @@ class Manager:
             - epochs: The `int` number of training epochs
             - lr_scheduelr: An optioanl `torch.optim.lr_scheduler._LRScheduler` to update the lr per epoch
             - is_dynamic_pruning: A `bool` flag of if using dynamic pruning
-            - show_verbose: A `bool` flag of if showing progress bar
             - val_dataset: An optional validation `data.DataLoader`
             - device: An optional `torch.device` where the data is moved to, gpu will be used when available if not specified.
             - use_multi_gpus: A `bool` flag of if using multi gpus
             - callbacks_list: A `list` of callbacks in `Callback`
-            - **kwargs: Additional keyword arguments that will be passed to `train_step` method. If given, `train` method must be overriden to accept these arguments.
+            - **kwargs: Additional keyword arguments that will be passed to `train_step` method.
         - Returns: A trained `torch.nn.Module`
-        '''
+        """
         # ensure compiled and epochs
         assert self.__compiled is True, "[Training Error]: Manager has not yet been compiled. Either loss_fn or optimizer, or both, are not given."
         assert epochs > 0, f"[Training Error]: The epochs must be a positive integer, got {epochs}."
@@ -261,7 +249,7 @@ class Manager:
                 c.on_epoch_start(epoch)
 
             # train for one epoch
-            summary = self.train(training_dataset, device=device, use_multi_gpus=use_multi_gpus, show_verbose=show_verbose, callbacks_list=callbacks_list, **kwargs)
+            summary = self.train(training_dataset, device=device, use_multi_gpus=use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
 
             # validate
             val_message = f"Epoch {epoch + 1}/{epochs}: "
@@ -310,17 +298,17 @@ class Manager:
 
     @classmethod
     def from_checkpoint(cls: Type[Manager], *args, **kwargs) -> Manager:
-        '''
+        """
         Method to load a manager from a saved `Checkpoint`. The manager will not be compiled with a loss function and its metrics.
 
         - Returns: A loaded `Manager`
-        '''
+        """
         # load checkpoint
         ckpt = Checkpoint.from_saved(*args, **kwargs)
         return cls(ckpt.model, ckpt.optimizer, loss_fn=ckpt.loss_fn, metrics=ckpt.metrics)
 
-    def train(self, dataset: data.DataLoader, device: torch.device=torch.device('cpu'), use_multi_gpus: bool=False, show_verbose: bool=False, callbacks_list: List[Callback]=[]) -> Dict[str, float]:
-        '''
+    def train(self, dataset: data.DataLoader, device: torch.device=torch.device('cpu'), use_multi_gpus: bool=False, show_verbose: bool=False, verbose_type: VerboseType = VerboseType.ALL, callbacks_list: List[Callback]=[]) -> Dict[str, float]:
+        """
         The single training step for an epoch
 
         - Parameters:
@@ -330,7 +318,7 @@ class Manager:
             - show_verbose: A `bool` flag of if showing progress bar
             - callbacks_list: A `list` of callbacks in `Callback`
         - Returns: A summary of `dict` with keys as `str` and values as `float`
-        '''
+        """
         # initialize
         self.compiled_losses.reset()
         for _, m in self.metric_fns.items(): m.reset()
@@ -359,7 +347,17 @@ class Manager:
 
             # implement progress bar
             if progress_bar is not None:
-                progress_bar.set_postfix(summary)
+                # initialize progress summary
+                if verbose_type == VerboseType.LOSS:
+                    progress_summary = {name: s for name, s in summary.items() if "loss" in name}
+                elif verbose_type == VerboseType.METRICS:
+                    progress_summary = {name: s for name, s in summary.items() if "loss" not in name}
+                elif verbose_type == VerboseType.ALL:
+                    progress_summary = summary
+                else: progress_summary = None
+
+                # update progress bar
+                progress_bar.set_postfix(progress_summary)
                 progress_bar.update()
 
         # end epoch training
@@ -373,14 +371,14 @@ class Manager:
         return summary
 
     def train_step(self, x_train: Any, y_train: Any) -> Dict[str, float]:
-        '''
+        """
         A single training step
 
         - Parameters:
             - x_train: The training data
             - y_train: The training label
         - Returns: A summary of `dict` with keys as `str` and values as `float`
-        '''
+        """
         # forward pass
         summary: dict[str, float] = {}
         self.compiled_optimizer.zero_grad()
@@ -402,14 +400,14 @@ class Manager:
         return summary
 
     def test(self, dataset: data.DataLoader, device: Optional[torch.device]=None, use_multi_gpus: bool=False, show_verbose: bool=False) -> Dict[str, float]:
-        '''
+        """
         Test target model
 
         - Parameters:
             - dataset: A `data.DataLoader` to load the dataset
             - use_multi_gpus: A `bool` flag to use multi gpus during testing
         - Returns: A `dict` of validation summary
-        '''
+        """
         # initialize function
         self.compiled_losses.reset()
         for _, m in self.metric_fns.items(): m.reset()
@@ -475,14 +473,14 @@ class Manager:
             return summary
 
     def test_step(self, x_test: Any, y_test: Any) -> dict[str, float]:
-        '''
+        """
         A single testing step
 
         - Parameters:
             - x_train: The testing data in `torch.Tensor`
             - y_train: The testing label in `torch.Tensor`
         - Returns: A `dict` of validation summary
-        '''
+        """
         # initialize
         summary: dict[str, float] = {}
 
