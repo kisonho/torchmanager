@@ -1,6 +1,7 @@
 # import typing modules
 from __future__ import annotations
 from typing import Any, Callable, Dict, Iterable, List, Optional, Protocol, Type, Union, runtime_checkable
+from enum import Enum
 
 # import required modules
 import abc, logging, torch, warnings
@@ -55,6 +56,13 @@ def _move_to_device(target: Any, device: torch.device) -> Any:
             if isinstance(t, _DeviceMovable):
                 t.to(device)
     return target
+
+
+class VerboseType(Enum):
+    ALL = -1
+    NONE = 0
+    LOSS = 1
+    METRICS = 2
 
 
 class Manager:
@@ -158,7 +166,7 @@ class Manager:
         self.__compile(optimizer, loss_fn, metrics)
         self.__compiled = True
 
-    def fit(self, training_dataset: data.DataLoader, epochs: int=100, initial_epoch: int=0, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler]=None, show_verbose: bool=False, val_dataset: Optional[data.DataLoader]=None, device: Optional[torch.device]=None, use_multi_gpus: bool=False, callbacks_list: List[Callback]=[], **kwargs) -> torch.nn.Module:
+    def fit(self, training_dataset: data.DataLoader, epochs: int=100, initial_epoch: int=0, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler]=None, val_dataset: Optional[data.DataLoader]=None, device: Optional[torch.device]=None, use_multi_gpus: bool=False, callbacks_list: List[Callback]=[], **kwargs) -> torch.nn.Module:
         """
         Training algorithm
 
@@ -167,12 +175,11 @@ class Manager:
             - epochs: The `int` number of training epochs
             - lr_scheduelr: An optioanl `torch.optim.lr_scheduler._LRScheduler` to update the lr per epoch
             - is_dynamic_pruning: A `bool` flag of if using dynamic pruning
-            - show_verbose: A `bool` flag of if showing progress bar
             - val_dataset: An optional validation `data.DataLoader`
             - device: An optional `torch.device` where the data is moved to, gpu will be used when available if not specified.
             - use_multi_gpus: A `bool` flag of if using multi gpus
             - callbacks_list: A `list` of callbacks in `Callback`
-            - **kwargs: Additional keyword arguments that will be passed to `train_step` method. If given, `train` method must be overriden to accept these arguments.
+            - **kwargs: Additional keyword arguments that will be passed to `train_step` method.
         - Returns: A trained `torch.nn.Module`
         """
         # ensure compiled and epochs
@@ -242,7 +249,7 @@ class Manager:
                 c.on_epoch_start(epoch)
 
             # train for one epoch
-            summary = self.train(training_dataset, device=device, use_multi_gpus=use_multi_gpus, show_verbose=show_verbose, callbacks_list=callbacks_list, **kwargs)
+            summary = self.train(training_dataset, device=device, use_multi_gpus=use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
 
             # validate
             val_message = f"Epoch {epoch + 1}/{epochs}: "
@@ -300,7 +307,7 @@ class Manager:
         ckpt = Checkpoint.from_saved(*args, **kwargs)
         return cls(ckpt.model, ckpt.optimizer, loss_fn=ckpt.loss_fn, metrics=ckpt.metrics)
 
-    def train(self, dataset: data.DataLoader, device: torch.device=torch.device('cpu'), use_multi_gpus: bool=False, show_verbose: bool=False, callbacks_list: List[Callback]=[]) -> Dict[str, float]:
+    def train(self, dataset: data.DataLoader, device: torch.device=torch.device('cpu'), use_multi_gpus: bool=False, show_verbose: bool=False, verbose_type: VerboseType = VerboseType.ALL, callbacks_list: List[Callback]=[]) -> Dict[str, float]:
         """
         The single training step for an epoch
 
@@ -340,7 +347,17 @@ class Manager:
 
             # implement progress bar
             if progress_bar is not None:
-                progress_bar.set_postfix(summary)
+                # initialize progress summary
+                if verbose_type == VerboseType.LOSS:
+                    progress_summary = {name: s for name, s in summary.items() if "loss" in name}
+                elif verbose_type == VerboseType.METRICS:
+                    progress_summary = {name: s for name, s in summary.items() if "loss" not in name}
+                elif verbose_type == VerboseType.ALL:
+                    progress_summary = summary
+                else: progress_summary = None
+
+                # update progress bar
+                progress_bar.set_postfix(progress_summary)
                 progress_bar.update()
 
         # end epoch training
