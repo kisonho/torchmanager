@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Optional, Type
 
 # import required modules
-import abc, argparse, logging, os
+import abc, argparse, logging, os, torch
 
 class Config(abc.ABC):
     """An abstract configuration class"""
@@ -91,6 +91,7 @@ class TrainingConfig(ExperimentConfig):
         - lr_decay: A `float` of the learning rate decay rate
         - lr_decay_step: An `int` of the learning rate decay step
     """
+    default_lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler]
     epochs: int
     initial_epoch: int
     lr_decay: float
@@ -100,6 +101,7 @@ class TrainingConfig(ExperimentConfig):
         """Constructor"""
         super().__init__(**kwargs)
         # set arguments
+        self.default_lr_scheduler = None
         self.epochs = epochs
         self.initial_epoch = initial_epoch
         self.lr_decay = lr_decay
