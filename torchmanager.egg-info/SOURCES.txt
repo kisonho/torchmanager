@@ -12,6 +12,8 @@ lib/train/checkpoint.py
 nightly/__init__.py
 nightly/callbacks.py
 nightly/managers.py
+nightly/train/__init__.py
+nightly/train/configs.py
 torchmanager.egg-info/PKG-INFO
 torchmanager.egg-info/SOURCES.txt
 torchmanager.egg-info/dependency_links.txt

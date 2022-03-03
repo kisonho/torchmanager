@@ -11,11 +11,12 @@ setup(name='torchmanager',
       long_description_content_type='text/markdown',
       author='Kison Ho',
       author_email='unfit-gothic.0q@icloud.com',
-      packages=['torchmanager', 'torchmanager-nightly', 'torchmanager.train'],
+      packages=['torchmanager', 'torchmanager.train', 'torchmanager-nightly', 'torchmanager-nightly.train'],
       package_dir={
             'torchmanager': 'lib',
+            'torchmanager.train': 'lib/train',
             'torchmanager-nightly': 'nightly',
-            'torchmanager.train': 'lib/train'
+            'torchmanager-nightly.train': 'nightly/train'
       },
       python_requires=">=3.8",
       url="https://github.com/kisonho/torchmanager.git"
