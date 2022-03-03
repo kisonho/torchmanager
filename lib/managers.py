@@ -26,12 +26,12 @@ class _DeviceMovable(Protocol):
 
 @runtime_checkable
 class _VerboseControllable(Protocol):
-    '''
+    """
     The learning rate scheduler protocol
 
     - Properties:
         - verbose: A `bool` flag of if showing messages when updating lr
-    '''
+    """
     @abc.abstractproperty
     def verbose(self) -> bool:
         raise NotImplementedError
@@ -58,7 +58,7 @@ def _move_to_device(target: Any, device: torch.device) -> Any:
 
 
 class Manager:
-    '''
+    """
     A training manager
 
     - Properties:
@@ -68,7 +68,7 @@ class Manager:
         - metrics: A `dict` of metrics with a name in `str` and a `Callable` method that takes the truth and predictions in `torch.Tensor` and returns a loss `torch.Tensor`
         - model: A target `torch.nn.Module` to be trained
         - optimizer: A `torch.optim.Optimizer` to train the model
-    '''
+    """
     # properties
     __compiled: bool
     loss_fn: Optional[Loss]
@@ -91,7 +91,7 @@ class Manager:
         return self.optimizer
     
     def __init__(self, model: torch.nn.Module, optimizer: Optional[torch.optim.Optimizer]=None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]]=None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]]={}) -> None:
-        '''
+        """
         Constructor
         
         - Parameters:
@@ -99,7 +99,7 @@ class Manager:
             - metrics: An optional `dict` of metrics with a name in `str` and a `Metric` object to calculate the metric
             - model: An optional target `torch.nn.Module` to be trained
             - optimizer: An optional `torch.optim.Optimizer` to train the model
-        '''
+        """
         # initialize
         self.metric_fns = {}
         self.model = model
@@ -114,14 +114,14 @@ class Manager:
             self.__compiled = False
 
     def __compile(self, optimizer: Optional[torch.optim.Optimizer]=None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]]=None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]]={}) -> None:
-        '''
+        """
         Compiles the manager
         
         - Parameters:
             - loss_fn: An optional `Loss` object to calculate the loss for single loss or a `dict` of losses in `Loss` with their names in `str` to calculate multiple losses
             - metrics: An optional `dict` of metrics with a name in `str` and a `Metric` object to calculate the metric
             - optimizer: An optional `torch.optim.Optimizer` to train the model
-        '''
+        """
         # initialize loss
         if isinstance(loss_fn, MultiOutputsLosses):
             loss_fn_mapping: Dict[str, Loss] = {f"{name}_loss": fn for name, fn in loss_fn.losses.items()} # type: ignore
@@ -147,19 +147,19 @@ class Manager:
         self.optimizer = optimizer
 
     def compile(self, optimizer: torch.optim.Optimizer, loss_fn: Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]], metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]]={}) -> None:
-        '''
+        """
         Compiles the manager
         
         - Parameters:
             - loss_fn: A `Loss` object to calculate the loss for single loss or a `dict` of losses in `Loss` with their names in `str` to calculate multiple losses
             - metrics: A `dict` of metrics with a name in `str` and a `Metric` object to calculate the metric
             - optimizer: A `torch.optim.Optimizer` to train the model
-        '''
+        """
         self.__compile(optimizer, loss_fn, metrics)
         self.__compiled = True
 
     def fit(self, training_dataset: data.DataLoader, epochs: int=100, initial_epoch: int=0, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler]=None, show_verbose: bool=False, val_dataset: Optional[data.DataLoader]=None, device: Optional[torch.device]=None, use_multi_gpus: bool=False, callbacks_list: List[Callback]=[], **kwargs) -> torch.nn.Module:
-        '''
+        """
         Training algorithm
 
         - Parameters:
@@ -174,7 +174,7 @@ class Manager:
             - callbacks_list: A `list` of callbacks in `Callback`
             - **kwargs: Additional keyword arguments that will be passed to `train_step` method. If given, `train` method must be overriden to accept these arguments.
         - Returns: A trained `torch.nn.Module`
-        '''
+        """
         # ensure compiled and epochs
         assert self.__compiled is True, "[Training Error]: Manager has not yet been compiled. Either loss_fn or optimizer, or both, are not given."
         assert epochs > 0, f"[Training Error]: The epochs must be a positive integer, got {epochs}."
@@ -291,17 +291,17 @@ class Manager:
 
     @classmethod
     def from_checkpoint(cls: Type[Manager], *args, **kwargs) -> Manager:
-        '''
+        """
         Method to load a manager from a saved `Checkpoint`. The manager will not be compiled with a loss function and its metrics.
 
         - Returns: A loaded `Manager`
-        '''
+        """
         # load checkpoint
         ckpt = Checkpoint.from_saved(*args, **kwargs)
         return cls(ckpt.model, ckpt.optimizer, loss_fn=ckpt.loss_fn, metrics=ckpt.metrics)
 
     def train(self, dataset: data.DataLoader, device: torch.device=torch.device('cpu'), use_multi_gpus: bool=False, show_verbose: bool=False, callbacks_list: List[Callback]=[]) -> Dict[str, float]:
-        '''
+        """
         The single training step for an epoch
 
         - Parameters:
@@ -311,7 +311,7 @@ class Manager:
             - show_verbose: A `bool` flag of if showing progress bar
             - callbacks_list: A `list` of callbacks in `Callback`
         - Returns: A summary of `dict` with keys as `str` and values as `float`
-        '''
+        """
         # initialize
         self.compiled_losses.reset()
         for _, m in self.metric_fns.items(): m.reset()
@@ -354,14 +354,14 @@ class Manager:
         return summary
 
     def train_step(self, x_train: Any, y_train: Any) -> Dict[str, float]:
-        '''
+        """
         A single training step
 
         - Parameters:
             - x_train: The training data
             - y_train: The training label
         - Returns: A summary of `dict` with keys as `str` and values as `float`
-        '''
+        """
         # forward pass
         summary: dict[str, float] = {}
         self.compiled_optimizer.zero_grad()
@@ -383,14 +383,14 @@ class Manager:
         return summary
 
     def test(self, dataset: data.DataLoader, device: Optional[torch.device]=None, use_multi_gpus: bool=False, show_verbose: bool=False) -> Dict[str, float]:
-        '''
+        """
         Test target model
 
         - Parameters:
             - dataset: A `data.DataLoader` to load the dataset
             - use_multi_gpus: A `bool` flag to use multi gpus during testing
         - Returns: A `dict` of validation summary
-        '''
+        """
         # initialize function
         self.compiled_losses.reset()
         for _, m in self.metric_fns.items(): m.reset()
@@ -456,14 +456,14 @@ class Manager:
             return summary
 
     def test_step(self, x_test: Any, y_test: Any) -> dict[str, float]:
-        '''
+        """
         A single testing step
 
         - Parameters:
             - x_train: The testing data in `torch.Tensor`
             - y_train: The testing label in `torch.Tensor`
         - Returns: A `dict` of validation summary
-        '''
+        """
         # initialize
         summary: dict[str, float] = {}
 

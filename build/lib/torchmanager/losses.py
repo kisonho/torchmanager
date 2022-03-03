@@ -88,14 +88,12 @@ class MultiLosses(Loss):
 
     def forward(self, input: Any, target: Any) -> torch.Tensor:
         # initilaize
-        loss: List[torch.Tensor] = []
+        loss = torch.tensor(0, dtype=torch.float)
 
         # get all losses
         for fn in self.losses:
-            loss.append(fn.forward(input, target))
-
-        # sum
-        return torch.concat(loss).sum()
+            loss += fn.forward(input, target)
+        return loss
 
 class MultiOutputsLosses(Loss):
     """
@@ -116,15 +114,12 @@ class MultiOutputsLosses(Loss):
 
     def forward(self, input: Dict[str, torch.Tensor], target: Dict[str, torch.Tensor]) -> torch.Tensor:
         # initilaize
-        loss: List[torch.Tensor] = []
+        loss = torch.tensor(0, dtype=torch.float)
 
         # loop for losses
         for k, fn in self.losses.items():
-            l = fn(input[k], target[k])
-            loss.append(l)
-
-        # sum
-        return torch.concat(loss).sum()
+            loss += fn(input[k], target[k])
+        return loss
 
 def loss(fn: Callable[[Any, Any], torch.Tensor]) -> Loss:
     """
