@@ -71,7 +71,7 @@ class Manager:
     '''
     # properties
     __compiled: bool
-    loss_fn: Optional[Union[Loss, Dict[str, Loss]]]
+    loss_fn: Optional[Loss]
     metric_fns: Dict[str, Metric]
     model: torch.nn.Module
     optimizer: Optional[torch.optim.Optimizer]
@@ -79,10 +79,6 @@ class Manager:
     @property
     def compiled_losses(self) -> Loss:
         assert self.loss_fn is not None, "[Training Error]: loss_fn is not given, compiles the manager with loss_fn first."
-        if isinstance(self.loss_fn, dict):
-            loss_fn = {f"loss_{name}": fn for name, fn in self.loss_fn.items()}
-            self.metric_fns.update(loss_fn)
-            self.loss_fn = MultiLosses([l for l in self.loss_fn.values()])
         return self.loss_fn
 
     @property
@@ -104,30 +100,12 @@ class Manager:
             - model: An optional target `torch.nn.Module` to be trained
             - optimizer: An optional `torch.optim.Optimizer` to train the model
         '''
-        # initialize loss
-        if isinstance(loss_fn, Loss) or isinstance(loss_fn, dict):
-            if isinstance(loss_fn, MultiOutputsLosses):
-                loss_fn_mapping: Dict[str, Metric] = {f"loss_{name}": fn for name, fn in loss_fn.losses.items()} # type: ignore
-                self.metric_fns.update(loss_fn_mapping)
-            self.loss_fn = loss_fn 
-        elif loss_fn is not None:
-            self.loss_fn = Loss(loss_fn)
-            warnings.warn("[Pending Deprecated Warning]: parsing `loss_fn` as a function was deprecated from v0.9.3 and will no longer be available from v1.1.0, use losses.Loss object instead.", PendingDeprecationWarning)
-        else:
-            self.loss_fn = None
-
-        # initialize metrics
+        # initialize
         self.metric_fns = {}
-        for name, fn in metrics.items():
-            if isinstance(fn, Metric):
-                self.metric_fns[name] = fn
-            else:
-                warnings.warn("[Pending Deprecated Warning]: parsing a metric in `metrics` as a function was deprecated from v0.9.3 and will no longer be available from v1.1.0, use `metrics.Metric` object instead.", PendingDeprecationWarning)
-                self.metric_fns[name] = Metric(fn)
-
-        # initialize main model and optimizer
         self.model = model
-        self.optimizer = optimizer
+
+        # compile
+        self.__compile(optimizer, loss_fn, metrics)
 
         # check compiled
         if self.loss_fn is not None and self.optimizer is not None:
@@ -145,8 +123,15 @@ class Manager:
             - optimizer: An optional `torch.optim.Optimizer` to train the model
         '''
         # initialize loss
-        if isinstance(loss_fn, Loss) or isinstance(loss_fn, dict):
-            self.loss_fn = loss_fn 
+        if isinstance(loss_fn, Loss):
+            if isinstance(loss_fn, MultiOutputsLosses):
+                loss_fn_mapping: Dict[str, Loss] = {f"{name}_loss": fn for name, fn in loss_fn.losses.items()} # type: ignore
+                self.metric_fns.update(loss_fn_mapping)
+            self.loss_fn = loss_fn
+        elif isinstance(loss_fn, dict):
+            loss_fn_mapping: Dict[str, Loss] = {f"{name}_loss": fn for name, fn in loss_fn.items()}
+            self.metric_fns.update(loss_fn_mapping)
+            self.loss_fn = MultiLosses([l for l in loss_fn_mapping.values()])
         elif loss_fn is not None:
             self.loss_fn = Loss(loss_fn)
             warnings.warn("[Deprecated Warning]: parsing `loss_fn` as a function was deprecated from v0.9.3 and will no longer be available from v1.1.0, use losses.Loss object instead.", DeprecationWarning)
@@ -154,7 +139,6 @@ class Manager:
             self.loss_fn = None
 
         # initialize metrics
-        self.metric_fns = {}
         for name, fn in metrics.items():
             if isinstance(fn, Metric):
                 self.metric_fns[name] = fn
