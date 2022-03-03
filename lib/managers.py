@@ -123,20 +123,17 @@ class Manager:
             - optimizer: An optional `torch.optim.Optimizer` to train the model
         '''
         # initialize loss
-        if isinstance(loss_fn, Loss):
-            if isinstance(loss_fn, MultiOutputsLosses):
-                loss_fn_mapping: Dict[str, Loss] = {f"{name}_loss": fn for name, fn in loss_fn.losses.items()} # type: ignore
-                self.metric_fns.update(loss_fn_mapping)
-            self.loss_fn = loss_fn
+        if isinstance(loss_fn, MultiOutputsLosses):
+            loss_fn_mapping: Dict[str, Loss] = {f"{name}_loss": fn for name, fn in loss_fn.losses.items()} # type: ignore
+            self.metric_fns.update(loss_fn_mapping)
         elif isinstance(loss_fn, dict):
             loss_fn_mapping: Dict[str, Loss] = {f"{name}_loss": fn for name, fn in loss_fn.items()}
             self.metric_fns.update(loss_fn_mapping)
-            self.loss_fn = MultiLosses([l for l in loss_fn_mapping.values()])
+            loss_fn = MultiLosses([l for l in loss_fn_mapping.values()])
         elif loss_fn is not None:
-            self.loss_fn = Loss(loss_fn)
+            loss_fn = Loss(loss_fn)
             warnings.warn("[Deprecated Warning]: parsing `loss_fn` as a function was deprecated from v0.9.3 and will no longer be available from v1.1.0, use losses.Loss object instead.", DeprecationWarning)
-        else:
-            self.loss_fn = None
+        self.loss_fn = loss_fn
 
         # initialize metrics
         for name, fn in metrics.items():
