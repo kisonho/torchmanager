@@ -1,5 +1,4 @@
 # import typing modules
-from turtle import forward
 from typing import Any, Callable, Dict, List, Optional
 
 # import required modules
@@ -68,6 +67,12 @@ class FocalCrossEntropy(Loss):
             return focal_loss.mean()
         else:
             return focal_loss.sum()
+
+class KLDiv(Loss):
+    """KL-Div Loss"""
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        loss_fn = torch.nn.KLDivLoss(*args, **kwargs)
+        super().__init__(loss_fn)
 
 class MultiLosses(Loss):
     """

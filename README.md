@@ -1,5 +1,10 @@
-# **torchmanager**
+# torchmanager
 A Keras like PyTorch training and testing manager
+
+## Pre-request
+* Python 3.8+
+* PyTorch 1.8.2+
+* tqdm
 
 ## Installation
 `pip install torchmanager`
@@ -11,7 +16,7 @@ import torch, torchmanager
 
 # define model
 class PytorchModel(torch.nn.Module):
-	...
+    ...
 
 # initialize model, optimizer, loss function, and metrics
 model = PytorchModel(...)
@@ -59,14 +64,14 @@ manager.fit(..., callbacks_list=[tensorboard_callback, last_ckpt_callback])
 ...
 
 class CustomManager(Manager):
-	...
+    ...
 ```
 
 2. Override the `train_step` method:
 ```
 class CustomManager(Manager):
-	...
-	
-	def train_step(x_train: torch.Tensor, y_train: torch.Tensor) -> Dict[str, float]:
-		...
+    ...
+    
+    def train_step(x_train: torch.Tensor, y_train: torch.Tensor) -> Dict[str, float]:
+        ...
 ```

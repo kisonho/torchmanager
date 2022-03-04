@@ -14,26 +14,18 @@ from .losses import Loss, MultiLosses, MultiOutputsLosses
 from .metrics import Metric
 from .train import Checkpoint
 
-
 @runtime_checkable
 class _DeviceMovable(Protocol):
-    """
-    The device movable protocol
-    """
+    """The device movable protocol"""
     @abc.abstractmethod
     def to(self, device: torch.device) -> Any:
         raise NotImplementedError
 
-
 @runtime_checkable
 class _VerboseControllable(Protocol):
-    """
-    The learning rate scheduler protocol
-
-    - Properties:
-        - verbose: A `bool` flag of if showing messages when updating lr
-    """
-    @abc.abstractproperty
+    """The learning rate scheduler protocol"""
+    @property
+    @abc.abstractmethod
     def verbose(self) -> bool:
         raise NotImplementedError
 
@@ -41,7 +33,6 @@ class _VerboseControllable(Protocol):
     @abc.abstractmethod
     def verbose(self, verbose: bool) -> None:
         raise NotImplementedError
-
 
 def _move_to_device(target: Any, device: torch.device) -> Any:
     """Move a target variable to device"""
@@ -57,17 +48,18 @@ def _move_to_device(target: Any, device: torch.device) -> Any:
                 t.to(device)
     return target
 
-
 class VerboseType(Enum):
+    """Verbose type enum"""
     ALL = -1
     NONE = 0
     LOSS = 1
     METRICS = 2
 
-
 class Manager:
     """
     A training manager
+
+    * [Deprecation Warning]: Method `train` becomes protected from v1.0.2, the public method will be removed from v1.2.0. Override `_train` method instead.
 
     - Properties:
         - compiled_losses: The loss function in `Metric` that must be exist
@@ -154,6 +146,64 @@ class Manager:
         # initialize optimizer
         self.optimizer = optimizer
 
+    def _train(self, dataset: data.DataLoader, device: torch.device=torch.device('cpu'), use_multi_gpus: bool=False, show_verbose: bool=False, verbose_type: VerboseType = VerboseType.ALL, callbacks_list: List[Callback]=[]) -> Dict[str, float]:
+        """
+        The single training step for an epoch
+
+        - Parameters:
+            - dataset: The `data.DataLoader` for training dataset
+            - device: A `torch.device` where the data is moved to, should be same as the model
+            - use_multi_gpus: A `bool` flag of if using multi gpus
+            - show_verbose: A `bool` flag of if showing progress bar
+            - callbacks_list: A `list` of callbacks in `Callback`
+        - Returns: A summary of `dict` with keys as `str` and values as `float`
+        """
+        # initialize progress bar
+        progress_bar = tqdm(total=len(dataset)) if show_verbose else None
+
+        # batch loop
+        for batch, (x_train, y_train) in enumerate(dataset):
+            # on batch start
+            for c in callbacks_list:
+                c.on_batch_start(batch)
+
+            # move x_train and y_train to device
+            if use_multi_gpus is not True:
+                x_train = _move_to_device(x_train, device)
+            y_train = _move_to_device(y_train, device)
+
+            # train for one step
+            summary = self.train_step(x_train, y_train)
+
+            # on batch start
+            for c in callbacks_list:
+                c.on_batch_end(batch, summary=summary)
+
+            # implement progress bar
+            if progress_bar is not None:
+                # initialize progress summary
+                if verbose_type == VerboseType.LOSS:
+                    progress_summary = {name: s for name, s in summary.items() if "loss" in name}
+                elif verbose_type == VerboseType.METRICS:
+                    progress_summary = {name: s for name, s in summary.items() if "loss" not in name}
+                elif verbose_type == VerboseType.ALL:
+                    progress_summary = summary
+                else: progress_summary = None
+
+                # update progress bar
+                progress_bar.set_postfix(progress_summary)
+                progress_bar.update()
+
+        # end epoch training
+        if progress_bar is not None:
+            progress_bar.close()
+
+        # summarize
+        summary = {name: float(fn.result.detach()) for name, fn in self.metric_fns.items()}
+        summary["loss"] = float(self.compiled_losses.result.detach())
+        if torch.cuda.is_available(): torch.cuda.empty_cache()
+        return summary
+
     def compile(self, optimizer: torch.optim.Optimizer, loss_fn: Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]], metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]]={}) -> None:
         """
         Compiles the manager
@@ -179,7 +229,7 @@ class Manager:
             - device: An optional `torch.device` where the data is moved to, gpu will be used when available if not specified.
             - use_multi_gpus: A `bool` flag of if using multi gpus
             - callbacks_list: A `list` of callbacks in `Callback`
-            - **kwargs: Additional keyword arguments that will be passed to `train_step` method.
+            - **kwargs: Additional keyword arguments that will be passed to `train` method.
         - Returns: A trained `torch.nn.Module`
         """
         # ensure compiled and epochs
@@ -243,6 +293,9 @@ class Manager:
         for epoch in range(initial_epoch, epochs):
             # initialize epoch
             logger.info(f"Training epoch {epoch + 1}/{epochs}")
+            self.compiled_losses.reset()
+            for _, m in self.metric_fns.items(): m.reset()
+            self.model.train()
 
             # on epoch start
             for c in callbacks_list:
@@ -296,6 +349,10 @@ class Manager:
         self.model = raw_model.to(cpu)
         return self.model
 
+    def train(self, *args, **kwargs) -> Dict[str, float]:
+        """The single training step for an epoch"""
+        return self._train(*args, **kwargs)
+
     @classmethod
     def from_checkpoint(cls: Type[Manager], *args, **kwargs) -> Manager:
         """
@@ -307,69 +364,6 @@ class Manager:
         ckpt = Checkpoint.from_saved(*args, **kwargs)
         return cls(ckpt.model, ckpt.optimizer, loss_fn=ckpt.loss_fn, metrics=ckpt.metrics)
 
-    def train(self, dataset: data.DataLoader, device: torch.device=torch.device('cpu'), use_multi_gpus: bool=False, show_verbose: bool=False, verbose_type: VerboseType = VerboseType.ALL, callbacks_list: List[Callback]=[]) -> Dict[str, float]:
-        """
-        The single training step for an epoch
-
-        - Parameters:
-            - dataset: The `data.DataLoader` for training dataset
-            - device: A `torch.device` where the data is moved to, should be same as the model
-            - use_multi_gpus: A `bool` flag of if using multi gpus
-            - show_verbose: A `bool` flag of if showing progress bar
-            - callbacks_list: A `list` of callbacks in `Callback`
-        - Returns: A summary of `dict` with keys as `str` and values as `float`
-        """
-        # initialize
-        self.compiled_losses.reset()
-        for _, m in self.metric_fns.items(): m.reset()
-        self.model.train()
-
-        # initialize progress bar
-        progress_bar = tqdm(total=len(dataset)) if show_verbose else None
-
-        # batch loop
-        for batch, (x_train, y_train) in enumerate(dataset):
-            # on batch start
-            for c in callbacks_list:
-                c.on_batch_start(batch)
-
-            # move x_train and y_train to device
-            if use_multi_gpus is not True:
-                x_train = _move_to_device(x_train, device)
-            y_train = _move_to_device(y_train, device)
-
-            # train for one step
-            summary = self.train_step(x_train, y_train)
-
-            # on batch start
-            for c in callbacks_list:
-                c.on_batch_end(batch, summary=summary)
-
-            # implement progress bar
-            if progress_bar is not None:
-                # initialize progress summary
-                if verbose_type == VerboseType.LOSS:
-                    progress_summary = {name: s for name, s in summary.items() if "loss" in name}
-                elif verbose_type == VerboseType.METRICS:
-                    progress_summary = {name: s for name, s in summary.items() if "loss" not in name}
-                elif verbose_type == VerboseType.ALL:
-                    progress_summary = summary
-                else: progress_summary = None
-
-                # update progress bar
-                progress_bar.set_postfix(progress_summary)
-                progress_bar.update()
-
-        # end epoch training
-        if progress_bar is not None:
-            progress_bar.close()
-
-        # summarize
-        summary = {name: float(fn.result.detach()) for name, fn in self.metric_fns.items()}
-        summary["loss"] = float(self.compiled_losses.result.detach())
-        if torch.cuda.is_available(): torch.cuda.empty_cache()
-        return summary
-
     def train_step(self, x_train: Any, y_train: Any) -> Dict[str, float]:
         """
         A single training step
@@ -380,7 +374,7 @@ class Manager:
         - Returns: A summary of `dict` with keys as `str` and values as `float`
         """
         # forward pass
-        summary: dict[str, float] = {}
+        summary: Dict[str, float] = {}
         self.compiled_optimizer.zero_grad()
         y = self.model(x_train)
         loss = self.compiled_losses(y, y_train)
@@ -458,7 +452,7 @@ class Manager:
                 progress_bar.close()
             
             # summarize
-            summary: dict[str, float] = {}
+            summary: Dict[str, float] = {}
             for name, fn in self.metric_fns.items():
                 try: summary[name] = float(fn.result.detach())
                 except Exception as metric_error:
@@ -472,7 +466,7 @@ class Manager:
                 self.model = raw_model.to(cpu)
             return summary
 
-    def test_step(self, x_test: Any, y_test: Any) -> dict[str, float]:
+    def test_step(self, x_test: Any, y_test: Any) -> Dict[str, float]:
         """
         A single testing step
 
@@ -482,7 +476,7 @@ class Manager:
         - Returns: A `dict` of validation summary
         """
         # initialize
-        summary: dict[str, float] = {}
+        summary: Dict[str, float] = {}
 
         # forward pass
         y = self.model(x_test)

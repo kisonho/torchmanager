@@ -1,2 +1,2 @@
 torchmanager
-torchmanager-nightly
+torchmanager_nightly

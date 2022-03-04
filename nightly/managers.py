@@ -1,5 +1,5 @@
 # import required modules
-import os, torch, uuid
+import os, torch
 from typing import Iterable
 
 # import core modules
@@ -35,7 +35,7 @@ class NightlyManager(Manager):
                 return tuple(output_shapes)
             else: return None
 
-    def fit_by_config(self, training_dataset: data.DataLoader, config: configs.TrainingConfig, val_dataset: Optional[data.DataLoader] = None) -> torch.nn.Module:
+    def fit_by_config(self, training_dataset: data.DataLoader, config: configs.TrainingConfig, val_dataset: Optional[data.DataLoader] = None, **kwargs: Any) -> torch.nn.Module:
         """
         Train model with configurations
 
@@ -66,7 +66,7 @@ class NightlyManager(Manager):
                 callbacks_list.append(best_ckpt_callback)
 
         # initialize learning rate scheduler
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(self.compiled_optimizer, step_size=config.lr_decay_step, gamma=config.lr_decay) if config.lr_decay > 0 else None
+        lr_scheduler = torch.optim.lr_scheduler.StepLR(self.compiled_optimizer, step_size=config.lr_decay_step, gamma=config.lr_decay) if config.lr_decay > 0 else config.default_lr_scheduler
 
         # train model
-        return self.fit(training_dataset, config.epochs, initial_epoch=config.initial_epoch, lr_scheduler=lr_scheduler, show_verbose=config.show_verbose, val_dataset=val_dataset, use_multi_gpus=config.use_multi_gpus, callbacks_list=callbacks_list)
+        return self.fit(training_dataset, config.epochs, initial_epoch=config.initial_epoch, lr_scheduler=lr_scheduler, show_verbose=config.show_verbose, val_dataset=val_dataset, use_multi_gpus=config.use_multi_gpus, callbacks_list=callbacks_list, **kwargs)

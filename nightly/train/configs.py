@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Optional, Type
 
 # import required modules
-import abc, argparse, logging, os
+import abc, argparse, logging, os, torch
 
 class Config(abc.ABC):
     """An abstract configuration class"""
@@ -36,13 +36,13 @@ class Config(abc.ABC):
         """
         raise NotImplementedError
 
-
 class ExperimentConfig(Config):
     """
     Configurations for an experiment
     
     - Properties:
         - experiment: An optional `str` of experiment name
+        - monitor: A `str` of the best checkpoint monitor
         - show_verbose: A `bool` flag of if showing the progress bar
         - use_multi_gpus: A `bool` flag of if using multi gpus
     """
@@ -80,17 +80,18 @@ class ExperimentConfig(Config):
         exp_args.add_argument("--show_verbose", action="store_true", default=False, help="Flag to show verbose.")
         return exp_args
 
-
 class TrainingConfig(ExperimentConfig):
     """
     Configurations for training
 
     - Properties:
+        - default_lr_scheduler: An optional `torch.optim.lr_scheduler._LRScheduler` for default lr scheduler when lr_decay is non-positive
         - epochs: An `int` of total training epochs
         - initial_epoch: An `int` of the starting epoch index
         - lr_decay: A `float` of the learning rate decay rate
         - lr_decay_step: An `int` of the learning rate decay step
     """
+    default_lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler]
     epochs: int
     initial_epoch: int
     lr_decay: float
@@ -100,6 +101,7 @@ class TrainingConfig(ExperimentConfig):
         """Constructor"""
         super().__init__(**kwargs)
         # set arguments
+        self.default_lr_scheduler = None
         self.epochs = epochs
         self.initial_epoch = initial_epoch
         self.lr_decay = lr_decay

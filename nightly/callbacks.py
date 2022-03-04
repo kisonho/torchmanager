@@ -4,7 +4,6 @@ from typing import Callable
 # import core modules
 from torchmanager.callbacks import * # type: ignore
 
-
 class _Training(Callback):
     """A Protected Training callback"""
     on_batch_end_fn: Optional[Callable[[int, Dict[str, float]], None]]
@@ -24,7 +23,6 @@ class _Training(Callback):
         if self.on_epoch_end_fn is not None:
             self.on_epoch_end_fn(epoch, summary, val_summary)
         else: pass
-
 
 def on_batch_end(fn: Callable[[int, Dict[str, float]], None]) -> _Training:
     """Decorator wrapper function to wrap a `Callable` function into a `_Training` callback to run the function at the end of each batch"""
