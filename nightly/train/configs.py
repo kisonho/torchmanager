@@ -36,7 +36,6 @@ class Config(abc.ABC):
         """
         raise NotImplementedError
 
-
 class ExperimentConfig(Config):
     """
     Configurations for an experiment
@@ -80,7 +79,6 @@ class ExperimentConfig(Config):
         exp_args.add_argument("--use_multi_gpus", action="store_true", default=False, help="Flag to use multi gpus.")
         exp_args.add_argument("--show_verbose", action="store_true", default=False, help="Flag to show verbose.")
         return exp_args
-
 
 class TrainingConfig(ExperimentConfig):
     """
