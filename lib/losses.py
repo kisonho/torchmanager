@@ -68,6 +68,12 @@ class FocalCrossEntropy(Loss):
         else:
             return focal_loss.sum()
 
+class KLDiv(Loss):
+    """KL-Div Loss"""
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        loss_fn = torch.nn.KLDivLoss(*args, **kwargs)
+        super().__init__(loss_fn)
+
 class MultiLosses(Loss):
     """
     A loss with multiple losses
