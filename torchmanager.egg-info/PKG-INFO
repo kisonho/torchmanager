@@ -1,7 +1,7 @@
 Metadata-Version: 2.1
 Name: torchmanager
-Version: 1.0.1
-Summary: PyTorch training manager (v1.0.1)
+Version: 1.0.2b1
+Summary: PyTorch training manager (v1.0.2 Beta1)
 Home-page: https://github.com/kisonho/torchmanager.git
 Author: Kison Ho
 Author-email: unfit-gothic.0q@icloud.com
@@ -11,8 +11,13 @@ Requires-Python: >=3.8
 Description-Content-Type: text/markdown
 License-File: LICENSE
 
-# **torchmanager**
+# torchmanager
 A Keras like PyTorch training and testing manager
+
+## Pre-request
+* Python 3.8+
+* PyTorch 1.8.2+
+* tqdm
 
 ## Installation
 `pip install torchmanager`
@@ -24,7 +29,7 @@ import torch, torchmanager
 
 # define model
 class PytorchModel(torch.nn.Module):
-	...
+    ...
 
 # initialize model, optimizer, loss function, and metrics
 model = PytorchModel(...)
@@ -72,15 +77,16 @@ manager.fit(..., callbacks_list=[tensorboard_callback, last_ckpt_callback])
 ...
 
 class CustomManager(Manager):
-	...
+    ...
 ```
 
 2. Override the `train_step` method:
 ```
 class CustomManager(Manager):
-	...
-	
-	def train_step(x_train: torch.Tensor, y_train: torch.Tensor) -> Dict[str, float]:
-		...
+    ...
+    
+    def train_step(x_train: torch.Tensor, y_train: torch.Tensor) -> Dict[str, float]:
+        ...
 ```
+
 

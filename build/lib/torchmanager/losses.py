@@ -1,4 +1,5 @@
 # import typing modules
+from turtle import forward
 from typing import Any, Callable, Dict, List, Optional
 
 # import required modules

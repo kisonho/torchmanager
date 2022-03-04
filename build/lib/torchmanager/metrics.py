@@ -51,13 +51,13 @@ class Metric(torch.nn.Module):
         if self._metric_fn is not None:
             return self._metric_fn(input, target)
         else: raise NotImplementedError("[Metric Error]: metric_fn is not given.")
-
-    def forward(self, input: Any, target: Any) -> torch.Tensor:
-        return self.call(input, target)
     
     def reset(self) -> None:
         """Reset the current results list"""
         self._results.clear()
+
+    def forward(self, input: Any, target: Any) -> torch.Tensor:
+        return self.call(input, target)
 
 class Accuracy(Metric):
     """The traditional accuracy metric to compare two `torch.Tensor`"""
@@ -79,7 +79,6 @@ class ConfusionMetrics(Metric):
         - Parameters:
             - input: The prediction `torch.Tensor`, or `y_pred`
             - target: The label `torch.Tensor`, or `y_true`
-        - Returns: A `torch.Tensor` of historgram
         """
         mask = (target >= 0) & (target < self.__num_classes)
         hist = torch.bincount(self.__num_classes * target[mask].to(torch.int64) + input[mask], minlength=self.__num_classes ** 2).reshape(self.__num_classes, self.__num_classes)
@@ -99,7 +98,6 @@ class ConfusionMetrics(Metric):
         return conf_mat
 
 class MAE(Metric):
-    """The Mean Absolute Error metric"""
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         error = input - target
         error = error.abs()
