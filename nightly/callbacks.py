@@ -1,10 +1,10 @@
 # import typing modules
-from typing import Callable
+from typing import Callable, Dict, Optional
 
 # import core modules
-from torchmanager.callbacks import * # type: ignore
+from torchmanager.callbacks import Callback as _Callback # type: ignore
 
-class _Training(Callback):
+class _Training(_Callback):
     """A Protected Training callback"""
     on_batch_end_fn: Optional[Callable[[int, Dict[str, float]], None]]
     on_epoch_end_fn: Optional[Callable[[int, Dict[str, float], Optional[Dict[str, float]]], None]]
