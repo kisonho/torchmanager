@@ -1,11 +1,5 @@
-# import typing modules
-from typing import Any, Callable, Dict, List, Optional
-
-# import required modules
-import torch
-from torch.nn import functional as F
-
-# import core modules
+from .core import functional as F, torch
+from .core.typing import Any, Callable, Dict, List, Optional
 from .metrics import Metric
 
 class Loss(Metric):

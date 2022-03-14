@@ -1,14 +1,6 @@
-# import typing modules
 from __future__ import annotations
-import os
-from typing import Dict, Optional, Tuple
-from enum import Enum
-
-# import required modules
-import sys, torch, warnings
-from torch.utils.tensorboard.writer import SummaryWriter
-
-# import core modules
+from .core import os, sys, tensorboard, torch, view
+from .core.typing import Dict, Enum, Optional, Tuple
 from .train.checkpoint import Checkpoint as Ckpt
 
 class Callback:
@@ -91,7 +83,7 @@ class LastCheckpoint(Callback):
 class Checkpoint(LastCheckpoint):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        warnings.warn("[Deprecation Warning]: Checkpoint callback has been renamed to LastCheckpoint and was deprecated from v 1.0.0, it will be removed at v1.1.0.", DeprecationWarning)
+        view.warnings.warn("[Deprecation Warning]: Checkpoint callback has been renamed to LastCheckpoint and was deprecated from v 1.0.0, it will be removed at v1.1.0.", DeprecationWarning)
 
 class MonitorType(Enum):
     '''The enum of monitor types'''
@@ -154,10 +146,10 @@ class TensorBoard(Callback):
         - writer: A `tensorboard.SummaryWriter` to record scalars
     '''
     # properties
-    _writer: SummaryWriter
+    _writer: tensorboard.writer.SummaryWriter
 
     @property
-    def writer(self) -> SummaryWriter:
+    def writer(self) -> tensorboard.writer.SummaryWriter:
         return self._writer
 
     def __init__(self, log_dir: str) -> None:
@@ -168,7 +160,7 @@ class TensorBoard(Callback):
             - log_dir: A `str` of logging directory
         '''
         super().__init__()
-        self._writer = SummaryWriter(log_dir)
+        self._writer = tensorboard.writer.SummaryWriter(log_dir)
 
     def add_graph(self, model: torch.nn.Module, input_shape: Optional[Tuple[int, ...]] = None) -> None:
         '''
