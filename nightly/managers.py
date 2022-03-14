@@ -1,10 +1,7 @@
-# import required modules
-import os, torch
-from typing import Iterable
-
-# import core modules
 from .train import configs
 from torchmanager import callbacks
+from torchmanager.core import os, torch
+from torchmanager.core.typing import Iterable
 from torchmanager.managers import * # type: ignore
 
 class NightlyManager(Manager):

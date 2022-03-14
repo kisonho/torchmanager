@@ -1,8 +1,5 @@
-# import typing modules
-from typing import Callable, Dict, Optional
-
-# import core modules
 from torchmanager.callbacks import Callback as _Callback # type: ignore
+from torchmanager.core.typing import Callable, Dict, Optional
 
 class _Training(_Callback):
     """A Protected Training callback"""

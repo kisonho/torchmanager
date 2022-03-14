@@ -1,4 +1,4 @@
-import warnings
+from torchmanager.core import warnings
 from . import train
 from .managers import NightlyManager as Manager
 
