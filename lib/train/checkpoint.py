@@ -1,9 +1,6 @@
-# import typing modules
 from __future__ import annotations
-from typing import Any, Dict, Optional, OrderedDict, Type
-
-# import required modules
-import torch
+from ..core import torch
+from ..core.typing import Any, Dict, Optional, OrderedDict, Type
 
 class Checkpoint:
     '''

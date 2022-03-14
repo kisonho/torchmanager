@@ -1,59 +1,10 @@
-# import typing modules
 from __future__ import annotations
-from typing import Any, Callable, Dict, Iterable, List, Optional, Protocol, Type, Union, runtime_checkable
-from enum import Enum
-
-# import required modules
-import abc, logging, torch, warnings
-from torch.utils import data
-from tqdm import tqdm
-
-# import core modules
+from .core import data, devices, torch, view
+from .core.typing import Any, Callable, Dict, List, Optional, Type, Union
 from .callbacks import Callback
 from .losses import Loss, MultiLosses, MultiOutputsLosses
 from .metrics import Metric
 from .train import Checkpoint
-
-@runtime_checkable
-class _DeviceMovable(Protocol):
-    """The device movable protocol"""
-    @abc.abstractmethod
-    def to(self, device: torch.device) -> Any:
-        raise NotImplementedError
-
-@runtime_checkable
-class _VerboseControllable(Protocol):
-    """The learning rate scheduler protocol"""
-    @property
-    @abc.abstractmethod
-    def verbose(self) -> bool:
-        raise NotImplementedError
-
-    @verbose.setter
-    @abc.abstractmethod
-    def verbose(self, verbose: bool) -> None:
-        raise NotImplementedError
-
-def _move_to_device(target: Any, device: torch.device) -> Any:
-    """Move a target variable to device"""
-    if isinstance(target, _DeviceMovable):
-        return target.to(device)
-    elif isinstance(target, dict):
-        for t in target.values():
-            if isinstance(t, _DeviceMovable):
-                t.to(device)
-    elif isinstance(target, Iterable):
-        for t in target:
-            if isinstance(t, _DeviceMovable):
-                t.to(device)
-    return target
-
-class VerboseType(Enum):
-    """Verbose type enum"""
-    ALL = -1
-    NONE = 0
-    LOSS = 1
-    METRICS = 2
 
 class Manager:
     """
@@ -132,7 +83,7 @@ class Manager:
             loss_fn = MultiLosses([l for l in loss_fn_mapping.values()])
         elif loss_fn is not None:
             loss_fn = Loss(loss_fn)
-            warnings.warn("[Deprecated Warning]: parsing `loss_fn` as a function was deprecated from v0.9.3 and will no longer be available from v1.1.0, use losses.Loss object instead.", DeprecationWarning)
+            view.warnings.warn("[Deprecated Warning]: parsing `loss_fn` as a function was deprecated from v0.9.3 and will no longer be available from v1.1.0, use losses.Loss object instead.", DeprecationWarning)
         self.loss_fn = loss_fn
 
         # initialize metrics
@@ -140,13 +91,13 @@ class Manager:
             if isinstance(fn, Metric):
                 self.metric_fns[name] = fn
             else:
-                warnings.warn("[Deprecated Warning]: parsing a metric in `metrics` as a function was deprecated from v0.9.3 and will no longer be available from v1.1.0, use `metrics.Metric` object instead.", DeprecationWarning)
+                view.warnings.warn("[Deprecated Warning]: parsing a metric in `metrics` as a function was deprecated from v0.9.3 and will no longer be available from v1.1.0, use `metrics.Metric` object instead.", DeprecationWarning)
                 self.metric_fns[name] = Metric(fn)
 
         # initialize optimizer
         self.optimizer = optimizer
 
-    def _train(self, dataset: data.DataLoader, device: torch.device=torch.device('cpu'), use_multi_gpus: bool=False, show_verbose: bool=False, verbose_type: VerboseType = VerboseType.ALL, callbacks_list: List[Callback]=[]) -> Dict[str, float]:
+    def _train(self, dataset: data.DataLoader, device: torch.device=torch.device('cpu'), use_multi_gpus: bool=False, show_verbose: bool=False, verbose_type: view.VerboseType = view.VerboseType.ALL, callbacks_list: List[Callback]=[]) -> Dict[str, float]:
         """
         The single training step for an epoch
 
@@ -158,8 +109,14 @@ class Manager:
             - callbacks_list: A `list` of callbacks in `Callback`
         - Returns: A summary of `dict` with keys as `str` and values as `float`
         """
+        # run deprecated method
+        summary = self.train(dataset, device=device, use_multi_gpus=use_multi_gpus, show_verbose=show_verbose, callbacks_list=callbacks_list)
+        if summary != NotImplemented:
+            view.warnings.warn("[Deprecated Warning]: Method `train` will be set to private in a future version. Override `_train` instead.", PendingDeprecationWarning)
+            return summary
+
         # initialize progress bar
-        progress_bar = tqdm(total=len(dataset)) if show_verbose else None
+        progress_bar = view.tqdm(total=len(dataset)) if show_verbose else None
 
         # batch loop
         for batch, (x_train, y_train) in enumerate(dataset):
@@ -169,8 +126,8 @@ class Manager:
 
             # move x_train and y_train to device
             if use_multi_gpus is not True:
-                x_train = _move_to_device(x_train, device)
-            y_train = _move_to_device(y_train, device)
+                x_train = devices.move_to_device(x_train, device)
+            y_train = devices.move_to_device(y_train, device)
 
             # train for one step
             summary = self.train_step(x_train, y_train)
@@ -182,11 +139,11 @@ class Manager:
             # implement progress bar
             if progress_bar is not None:
                 # initialize progress summary
-                if verbose_type == VerboseType.LOSS:
+                if verbose_type == view.VerboseType.LOSS:
                     progress_summary = {name: s for name, s in summary.items() if "loss" in name}
-                elif verbose_type == VerboseType.METRICS:
+                elif verbose_type == view.VerboseType.METRICS:
                     progress_summary = {name: s for name, s in summary.items() if "loss" not in name}
-                elif verbose_type == VerboseType.ALL:
+                elif verbose_type == view.VerboseType.ALL:
                     progress_summary = summary
                 else: progress_summary = None
 
@@ -239,16 +196,11 @@ class Manager:
         assert initial_epoch < epochs, f"[Training Error]: The initial_epoch must be smaller than total epochs, got epochs={epochs} but initial_epoch={initial_epoch}."
 
         # initialize logging
-        logging.basicConfig(level=logging.INFO, format="%(message)s")
-        logger = logging.getLogger("Training")
+        view.logging.basicConfig(level=view.logging.INFO, format="%(message)s")
+        logger = view.logging.getLogger("Training")
 
         # initialize device
-        cpu = torch.device("cpu")
-        if device is None:
-            gpu = torch.device("cuda")
-            device = gpu if torch.cuda.is_available() else cpu
-        else:
-            warnings.warn(f"[Device Warning]: Using specified device {device}.", ResourceWarning)
+        cpu, device = devices.find(device)
         
         # multi gpus support
         raw_model = self.model
@@ -257,19 +209,10 @@ class Manager:
                 self.model = torch.nn.parallel.DataParallel(raw_model)
             else:
                 use_multi_gpus = False
-                warnings.warn(f"[Device Warning]: The use_multi_gpus flag is set to True, but CUDA is not available.", ResourceWarning)
-        self.model.to(device)
+                view.warnings.warn(f"[Device Warning]: The use_multi_gpus flag is set to True, but CUDA is not available.", ResourceWarning)
 
-        # move losses to device
-        if isinstance(self.loss_fn, dict):
-            for l in self.loss_fn.values(): l.to(device)
-        elif isinstance(self.loss_fn, MultiLosses):
-            for l in self.loss_fn.losses: l.to(device)
-        else:
-            self.compiled_losses.to(device)
-
-        # move metrics to device
-        for m in self.metric_fns.values(): m.to(device)
+        # move to device
+        devices.move_to_device([self.model, self.compiled_losses, self.metric_fns], device)
 
         # on train start
         for c in callbacks_list:
@@ -278,7 +221,7 @@ class Manager:
         # go to initial epoch
         if lr_scheduler is not None and initial_epoch > 0:
             # disable verbose
-            assert isinstance(lr_scheduler, _VerboseControllable), "[Runtime Error]: lr_scheduler does not performs to the VerboseControllable protocol."
+            assert isinstance(lr_scheduler, view._VerboseControllable), "[Runtime Error]: lr_scheduler does not performs to the VerboseControllable protocol."
             verbose = lr_scheduler.verbose
             lr_scheduler.verbose = False
 
@@ -302,7 +245,7 @@ class Manager:
                 c.on_epoch_start(epoch)
 
             # train for one epoch
-            summary = self.train(training_dataset, device=device, use_multi_gpus=use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
+            summary = self._train(training_dataset, device=device, use_multi_gpus=use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
 
             # validate
             val_message = f"Epoch {epoch + 1}/{epochs}: "
@@ -351,7 +294,7 @@ class Manager:
 
     def train(self, *args, **kwargs) -> Dict[str, float]:
         """The single training step for an epoch"""
-        return self._train(*args, **kwargs)
+        return NotImplemented
 
     @classmethod
     def from_checkpoint(cls: Type[Manager], *args, **kwargs) -> Manager:
@@ -413,7 +356,7 @@ class Manager:
             device = gpu if torch.cuda.is_available() else cpu
             use_multi_gpus = torch.cuda.is_available() if use_multi_gpus is True else use_multi_gpus
         else:
-            warnings.warn(f"[Device Warning]: Using specified device {device}.", ResourceWarning)
+            view.warnings.warn(f"[Device Warning]: Using specified device {device}.", ResourceWarning)
 
         # multi gpu support
         if use_multi_gpus is True and not isinstance(self.model, torch.nn.parallel.DataParallel):
@@ -428,7 +371,7 @@ class Manager:
         except: pass
 
         # initialize progress bar
-        progress_bar = tqdm(total=len(dataset)) if show_verbose else None
+        progress_bar = view.tqdm(total=len(dataset)) if show_verbose else None
 
         # disable auto gradients
         with torch.no_grad():
@@ -436,8 +379,8 @@ class Manager:
             for x_test, y_test in dataset:
                 # move x_test, y_test to device
                 if use_multi_gpus is not True and isinstance(x_test, torch.Tensor):
-                    x_test = _move_to_device(x_test, device)
-                y_test = _move_to_device(y_test, device)
+                    x_test = devices.move_to_device(x_test, device)
+                y_test = devices.move_to_device(y_test, device)
 
                 # test for one step
                 step_summary = self.test_step(x_test, y_test)

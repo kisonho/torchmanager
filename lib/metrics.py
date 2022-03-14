@@ -1,8 +1,5 @@
-# import typing modules
-from typing import Any, Callable, List, Optional
-
-# import required modules
-import torch
+from .core import torch, view
+from .core.typing import Any, Callable, List, Optional
 
 class Metric(torch.nn.Module):
     """
@@ -40,6 +37,9 @@ class Metric(torch.nn.Module):
         return m
 
     def call(self, input: Any, target: Any) -> torch.Tensor:
+        return NotImplemented
+
+    def forward(self, input: Any, target: Any) -> torch.Tensor:
         """
         Forward the current result method
         
@@ -48,12 +48,16 @@ class Metric(torch.nn.Module):
             - target: The label, or `y_true`, in `Any` kind
         - Returns: The metric in `torch.Tensor`
         """
+        # run deprecated method
+        m = self.call(input, target)
+        if m != NotImplemented:
+            view.warnings.warn("[Deprecated Warning]: Method `call` was deprecated since version v1.0.0, the public method will be removed from 1.1.0. Override `forward` instead.", DeprecationWarning)
+            return m
+
+        # main method
         if self._metric_fn is not None:
             return self._metric_fn(input, target)
         else: raise NotImplementedError("[Metric Error]: metric_fn is not given.")
-
-    def forward(self, input: Any, target: Any) -> torch.Tensor:
-        return self.call(input, target)
     
     def reset(self) -> None:
         """Reset the current results list"""
