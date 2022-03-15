@@ -1,6 +1,6 @@
 # import typing modules
 from __future__ import annotations
-from typing import Any, Iterable, Optional, Protocol, Tuple, Union, runtime_checkable
+from typing import Any, Iterable, List, Optional, Protocol, Tuple, Union, runtime_checkable
 
 # import required modules
 import abc, torch, warnings
@@ -48,9 +48,7 @@ def move_to_device(target: Any, device: torch.device) -> Any:
     if isinstance(target, _DeviceMovable):
         return target.to(device)
     elif isinstance(target, dict):
-        for k, t in target.items():
-            target[k] = move_to_device(t, device)
+        target = {k: move_to_device(t, device) for k, t in target.items()}
     elif isinstance(target, Iterable):
-        for t in target:
-            move_to_device(t, device)
+        target = [move_to_device(t, device) for t in target]
     return target
