@@ -1,10 +1,10 @@
 from __future__ import annotations
-from .core import data, devices, torch, view
-from .core.typing import Any, Callable, Dict, List, Optional, Type, Union
 from .callbacks import Callback
+from .core import data, devices, math, torch, view
+from .core.typing import Any, Callable, Dict, List, Optional, Type, Union
 from .losses import Loss, MultiLosses, MultiOutputsLosses
 from .metrics import Metric
-from .train import Checkpoint
+from .train import Checkpoint, _lr
 
 class Manager:
     """
@@ -56,7 +56,7 @@ class Manager:
         self.model = model
 
         # compile
-        self.__compile(optimizer, loss_fn, metrics)
+        self._compile(optimizer, loss_fn, metrics)
 
         # check compiled
         if self.loss_fn is not None and self.optimizer is not None:
@@ -64,7 +64,7 @@ class Manager:
         else:
             self.__compiled = False
 
-    def __compile(self, optimizer: Optional[torch.optim.Optimizer]=None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]]=None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]]={}) -> None:
+    def _compile(self, optimizer: Optional[torch.optim.Optimizer]=None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]]=None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]]={}) -> None:
         """
         Compiles the manager
         
@@ -97,7 +97,7 @@ class Manager:
         # initialize optimizer
         self.optimizer = optimizer
 
-    def _train(self, dataset: data.DataLoader, device: torch.device=torch.device('cpu'), use_multi_gpus: bool=False, show_verbose: bool=False, verbose_type: view.VerboseType = view.VerboseType.ALL, callbacks_list: List[Callback]=[]) -> Dict[str, float]:
+    def _train(self, dataset: data.DataLoader, iterations: Optional[int] = None, device: torch.device=torch.device('cpu'), use_multi_gpus: bool=False, show_verbose: bool=False, verbose_type: view.VerboseType = view.VerboseType.ALL, callbacks_list: List[Callback]=[]) -> Dict[str, float]:
         """
         The single training step for an epoch
 
@@ -116,7 +116,8 @@ class Manager:
             return summary
 
         # initialize progress bar
-        progress_bar = view.tqdm(total=len(dataset)) if show_verbose else None
+        iterations = len(dataset) if iterations is None else iterations
+        progress_bar = view.tqdm(total=iterations) if show_verbose else None
 
         # batch loop
         for batch, (x_train, y_train) in enumerate(dataset):
@@ -151,6 +152,10 @@ class Manager:
                 progress_bar.set_postfix(progress_summary)
                 progress_bar.update()
 
+            # check for iterations
+            if batch + 1 >= iterations:
+                break
+
         # end epoch training
         if progress_bar is not None:
             progress_bar.close()
@@ -170,16 +175,17 @@ class Manager:
             - metrics: A `dict` of metrics with a name in `str` and a `Metric` object to calculate the metric
             - optimizer: A `torch.optim.Optimizer` to train the model
         """
-        self.__compile(optimizer, loss_fn, metrics)
+        self._compile(optimizer, loss_fn, metrics)
         self.__compiled = True
 
-    def fit(self, training_dataset: data.DataLoader, epochs: int=100, initial_epoch: int=0, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler]=None, val_dataset: Optional[data.DataLoader]=None, device: Optional[torch.device]=None, use_multi_gpus: bool=False, callbacks_list: List[Callback]=[], **kwargs) -> torch.nn.Module:
+    def fit(self, training_dataset: data.DataLoader, epochs: Optional[int]=None, iterations: Optional[int] = None, initial_epoch: int=0, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler]=None, val_dataset: Optional[data.DataLoader]=None, device: Optional[torch.device]=None, use_multi_gpus: bool=False, callbacks_list: List[Callback]=[], **kwargs) -> torch.nn.Module:
         """
         Training algorithm
 
         - Parameters:
             - training_dataset: The `data.DataLoader` for training dataset
-            - epochs: The `int` number of training epochs
+            - epochs: An optional `int` number of training epochs
+            - iterations: An optional `int` number of training iterations
             - lr_scheduelr: An optioanl `torch.optim.lr_scheduler._LRScheduler` to update the lr per epoch
             - is_dynamic_pruning: A `bool` flag of if using dynamic pruning
             - val_dataset: An optional validation `data.DataLoader`
@@ -191,46 +197,29 @@ class Manager:
         """
         # ensure compiled and epochs
         assert self.__compiled is True, "[Training Error]: Manager has not yet been compiled. Either loss_fn or optimizer, or both, are not given."
-        assert epochs > 0, f"[Training Error]: The epochs must be a positive integer, got {epochs}."
+        if epochs is not None:
+            assert epochs > 0, f"[Training Error]: The epochs must be a positive integer, got {epochs}."
+            assert iterations is None, f"[Training Error]: The iterations must be given as `None` when epochs is given, got {iterations}."
+            iterations = int(epochs * len(training_dataset))
+        else:
+            assert iterations is not None, f"[Training Error]: The iterations must be given if epochs is not given."
+            assert iterations > 0, f"[Training Error]: The iterations must be a positive integer, got {iterations}."
+            assert epochs is None, f"[Training Error]: The epochs must be given as `None` when iterations is given, got {epochs}."
+            epochs = math.ceil(iterations / len(training_dataset))
         assert initial_epoch >= 0, f"[Training Error]: The initial_epoch must be a non_negative integer, got {initial_epoch}."
         assert initial_epoch < epochs, f"[Training Error]: The initial_epoch must be smaller than total epochs, got epochs={epochs} but initial_epoch={initial_epoch}."
 
-        # initialize logging
+        # initialize
         view.logging.basicConfig(level=view.logging.INFO, format="%(message)s")
         logger = view.logging.getLogger("Training")
-
-        # initialize device
+        _lr.initial_step_lr_scheduler(lr_scheduler, initial_epoch)
         cpu, device = devices.find(device)
+        for c in callbacks_list: c.on_train_start()
         
         # multi gpus support
         raw_model = self.model
-        if use_multi_gpus is True:
-            if torch.cuda.is_available():
-                self.model = torch.nn.parallel.DataParallel(raw_model)
-            else:
-                use_multi_gpus = False
-                view.warnings.warn(f"[Device Warning]: The use_multi_gpus flag is set to True, but CUDA is not available.", ResourceWarning)
-
-        # move to device
+        if use_multi_gpus is True: self.model, use_multi_gpus = devices.data_parallel(raw_model)
         devices.move_to_device([self.model, self.compiled_losses, self.metric_fns], device)
-
-        # on train start
-        for c in callbacks_list:
-            c.on_train_start()
-
-        # go to initial epoch
-        if lr_scheduler is not None and initial_epoch > 0:
-            # disable verbose
-            assert isinstance(lr_scheduler, view._VerboseControllable), "[Runtime Error]: lr_scheduler does not performs to the VerboseControllable protocol."
-            verbose = lr_scheduler.verbose
-            lr_scheduler.verbose = False
-
-            # steps to initial epoch
-            for _ in range(initial_epoch):
-                lr_scheduler.step()
-
-            # reset verbose
-            lr_scheduler.verbose = verbose
 
         # epoch loop
         for epoch in range(initial_epoch, epochs):
@@ -239,49 +228,28 @@ class Manager:
             self.compiled_losses.reset()
             for _, m in self.metric_fns.items(): m.reset()
             self.model.train()
-
-            # on epoch start
-            for c in callbacks_list:
-                c.on_epoch_start(epoch)
+            for c in callbacks_list: c.on_epoch_start(epoch)
+            batch_iterations = len(training_dataset) if len(training_dataset) < iterations else iterations
 
             # train for one epoch
-            summary = self._train(training_dataset, device=device, use_multi_gpus=use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
+            summary = self._train(training_dataset, iterations=batch_iterations, device=device, use_multi_gpus=use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
+            iterations -= batch_iterations
 
             # validate
             val_message = f"Epoch {epoch + 1}/{epochs}: "
-            if val_dataset is not None:
-                val_summary = self.test(val_dataset, use_multi_gpus=use_multi_gpus)
+            val_summary = self.test(val_dataset, use_multi_gpus=use_multi_gpus) if val_dataset is not None else {}
+            val_summary = {f"val_{name}": value for name, value in val_summary.items()}
+            summary.update(val_summary)
 
-                # print summary info
-                for name, value in summary.items():
-                    val_message += f"{name}={value:.4f}, "
-                
-                # print val summary info
-                for i, (name, value) in enumerate(val_summary.items()):
-                    if i > 0: val_message += ", "
-                    val_message += f"val_{name}={value:.4f}"
-                logger.info(val_message)
-            else:
-                val_summary = None
-
-                # print summary info
-                for i, (name, value) in enumerate(summary.items()):
-                    if i > 0: val_message += ", "
-                    val_message += f"{name}={value:.4f}"
-                logger.info(val_message)
+            # print summary info
+            for i, (name, value) in enumerate(summary.items()):
+                if i > 0: val_message += ", "
+                val_message += f"{name}={value:.4f}"
+            logger.info(val_message)
 
             # step lr scheduler
             if lr_scheduler is not None:
-                # update lr
-                lr_scheduler.step()
-                lr_list = lr_scheduler.get_last_lr()
-                lr_summary: Dict[str, float] = {}
-
-                # update summary
-                if len(lr_list) > 1:
-                    for i, lr in enumerate(lr_list):
-                        lr_summary[f'lr_{i}'] = lr
-                else: lr_summary['lr'] = lr_list[0]
+                lr_summary = _lr.update_lr(lr_scheduler)
                 summary.update(lr_summary)
 
             # on epoch end
@@ -350,13 +318,7 @@ class Manager:
         for _, m in self.metric_fns.items(): m.reset()
 
         # find available device
-        cpu = torch.device("cpu")
-        if device is None:
-            gpu = torch.device("cuda")
-            device = gpu if torch.cuda.is_available() else cpu
-            use_multi_gpus = torch.cuda.is_available() if use_multi_gpus is True else use_multi_gpus
-        else:
-            view.warnings.warn(f"[Device Warning]: Using specified device {device}.", ResourceWarning)
+        cpu, device = devices.find(device)
 
         # multi gpu support
         if use_multi_gpus is True and not isinstance(self.model, torch.nn.parallel.DataParallel):

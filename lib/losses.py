@@ -44,6 +44,14 @@ class FocalCrossEntropy(Loss):
     _ignore_index: int
 
     def __init__(self, alpha: float = 1, gamma: float = 0, calculate_average: bool = True, ignore_index: int = 255):
+        """
+        Constructor
+
+        - Parameters:
+            - alpha: A `float` of alpha in focal cross entropy
+            - gamma: A `float` of gamma in focal cross entropy
+            - calculate_average: A `bool` flag of if calculate average for the focal loss
+        """
         super().__init__()
         self._alpha = alpha
         self._gamma = gamma
