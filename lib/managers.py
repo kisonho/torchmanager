@@ -238,8 +238,7 @@ class Manager:
             # validate
             val_message = f"Epoch {epoch + 1}/{epochs}: "
             val_summary = self.test(val_dataset, use_multi_gpus=use_multi_gpus) if val_dataset is not None else {}
-            val_summary = {f"val_{name}": value for name, value in val_summary.items()}
-            summary.update(val_summary)
+            summary.update({f"val_{name}": value for name, value in val_summary.items()})
 
             # print summary info
             for i, (name, value) in enumerate(summary.items()):

@@ -48,8 +48,8 @@ def move_to_device(target: Any, device: torch.device) -> Any:
     if isinstance(target, _DeviceMovable):
         return target.to(device)
     elif isinstance(target, dict):
-        for t in target.values():
-            move_to_device(t, device)
+        for k, t in target.items():
+            target[k] = move_to_device(t, device)
     elif isinstance(target, Iterable):
         for t in target:
             move_to_device(t, device)

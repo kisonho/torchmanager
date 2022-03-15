@@ -99,7 +99,10 @@ class MultiLosses(Loss):
 
         # get all losses
         for fn in self.losses:
-            loss += fn.forward(input, target)
+            assert isinstance(fn, Loss), f"[Runtime Error]: Function {fn} is not a Loss object."
+            l = fn.forward(input, target)
+            loss = loss.to(l.device)
+            loss += l
         return loss
 
 class MultiOutputsLosses(Loss):
@@ -125,7 +128,10 @@ class MultiOutputsLosses(Loss):
 
         # loop for losses
         for k, fn in self.losses.items():
-            loss += fn(input[k], target[k])
+            assert isinstance(fn, Loss), f"[Runtime Error]: Function {fn} is not a Loss object."
+            l = fn(input[k], target[k])
+            loss = loss.to(l.device)
+            loss += l
         return loss
 
 def loss(fn: Callable[[Any, Any], torch.Tensor]) -> Loss:
