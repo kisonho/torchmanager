@@ -44,6 +44,14 @@ class FocalCrossEntropy(Loss):
     _ignore_index: int
 
     def __init__(self, alpha: float = 1, gamma: float = 0, calculate_average: bool = True, ignore_index: int = 255):
+        """
+        Constructor
+
+        - Parameters:
+            - alpha: A `float` of alpha in focal cross entropy
+            - gamma: A `float` of gamma in focal cross entropy
+            - calculate_average: A `bool` flag of if calculate average for the focal loss
+        """
         super().__init__()
         self._alpha = alpha
         self._gamma = gamma
@@ -91,7 +99,10 @@ class MultiLosses(Loss):
 
         # get all losses
         for fn in self.losses:
-            loss += fn.forward(input, target)
+            assert isinstance(fn, Loss), f"[Runtime Error]: Function {fn} is not a Loss object."
+            l = fn.forward(input, target)
+            loss = loss.to(l.device)
+            loss += l
         return loss
 
 class MultiOutputsLosses(Loss):
@@ -117,7 +128,10 @@ class MultiOutputsLosses(Loss):
 
         # loop for losses
         for k, fn in self.losses.items():
-            loss += fn(input[k], target[k])
+            assert isinstance(fn, Loss), f"[Runtime Error]: Function {fn} is not a Loss object."
+            l = fn(input[k], target[k])
+            loss = loss.to(l.device)
+            loss += l
         return loss
 
 def loss(fn: Callable[[Any, Any], torch.Tensor]) -> Loss:
