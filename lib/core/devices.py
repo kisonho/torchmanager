@@ -1,6 +1,6 @@
 # import typing modules
 from __future__ import annotations
-from typing import Any, Iterable, List, Optional, Protocol, Tuple, Union, runtime_checkable
+from typing import Any, Iterable, Optional, Protocol, Tuple, Union, runtime_checkable
 
 # import required modules
 import abc, torch, warnings
@@ -19,6 +19,9 @@ def data_parallel(raw_model: torch.nn.Module) -> Tuple[Union[torch.nn.Module, to
     else:
         warnings.warn(f"[Device Warning]: The use_multi_gpus flag is set to True, but CUDA is not available.", ResourceWarning)
         return raw_model, False
+
+def empty_cache() -> None:
+    if torch.cuda.is_available(): torch.cuda.empty_cache()
 
 def find(specified: Optional[torch.device] = None) -> Tuple[torch.device, torch.device]:
     """
@@ -43,7 +46,7 @@ def move_to_device(target: Any, device: torch.device) -> Any:
     - Parameters:
         - target: `Any` type of target
         - device: A `torch.device` of target device
-    - Returns: `Any` type of moved target
+    - Returns: The same type of target but moved to target device
     """
     if isinstance(target, _DeviceMovable):
         return target.to(device)

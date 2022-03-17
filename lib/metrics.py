@@ -1,5 +1,5 @@
 from .core import torch, view
-from .core.typing import Any, Callable, List, Optional
+from .core._typing import Any, Callable, List, Optional
 
 class Metric(torch.nn.Module):
     """

@@ -11,15 +11,24 @@ setup(name='torchmanager',
       long_description_content_type='text/markdown',
       author='Kison Ho',
       author_email='unfit-gothic.0q@icloud.com',
-      packages=['torchmanager', 'torchmanager.core', 'torchmanager.train', 'torchmanager_nightly', 'torchmanager_nightly.train'],
+      packages=[
+            'torchmanager',
+            'torchmanager.callbacks',
+            'torchmanager.core',
+            'torchmanager.train',
+            'torchmanager_nightly',
+            'torchmanager_nightly.train'
+      ],
       package_dir={
             'torchmanager': 'lib',
+            'torchmanager.callbacks': 'lib/callbacks',
             'torchmanager.core': 'lib/core',
             'torchmanager.train': 'lib/train',
             'torchmanager_nightly': 'nightly',
             'torchmanager_nightly.train': 'nightly/train'
       },
-      install_requires=['torch>=1.8.2',
+      install_requires=[
+            'torch>=1.8.2',
             'tqdm',
       ],
       python_requires=">=3.8",

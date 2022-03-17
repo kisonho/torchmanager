@@ -1,8 +1,8 @@
 from __future__ import annotations
 from ..core import torch
-from ..core.typing import Any, Dict, Optional, OrderedDict, Type
+from ..core._typing import Any, Dict, Generic, Module, Optional, OrderedDict, Type
 
-class Checkpoint:
+class Checkpoint(Generic[Module]):
     '''
     The callback to save the latest checkpoint for each epoch
 
@@ -18,11 +18,11 @@ class Checkpoint:
     last_epoch: int
     loss_fn: Optional[torch.nn.Module]
     metrics: Dict[str, torch.nn.Module]
-    model: torch.nn.Module
+    model: Module
     optimizer: Optional[torch.optim.Optimizer]
     save_weights_only: bool
 
-    def __init__(self, model: torch.nn.Module, last_epoch: int=0, optimizer: Optional[torch.optim.Optimizer]=None, loss_fn: Optional[torch.nn.Module]=None, metrics: Optional[Dict[str, torch.nn.Module]]=None, save_weights_only: bool=False) -> None:
+    def __init__(self, model: Module, last_epoch: int=0, optimizer: Optional[torch.optim.Optimizer]=None, loss_fn: Optional[torch.nn.Module]=None, metrics: Optional[Dict[str, torch.nn.Module]]=None, save_weights_only: bool=False) -> None:
         '''
         Constructor
 

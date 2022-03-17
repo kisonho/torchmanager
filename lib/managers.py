@@ -1,12 +1,12 @@
 from __future__ import annotations
 from .callbacks import Callback
 from .core import data, devices, math, torch, view
-from .core.typing import Any, Callable, Dict, List, Optional, Type, Union
+from .core._typing import Any, Callable, Dict, Generic, List, Module, Optional, Type, Union
 from .losses import Loss, MultiLosses, MultiOutputsLosses
 from .metrics import Metric
 from .train import Checkpoint, _lr
 
-class Manager:
+class Manager(Generic[Module]):
     """
     A training manager
 
@@ -24,7 +24,7 @@ class Manager:
     __compiled: bool
     loss_fn: Optional[Loss]
     metric_fns: Dict[str, Metric]
-    model: torch.nn.Module
+    model: Module
     optimizer: Optional[torch.optim.Optimizer]
     
     @property
@@ -41,7 +41,7 @@ class Manager:
         assert self.optimizer is not None, "[Training Error]: optimizer is not given."
         return self.optimizer
     
-    def __init__(self, model: torch.nn.Module, optimizer: Optional[torch.optim.Optimizer]=None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]]=None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]]={}) -> None:
+    def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer]=None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]]=None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]]={}) -> None:
         """
         Constructor
         
@@ -254,9 +254,11 @@ class Manager:
             # on epoch end
             for c in callbacks_list:
                 c.on_epoch_end(epoch, summary=summary, val_summary=val_summary)
+            devices.empty_cache()
 
         # remove model from gpu
         self.model = raw_model.to(cpu)
+        devices.empty_cache()
         return self.model
 
     def train(self, *args, **kwargs) -> Dict[str, float]:

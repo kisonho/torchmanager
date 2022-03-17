@@ -1,5 +1,5 @@
 from .core import functional as F, torch
-from .core.typing import Any, Callable, Dict, List, Optional
+from .core._typing import Any, Callable, Dict, List, Optional
 from .metrics import Metric
 
 class Loss(Metric):

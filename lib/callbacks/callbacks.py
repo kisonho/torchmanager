@@ -1,7 +1,7 @@
 from __future__ import annotations
-from .core import os, sys, tensorboard, torch, view
-from .core.typing import Dict, Enum, Optional, Tuple
-from .train.checkpoint import Checkpoint as Ckpt
+from ..core import os, sys, tensorboard, torch, view
+from ..core._typing import Dict, Enum, Optional, Tuple
+from ..train.checkpoint import Checkpoint as Ckpt
 
 class Callback:
     '''
