@@ -49,7 +49,7 @@ def move_to_device(target: Any, device: torch.device) -> Any:
     - Returns: The same type of target but moved to target device
     """
     if isinstance(target, _DeviceMovable):
-        return target.to(device)
+        target = target.to(device)
     elif isinstance(target, dict):
         target = {k: move_to_device(t, device) for k, t in target.items()}
     elif isinstance(target, Iterable):

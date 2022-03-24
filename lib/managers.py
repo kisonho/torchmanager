@@ -300,9 +300,14 @@ class Manager(Generic[Module]):
         self.compiled_optimizer.step()
 
         # summary result
-        summary["loss"] = float(self.compiled_losses.result.detach())
+        try: summary["loss"] = float(self.compiled_losses.result.detach())
+        except Exception as e: raise RuntimeError("[Runtime Error]: Cannot fetch loss.") from e
         for name, fn in self.metric_fns.items():
-            summary[name] = float(fn.result.detach())
+            try: summary[name] = float(fn.result.detach())
+            except Exception as metric_error:
+                runtime_error = RuntimeError(f"[Runtime Error]: Cannot fetch metric '{name}'.")
+                raise runtime_error from metric_error
+
         return summary
 
     def test(self, dataset: data.DataLoader, device: Optional[torch.device]=None, use_multi_gpus: bool=False, show_verbose: bool=False) -> Dict[str, float]:
@@ -393,7 +398,7 @@ class Manager(Generic[Module]):
                 fn(y, y_test)
                 summary[name] = float(fn.result.detach())
             except Exception as metric_error:
-                runtime_error = RuntimeError(f"Cannot fetch metric '{name}'.")
+                runtime_error = RuntimeError(f"[Runtime Error]: Cannot fetch metric '{name}'.")
                 raise runtime_error from metric_error
 
         # forward loss

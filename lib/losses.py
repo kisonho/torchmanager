@@ -100,7 +100,7 @@ class MultiLosses(Loss):
         # get all losses
         for fn in self.losses:
             assert isinstance(fn, Loss), f"[Runtime Error]: Function {fn} is not a Loss object."
-            l = fn.forward(input, target)
+            l = fn(input, target)
             loss = loss.to(l.device)
             loss += l
         return loss
