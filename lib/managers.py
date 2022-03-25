@@ -1,7 +1,7 @@
 from __future__ import annotations
 from .callbacks import Callback
 from .core import data, devices, math, torch, view
-from .core._typing import Any, Callable, Dict, Generic, List, Module, Optional, Type, Union
+from .core._typing import Any, Callable, Dict, Generic, List, Module, Optional, SizedIterable, Type, Union
 from .losses import Loss, MultiLosses, MultiOutputsLosses
 from .metrics import Metric
 from .train import Checkpoint, _lr
@@ -97,12 +97,12 @@ class Manager(Generic[Module]):
         # initialize optimizer
         self.optimizer = optimizer
 
-    def _train(self, dataset: data.DataLoader, iterations: Optional[int] = None, device: torch.device=torch.device('cpu'), use_multi_gpus: bool=False, show_verbose: bool=False, verbose_type: view.VerboseType = view.VerboseType.ALL, callbacks_list: List[Callback]=[]) -> Dict[str, float]:
+    def _train(self, dataset: SizedIterable, iterations: Optional[int] = None, device: torch.device=torch.device('cpu'), use_multi_gpus: bool=False, show_verbose: bool=False, verbose_type: view.VerboseType = view.VerboseType.ALL, callbacks_list: List[Callback]=[]) -> Dict[str, float]:
         """
         The single training step for an epoch
 
         - Parameters:
-            - dataset: The `data.DataLoader` for training dataset
+            - dataset: A `SizedIterable` training dataset
             - device: A `torch.device` where the data is moved to, should be same as the model
             - use_multi_gpus: A `bool` flag of if using multi gpus
             - show_verbose: A `bool` flag of if showing progress bar
@@ -178,24 +178,24 @@ class Manager(Generic[Module]):
         self._compile(optimizer, loss_fn, metrics)
         self.__compiled = True
 
-    def fit(self, training_dataset: data.DataLoader, epochs: Optional[int]=None, iterations: Optional[int] = None, initial_epoch: int=0, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler]=None, val_dataset: Optional[data.DataLoader]=None, device: Optional[torch.device]=None, use_multi_gpus: bool=False, callbacks_list: List[Callback]=[], **kwargs) -> torch.nn.Module:
+    def fit(self, training_dataset: Any, epochs: Optional[int]=None, iterations: Optional[int] = None, initial_epoch: int=0, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler]=None, val_dataset: Optional[Any]=None, device: Optional[torch.device]=None, use_multi_gpus: bool=False, callbacks_list: List[Callback]=[], **kwargs) -> torch.nn.Module:
         """
         Training algorithm
 
         - Parameters:
-            - training_dataset: The `data.DataLoader` for training dataset
+            - training_dataset: Any kind of training dataset, must performs to `SizedIterable`
             - epochs: An optional `int` number of training epochs
             - iterations: An optional `int` number of training iterations
             - lr_scheduelr: An optioanl `torch.optim.lr_scheduler._LRScheduler` to update the lr per epoch
             - is_dynamic_pruning: A `bool` flag of if using dynamic pruning
-            - val_dataset: An optional validation `data.DataLoader`
+            - val_dataset: An optional validation `Any`
             - device: An optional `torch.device` where the data is moved to, gpu will be used when available if not specified.
             - use_multi_gpus: A `bool` flag of if using multi gpus
             - callbacks_list: A `list` of callbacks in `Callback`
             - **kwargs: Additional keyword arguments that will be passed to `train` method.
         - Returns: A trained `torch.nn.Module`
         """
-        # ensure compiled and epochs
+        # arguments checking
         assert self.__compiled is True, "[Training Error]: Manager has not yet been compiled. Either loss_fn or optimizer, or both, are not given."
         if epochs is not None:
             assert epochs > 0, f"[Training Error]: The epochs must be a positive integer, got {epochs}."
@@ -208,6 +208,7 @@ class Manager(Generic[Module]):
             epochs = math.ceil(iterations / len(training_dataset))
         assert initial_epoch >= 0, f"[Training Error]: The initial_epoch must be a non_negative integer, got {initial_epoch}."
         assert initial_epoch < epochs, f"[Training Error]: The initial_epoch must be smaller than total epochs, got epochs={epochs} but initial_epoch={initial_epoch}."
+        assert isinstance(training_dataset, SizedIterable), "[Runtime Error]: The training_dataset must be both Sized and Iterable."
 
         # initialize
         view.logging.basicConfig(level=view.logging.INFO, format="%(message)s")
@@ -218,7 +219,11 @@ class Manager(Generic[Module]):
         
         # multi gpus support
         raw_model = self.model
-        if use_multi_gpus is True: self.model, use_multi_gpus = devices.data_parallel(raw_model)
+        raw_loss_fn = self.compiled_losses
+        if use_multi_gpus is True: 
+            self.model, use_multi_gpus = devices.data_parallel(raw_model)
+            paralleled_loss_fn, _ = devices.data_parallel(self.compiled_losses)
+            self.loss_fn = Loss(paralleled_loss_fn)
         devices.move_to_device([self.model, self.compiled_losses, self.metric_fns], device)
 
         # epoch loop
@@ -258,6 +263,7 @@ class Manager(Generic[Module]):
 
         # remove model from gpu
         self.model = raw_model.to(cpu)
+        self.loss_fn = raw_loss_fn
         devices.empty_cache()
         return self.model
 
@@ -310,15 +316,18 @@ class Manager(Generic[Module]):
 
         return summary
 
-    def test(self, dataset: data.DataLoader, device: Optional[torch.device]=None, use_multi_gpus: bool=False, show_verbose: bool=False) -> Dict[str, float]:
+    def test(self, dataset: Any, device: Optional[torch.device]=None, use_multi_gpus: bool=False, show_verbose: bool=False) -> Dict[str, float]:
         """
         Test target model
 
         - Parameters:
-            - dataset: A `data.DataLoader` to load the dataset
+            - dataset: Either `SizedIterable` or `data.DataLoader` to load the dataset
             - use_multi_gpus: A `bool` flag to use multi gpus during testing
         - Returns: A `dict` of validation summary
         """
+        # arguments checking
+        assert isinstance(dataset, SizedIterable), "[Runtime Error]: The dataset must be both Sized and Iterable."
+
         # initialize function
         self.compiled_losses.reset()
         for _, m in self.metric_fns.items(): m.reset()
@@ -327,18 +336,29 @@ class Manager(Generic[Module]):
         cpu, device = devices.find(device)
 
         # multi gpu support
-        if use_multi_gpus is True and not isinstance(self.model, torch.nn.parallel.DataParallel):
-            raw_model = self.model
-            self.model = torch.nn.parallel.DataParallel(self.model)
-        else: raw_model = None
+        if use_multi_gpus is True:
+            if not isinstance(self.model, torch.nn.parallel.DataParallel):
+                raw_model = self.model
+                self.model = torch.nn.parallel.DataParallel(self.model)
+            else: raw_model = None
+
+            if not isinstance(self.compiled_losses, torch.nn.parallel.DataParallel):
+                raw_loss_fn = self.compiled_losses
+                paralleled_loss_fn = torch.nn.parallel.DataParallel(self.compiled_losses)
+                self.loss_fn = Loss(paralleled_loss_fn)
+            else: raw_loss_fn = None
+        else:
+            raw_model = None
+            raw_loss_fn = None
 
         # set module status
         try:
             self.model.eval()
-            self.model.to(device)
+            devices.move_to_device([self.model, self.compiled_losses, self.metric_fns], device)
         except: pass
 
         # initialize progress bar
+        if len(dataset) == 0: return {}
         progress_bar = view.tqdm(total=len(dataset)) if show_verbose else None
 
         # disable auto gradients
@@ -372,9 +392,11 @@ class Manager(Generic[Module]):
             if self.loss_fn is not None:
                 summary["loss"] = float(self.compiled_losses.result.detach())
 
-            # reset model
+            # reset model and loss
             if raw_model is not None:
                 self.model = raw_model.to(cpu)
+            if raw_loss_fn is not None:
+                self.loss_fn = raw_loss_fn.to(cpu)
             return summary
 
     def test_step(self, x_test: Any, y_test: Any) -> Dict[str, float]:

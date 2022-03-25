@@ -24,7 +24,9 @@ class Loss(Metric):
         return super().reset()
 
     def forward(self, input: Any, target: Any) -> torch.Tensor:
-        return super().forward(input, target)
+        if isinstance(self._metric_fn, torch.nn.parallel.DataParallel):
+            return super().forward(input, target).mean(dim=0)
+        else: return super().forward(input, target)
 
 class CrossEntropy(Loss):
     """The cross entropy loss"""
