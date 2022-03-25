@@ -1,0 +1,2 @@
+torchmanager
+torchmanager_nightly
