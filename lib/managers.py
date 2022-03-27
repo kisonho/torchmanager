@@ -392,12 +392,10 @@ class Manager(Generic[Module]):
             if self.loss_fn is not None:
                 summary["loss"] = float(self.compiled_losses.result.detach())
 
-            # reset model and loss
-            if raw_model is not None:
-                self.model = raw_model.to(cpu)
-            if raw_loss_fn is not None:
-                self.loss_fn = raw_loss_fn.to(cpu)
-            return summary
+        # reset model and loss
+        if raw_model is not None: self.model = raw_model.to(cpu)
+        if raw_loss_fn is not None: self.loss_fn = raw_loss_fn.to(cpu)
+        return summary
 
     def test_step(self, x_test: Any, y_test: Any) -> Dict[str, float]:
         """
