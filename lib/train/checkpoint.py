@@ -42,7 +42,7 @@ class Checkpoint(Generic[Module]):
         self.save_weights_only = save_weights_only
 
     @classmethod
-    def from_saved(cls: Type[Checkpoint], ckpt_path: str, model: Optional[torch.nn.Module]=None) -> Checkpoint:
+    def from_saved(cls: Type[Checkpoint[torch.nn.Module]], ckpt_path: str, model: Optional[torch.nn.Module]=None) -> Checkpoint[torch.nn.Module]:
         '''
         Load checkpoint from a saved checkpoint file
 

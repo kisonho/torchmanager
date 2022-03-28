@@ -272,7 +272,7 @@ class Manager(Generic[Module]):
         return NotImplemented
 
     @classmethod
-    def from_checkpoint(cls: Type[Manager], *args, **kwargs) -> Manager:
+    def from_checkpoint(cls: Type[Manager[torch.nn.Module]], *args, **kwargs) -> Manager[torch.nn.Module]:
         """
         Method to load a manager from a saved `Checkpoint`. The manager will not be compiled with a loss function and its metrics.
 
