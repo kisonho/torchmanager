@@ -1,6 +1,6 @@
 from __future__ import annotations
 from .callbacks import Callback
-from .core import data, devices, math, torch, view
+from .core import devices, math, torch, view
 from .core._typing import Any, Callable, Dict, Generic, List, Module, Optional, SizedIterable, Type, Union
 from .losses import Loss, MultiLosses, MultiOutputsLosses
 from .metrics import Metric

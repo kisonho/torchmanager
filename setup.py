@@ -5,8 +5,8 @@ this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
 setup(name='torchmanager',
-      version='1.0.2',
-      description='PyTorch training manager (v1.0.2)',
+      version='1.0.3b1',
+      description='PyTorch training manager (v1.0.3b1)',
       long_description=long_description,
       long_description_content_type='text/markdown',
       author='Kison Ho',
@@ -15,17 +15,21 @@ setup(name='torchmanager',
             'torchmanager',
             'torchmanager.callbacks',
             'torchmanager.core',
+            'torchmanager.core.devices',
+            'torchmanager.core.view',
+            'torchmanager.losses',
+            'torchmanager.metrics',
             'torchmanager.train',
-            'torchmanager_nightly',
-            'torchmanager_nightly.train'
       ],
       package_dir={
             'torchmanager': 'lib',
             'torchmanager.callbacks': 'lib/callbacks',
             'torchmanager.core': 'lib/core',
+            'torchmanager.core': 'lib/core/devices',
+            'torchmanager.core': 'lib/core/view',
+            'torchmanager.losses': 'lib/losses',
+            'torchmanager.metrics': 'lib/metrics',
             'torchmanager.train': 'lib/train',
-            'torchmanager_nightly': 'nightly',
-            'torchmanager_nightly.train': 'nightly/train'
       },
       install_requires=[
             'tensorboard',

@@ -1,11 +1,12 @@
-from ..core import torch, view
+from ..core import torch
 from ..core._typing import Dict, Optional
+from ..core.view.verbose import _VerboseControllable
 
 def initial_step_lr_scheduler(lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler], initial_epoch: int = 0) -> None:
     # go to initial epoch
     if lr_scheduler is not None and initial_epoch > 0:
         # disable verbose
-        assert isinstance(lr_scheduler, view._VerboseControllable), "[Runtime Error]: lr_scheduler does not performs to the VerboseControllable protocol."
+        assert isinstance(lr_scheduler, _VerboseControllable), "[Runtime Error]: lr_scheduler does not performs to the VerboseControllable protocol."
         verbose = lr_scheduler.verbose
         lr_scheduler.verbose = False
 
