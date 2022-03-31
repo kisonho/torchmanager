@@ -1,6 +1,10 @@
 from ..core import torch
-from ..core._typing import Dict, Optional
+from ..core._typing import Dict, Enum, Optional
 from ..core.view.verbose import _VerboseControllable
+
+class LrScheduleFreq(Enum):
+    EPOCH = 0
+    BATCH = 1
 
 def initial_step_lr_scheduler(lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler], initial_epoch: int = 0) -> None:
     # go to initial epoch
