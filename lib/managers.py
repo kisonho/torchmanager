@@ -197,6 +197,7 @@ class Manager(Generic[Module]):
         """
         # arguments checking
         assert self.__compiled is True, "[Training Error]: Manager has not yet been compiled. Either loss_fn or optimizer, or both, are not given."
+        assert isinstance(training_dataset, SizedIterable), "[Runtime Error]: The training_dataset must be both Sized and Iterable."
         if epochs is not None:
             assert epochs > 0, f"[Training Error]: The epochs must be a positive integer, got {epochs}."
             assert iterations is None, f"[Training Error]: The iterations must be given as `None` when epochs is given, got {iterations}."
@@ -208,7 +209,6 @@ class Manager(Generic[Module]):
             epochs = math.ceil(iterations / len(training_dataset))
         assert initial_epoch >= 0, f"[Training Error]: The initial_epoch must be a non_negative integer, got {initial_epoch}."
         assert initial_epoch < epochs, f"[Training Error]: The initial_epoch must be smaller than total epochs, got epochs={epochs} but initial_epoch={initial_epoch}."
-        assert isinstance(training_dataset, SizedIterable), "[Runtime Error]: The training_dataset must be both Sized and Iterable."
 
         # initialize
         view.logging.basicConfig(level=view.logging.INFO, format="%(message)s")

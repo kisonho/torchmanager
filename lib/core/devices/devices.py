@@ -1,6 +1,6 @@
 # import typing modules
 from __future__ import annotations
-from typing import Any, Iterable, Optional, Protocol, Tuple, Union, runtime_checkable
+from typing import Any, Iterable, List, Optional, Protocol, Tuple, Union, runtime_checkable
 
 # import required modules
 import abc, torch, warnings
@@ -12,15 +12,23 @@ class _DeviceMovable(Protocol):
     def to(self, device: torch.device) -> Any:
         raise NotImplementedError
 
-def data_parallel(raw_model: torch.nn.Module) -> Tuple[Union[torch.nn.Module, torch.nn.parallel.DataParallel], bool]:
+def data_parallel(raw_model: torch.nn.Module, *args, **kwargs) -> Tuple[Union[torch.nn.Module, torch.nn.parallel.DataParallel], bool]:
+    """
+    Make a `torch.nn.Module` data parallel
+
+    - Parameters:
+        - raw_model: A target `torch.nn.Module`
+    - Returns: A `tuple` of either data paralleled `torch.nn.parallel.DataParallel` model if CUDA is available or a raw model if not, and a `bool` flag of if the model data paralleled successfuly.
+    """
     if torch.cuda.is_available():
-        model = torch.nn.parallel.DataParallel(raw_model)
+        model = torch.nn.parallel.DataParallel(raw_model, *args, **kwargs)
         return model, True
     else:
-        warnings.warn(f"[Device Warning]: The use_multi_gpus flag is set to True, but CUDA is not available.", ResourceWarning)
+        warnings.warn(f"[Device Warning]: CUDA is not available, unable to use multi-gpus.", ResourceWarning)
         return raw_model, False
 
 def empty_cache() -> None:
+    """Empty CUDA cache"""
     if torch.cuda.is_available(): torch.cuda.empty_cache()
 
 def find(specified: Optional[torch.device] = None) -> Tuple[torch.device, torch.device]:
@@ -29,7 +37,7 @@ def find(specified: Optional[torch.device] = None) -> Tuple[torch.device, torch.
 
     - Pameters:
         - specified: An optional `torch.device` of specified
-    - Returns: A `tuple` of CPU in `torch.device` and found device in `torch.device`
+    - Returns: A `tuple` of CPU in `torch.device` and available device in `torch.device`
     """
     cpu = torch.device("cpu")
     if specified is None:
