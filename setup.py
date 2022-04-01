@@ -32,7 +32,6 @@ setup(name='torchmanager',
             'torchmanager.train': 'lib/train',
       },
       install_requires=[
-            'tensorboard',
             'torch>=1.8.2',
             'tqdm',
       ],

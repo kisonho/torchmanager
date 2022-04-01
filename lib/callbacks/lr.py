@@ -1,8 +1,12 @@
-from torch.utils import tensorboard
 from ..core import torch
-from ..core._typing import Dict, Optional
+from ..core._typing import Any, Dict, Optional, Protocol, runtime_checkable
 from ..train import _lr
 from .callback import Callback
+
+@runtime_checkable
+class _SummaryWriter(Protocol):
+    """The SummaryWriter protocol"""
+    def add_scalars(self, main_tag: str, tag_scalar_dict: Any, global_step: Optional[int] = None) -> None: pass
 
 class LrSchedueler(Callback):
     """
@@ -12,12 +16,13 @@ class LrSchedueler(Callback):
         - freq: An `_lr.LrScheduleFreq` of the frequency to update learning rate
     """
     __lr_scheduler: torch.optim.lr_scheduler._LRScheduler
-    _writer: Optional[tensorboard.writer.SummaryWriter]
+    _writer: Optional[_SummaryWriter]
     freq: _lr.LrScheduleFreq
 
-    def __init__(self, scheduler: torch.optim.lr_scheduler._LRScheduler, freq: _lr.LrScheduleFreq, tf_board_writer: Optional[tensorboard.writer.SummaryWriter] = None) -> None:
+    def __init__(self, scheduler: torch.optim.lr_scheduler._LRScheduler, freq: _lr.LrScheduleFreq, tf_board_writer: Optional[_SummaryWriter] = None) -> None:
         super().__init__()
         self.__lr_scheduler = scheduler
+        assert isinstance(tf_board_writer, _SummaryWriter), "[Callback Error]: The given writer does not performs to SummaryWriter protocol."
         self._writer = tf_board_writer
         self.freq = freq
 
