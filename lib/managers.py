@@ -259,7 +259,6 @@ class Manager(Generic[Module]):
             # on epoch end
             for c in callbacks_list:
                 c.on_epoch_end(epoch, summary=summary, val_summary=val_summary)
-            devices.empty_cache()
 
         # remove model from gpu
         self.model = raw_model.to(cpu)
@@ -395,6 +394,7 @@ class Manager(Generic[Module]):
         # reset model and loss
         if raw_model is not None: self.model = raw_model.to(cpu)
         if raw_loss_fn is not None: self.loss_fn = raw_loss_fn.to(cpu)
+        devices.empty_cache()
         return summary
 
     def test_step(self, x_test: Any, y_test: Any) -> Dict[str, float]:

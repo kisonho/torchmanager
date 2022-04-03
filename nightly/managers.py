@@ -1,11 +1,15 @@
+import copy
+
 from .train import configs
 from torchmanager import callbacks
 from torchmanager.core import os, torch
-from torchmanager.core.typing import Iterable
+from torchmanager.core._typing import Iterable, Generic, Module, Tuple
 from torchmanager.managers import * # type: ignore
 
-class NightlyManager(Manager):
-    def debug(self, input_shape: torch.Size, dtype: torch.dtype=torch.float) -> Optional[tuple[torch.Size, ...]]:
+class NightlyManager(Manager, Generic[Module]):
+    model: Module
+
+    def debug(self, input_shape: torch.Size, label_shapes: Iterable[torch.Size], dtype: torch.dtype=torch.float) -> Optional[Tuple[torch.Size, ...]]:
         """
         The debug function to debug model with dummy data
 
@@ -14,32 +18,39 @@ class NightlyManager(Manager):
             dtype: A `torch.dtype` of the input dummy data
         - Returns: An optional `tuple` of `torch.Size` of multi output dummy data shape
         """
+        assert self.__compiled is True, "[Debug Error]: Manager has not yet been compiled. Either loss_fn or optimizer, or both, are not given."
+        assert self.optimizer is not None, "[Debug Error]: Manager has not yet been compiled. Either loss_fn or optimizer, or both, are not given."
+
         # initialize dummy inputs
         inputs = torch.randn(input_shape, dtype=dtype)
+        labels = tuple([torch.randn(label_shape) for label_shape in label_shapes])
+        label = labels[0] if len(labels) == 1 else labels
+        raw_model = copy.deepcopy(self.model)
 
-        # no gradients
-        with torch.no_grad():
-            # parsing to model
-            try: outputs = self.model(inputs)
-            except Exception as error:
-                raise RuntimeError(f"[Running Failed]: Data with input shape {input_shape} does not fit with the given model.") from error
+        # parsing to model
+        try:
+            self.train_step(inputs, label)
+            y = self.model(inputs)
+            self.model.load_state_dict(raw_model.state_dict())
+        except Exception as error:
+            raise RuntimeError(f"[Running Failed]: Data with input shape {input_shape} and label shape {label_shapes} does not fit with the given model.") from error
 
-            # collect output shapes
-            if isinstance(outputs, torch.Tensor):
-                return tuple([outputs.shape])
-            elif isinstance(outputs, Iterable):
-                output_shapes: List[torch.Size] = [output.shape for output in outputs]
-                return tuple(output_shapes)
-            else: return None
+        # collect output shapes
+        if isinstance(y, torch.Tensor):
+            return tuple([y.shape])
+        elif isinstance(y, Iterable):
+            y: Iterable[torch.Tensor]
+            output_shapes = [output.shape for output in y]
+            return tuple(output_shapes)
+        else: return None
 
-    def fit_by_config(self, training_dataset: data.DataLoader, config: configs.TrainingConfig, val_dataset: Optional[data.DataLoader] = None, **kwargs: Any) -> torch.nn.Module:
+    def fit_by_config(self, training_dataset: Any, config: configs.TrainingConfig, **kwargs: Any) -> torch.nn.Module:
         """
         Train model with configurations
 
         - Parameters:
-            training_dataset: A `data.DataLoader` of training dataset
-            config: A `config.TrainingConfig` of the training configurations
-            val_dataset: An optional `data.DataLoader` of validation dataset
+            - training_dataset: `Any` kind of training dataset that performs `SizedIterable` protocol
+            - config: A `config.TrainingConfig` of the training configurations
         - Returns: A trained `torch.nn.Module`
         """
         # initialize callbacks
@@ -66,4 +77,4 @@ class NightlyManager(Manager):
         lr_scheduler = torch.optim.lr_scheduler.StepLR(self.compiled_optimizer, step_size=config.lr_decay_step, gamma=config.lr_decay) if config.lr_decay > 0 else config.default_lr_scheduler
 
         # train model
-        return self.fit(training_dataset, config.epochs, initial_epoch=config.initial_epoch, lr_scheduler=lr_scheduler, show_verbose=config.show_verbose, val_dataset=val_dataset, use_multi_gpus=config.use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
+        return self.fit(training_dataset, config.epochs, initial_epoch=config.initial_epoch, lr_scheduler=lr_scheduler, show_verbose=config.show_verbose, use_multi_gpus=config.use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
