@@ -328,7 +328,7 @@ class Manager(Generic[Module]):
         assert isinstance(dataset, SizedIterable), "[Runtime Error]: The dataset must be both Sized and Iterable."
 
         # initialize function
-        self.compiled_losses.reset()
+        if self.loss_fn is not None: self.loss_fn.reset()
         for _, m in self.metric_fns.items(): m.reset()
 
         # find available device
@@ -353,7 +353,7 @@ class Manager(Generic[Module]):
         # set module status
         try:
             self.model.eval()
-            devices.move_to_device([self.model, self.compiled_losses, self.metric_fns], device)
+            devices.move_to_device([self.model, self.loss_fn, self.metric_fns], device)
         except: pass
 
         # initialize progress bar
@@ -423,6 +423,6 @@ class Manager(Generic[Module]):
 
         # forward loss
         if self.loss_fn is not None:
-            self.compiled_losses(y, y_test)
-            summary["loss"] = float(self.compiled_losses.result.detach())
+            self.loss_fn(y, y_test)
+            summary["loss"] = float(self.loss_fn.result.detach())
         return summary
