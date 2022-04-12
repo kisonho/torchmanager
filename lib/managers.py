@@ -22,6 +22,7 @@ class Manager(Generic[Module]):
     """
     # properties
     __compiled: bool
+    __current_epoch: int
     loss_fn: Optional[Loss]
     metric_fns: Dict[str, Metric]
     model: Module
@@ -40,6 +41,15 @@ class Manager(Generic[Module]):
     def compiled_optimizer(self) -> torch.optim.Optimizer:
         assert self.optimizer is not None, "[Training Error]: optimizer is not given."
         return self.optimizer
+
+    @property
+    def current_epoch(self) -> int:
+        return self.__current_epoch
+
+    @current_epoch.setter
+    def current_epoch(self, e: int) -> None:
+        assert e >= 0, f"[Training Error]: The epoch index must be a non_negative integer, got {e}."
+        self.__current_epoch = e
     
     def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer]=None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]]=None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]]={}) -> None:
         """
@@ -52,6 +62,7 @@ class Manager(Generic[Module]):
             - optimizer: An optional `torch.optim.Optimizer` to train the model
         """
         # initialize
+        self.__current_epoch = 0
         self.metric_fns = {}
         self.model = model
 
@@ -178,7 +189,7 @@ class Manager(Generic[Module]):
         self._compile(optimizer, loss_fn, metrics)
         self.__compiled = True
 
-    def fit(self, training_dataset: Any, epochs: Optional[int]=None, iterations: Optional[int] = None, initial_epoch: int=0, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler]=None, val_dataset: Optional[Any]=None, device: Optional[torch.device]=None, use_multi_gpus: bool=False, callbacks_list: List[Callback]=[], **kwargs) -> torch.nn.Module:
+    def fit(self, training_dataset: Any, epochs: Optional[int] = None, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None, val_dataset: Optional[Any] = None, device: Optional[torch.device] = None, use_multi_gpus: bool = False, callbacks_list: List[Callback] = [], **kwargs) -> torch.nn.Module:
         """
         Training algorithm
 
@@ -207,13 +218,17 @@ class Manager(Generic[Module]):
             assert iterations > 0, f"[Training Error]: The iterations must be a positive integer, got {iterations}."
             assert epochs is None, f"[Training Error]: The epochs must be given as `None` when iterations is given, got {epochs}."
             epochs = math.ceil(iterations / len(training_dataset))
-        assert initial_epoch >= 0, f"[Training Error]: The initial_epoch must be a non_negative integer, got {initial_epoch}."
-        assert initial_epoch < epochs, f"[Training Error]: The initial_epoch must be smaller than total epochs, got epochs={epochs} but initial_epoch={initial_epoch}."
+
+        # initialize initial epoch
+        if initial_epoch is not None: 
+            assert initial_epoch >= 0, f"[Training Error]: The initial_epoch must be a non_negative integer, got {initial_epoch}."
+            assert initial_epoch < epochs, f"[Training Error]: The initial_epoch must be smaller than total epochs, got epochs={epochs} but initial_epoch={initial_epoch}."
+            self.__current_epoch = initial_epoch
 
         # initialize
         view.logging.basicConfig(level=view.logging.INFO, format="%(message)s")
         logger = view.logging.getLogger("Training")
-        _lr.initial_step_lr_scheduler(lr_scheduler, initial_epoch)
+        _lr.initial_step_lr_scheduler(lr_scheduler, self.__current_epoch)
         cpu, device = devices.find(device)
         for c in callbacks_list: c.on_train_start()
         
@@ -227,7 +242,7 @@ class Manager(Generic[Module]):
         devices.move_to_device([self.model, self.compiled_losses, self.metric_fns], device)
 
         # epoch loop
-        for epoch in range(initial_epoch, epochs):
+        for epoch in range(self.current_epoch, epochs):
             # initialize epoch
             logger.info(f"Training epoch {epoch + 1}/{epochs}")
             self.compiled_losses.reset()
@@ -259,6 +274,7 @@ class Manager(Generic[Module]):
             # on epoch end
             for c in callbacks_list:
                 c.on_epoch_end(epoch, summary=summary, val_summary=val_summary)
+            self.current_epoch += 1
 
         # remove model from gpu
         self.model = raw_model.to(cpu)
@@ -279,7 +295,9 @@ class Manager(Generic[Module]):
         """
         # load checkpoint
         ckpt = Checkpoint.from_saved(*args, **kwargs)
-        return cls(ckpt.model, ckpt.optimizer, loss_fn=ckpt.loss_fn, metrics=ckpt.metrics)
+        manager = cls(ckpt.model, ckpt.optimizer, loss_fn=ckpt.loss_fn, metrics=ckpt.metrics)
+        manager.current_epoch = ckpt.last_epoch
+        return manager
 
     def train_step(self, x_train: Any, y_train: Any) -> Dict[str, float]:
         """
@@ -426,3 +444,13 @@ class Manager(Generic[Module]):
             self.loss_fn(y, y_test)
             summary["loss"] = float(self.loss_fn.result.detach())
         return summary
+
+    def to_checkpoint(self) -> Checkpoint[Module]:
+        """
+        Convert the current manager to a checkpoint
+        
+        - Returns: A `Checkpoint` with its model in `Module` type
+        """
+        metrics: Dict[str, torch.nn.Module] = {k: m for k, m in self.metric_fns.items()}
+        ckpt = Checkpoint(self.model, last_epoch=self.current_epoch, optimizer=self.optimizer, loss_fn=self.loss_fn, metrics=metrics)
+        return ckpt

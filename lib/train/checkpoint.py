@@ -1,6 +1,6 @@
 from __future__ import annotations
-from ..core import torch
-from ..core._typing import Any, Dict, Generic, Module, Optional, OrderedDict, Type
+from ..core import abc, torch
+from ..core._typing import Any, Dict, Generic, Module, Optional, OrderedDict, Type, Protocol, runtime_checkable
 
 class Checkpoint(Generic[Module]):
     '''
