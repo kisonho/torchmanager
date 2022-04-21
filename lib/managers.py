@@ -1,10 +1,10 @@
 from __future__ import annotations
 from .callbacks import Callback
 from .core import devices, math, torch, view
-from .core._typing import Any, Callable, Dict, Generic, List, Module, Optional, SizedIterable, Type, Union
+from .core.typing import Any, Callable, Dict, Generic, List, Module, Optional, SizedIterable, Type, Union
 from .losses import Loss, MultiLosses, MultiOutputsLosses
 from .metrics import Metric
-from .train import Checkpoint, _lr
+from .train import Checkpoint, learning_rate
 
 class Manager(Generic[Module]):
     """
@@ -228,7 +228,7 @@ class Manager(Generic[Module]):
         # initialize
         view.logging.basicConfig(level=view.logging.INFO, format="%(message)s")
         logger = view.logging.getLogger("Training")
-        _lr.initial_step_lr_scheduler(lr_scheduler, self.__current_epoch)
+        learning_rate.initial_step_lr_scheduler(lr_scheduler, self.__current_epoch)
         cpu, device = devices.find(device)
         for c in callbacks_list: c.on_train_start()
         
@@ -268,7 +268,7 @@ class Manager(Generic[Module]):
 
             # step lr scheduler
             if lr_scheduler is not None:
-                lr_summary = _lr.update_lr(lr_scheduler)
+                lr_summary = learning_rate.update_lr(lr_scheduler)
                 summary.update(lr_summary)
 
             # on epoch end

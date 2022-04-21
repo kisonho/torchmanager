@@ -1,5 +1,5 @@
 from ..core import torch
-from ..core._typing import Dict, Enum, Optional
+from ..core.typing import Dict, Enum, Optional
 from ..core.view.verbose import _VerboseControllable
 
 class LrScheduleFreq(Enum):

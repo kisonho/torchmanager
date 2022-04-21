@@ -1,5 +1,5 @@
 from __future__ import annotations
-from ..core._typing import Dict, Optional
+from ..core.typing import Dict, Optional
 
 class Callback:
     """

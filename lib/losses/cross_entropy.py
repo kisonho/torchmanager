@@ -1,5 +1,5 @@
 from ..core import functional as F, torch
-from ..core._typing import Any
+from ..core.typing import Any
 from .losses import Loss
 
 class CrossEntropy(Loss):

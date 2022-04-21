@@ -1,6 +1,6 @@
 from ..core import torch
-from ..core._typing import Any, Dict, Optional, Protocol, runtime_checkable
-from ..train import _lr
+from ..core.typing import Any, Dict, Optional, Protocol, runtime_checkable
+from ..train import learning_rate
 from .callback import Callback
 
 @runtime_checkable
@@ -17,9 +17,9 @@ class LrSchedueler(Callback):
     """
     __lr_scheduler: torch.optim.lr_scheduler._LRScheduler
     _writer: Optional[_SummaryWriter]
-    freq: _lr.LrScheduleFreq
+    freq: learning_rate.LrScheduleFreq
 
-    def __init__(self, scheduler: torch.optim.lr_scheduler._LRScheduler, freq: _lr.LrScheduleFreq, tf_board_writer: Optional[_SummaryWriter] = None) -> None:
+    def __init__(self, scheduler: torch.optim.lr_scheduler._LRScheduler, freq: learning_rate.LrScheduleFreq, tf_board_writer: Optional[_SummaryWriter] = None) -> None:
         super().__init__()
         self.__lr_scheduler = scheduler
         assert isinstance(tf_board_writer, _SummaryWriter), "[Callback Error]: The given writer does not performs to SummaryWriter protocol."
@@ -27,12 +27,12 @@ class LrSchedueler(Callback):
         self.freq = freq
 
     def on_batch_end(self, *args, **kwargs) -> None:
-        if self.freq == _lr.LrScheduleFreq.BATCH:
+        if self.freq == learning_rate.LrScheduleFreq.BATCH:
             self.__lr_scheduler.step()
 
     def on_epoch_end(self, epoch: int, *args, **kwargs) -> None:
         # update lr scheduler
-        if self.freq == _lr.LrScheduleFreq.EPOCH:
+        if self.freq == learning_rate.LrScheduleFreq.EPOCH:
             self.__lr_scheduler.step()
 
         # get summary

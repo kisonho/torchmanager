@@ -1,6 +1,6 @@
 from __future__ import annotations
 from ..core import tensorboard, torch
-from ..core._typing import Dict, Optional, Tuple
+from ..core.typing import Dict, Optional, Tuple
 from .callback import Callback
 
 class TensorBoard(Callback):

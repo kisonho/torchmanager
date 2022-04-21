@@ -1,5 +1,5 @@
 from ..core import torch
-from ..core._typing import Any, Callable, Dict, List, Optional
+from ..core.typing import Any, Callable, Dict, List, Optional
 from ..metrics import Metric
 
 class Loss(Metric):

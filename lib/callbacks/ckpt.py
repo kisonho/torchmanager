@@ -1,6 +1,6 @@
 from __future__ import annotations
 from ..core import os, sys, view
-from ..core._typing import Dict, Enum, Generic, Module, Optional
+from ..core.typing import Dict, Enum, Generic, Module, Optional
 from ..train.checkpoint import Checkpoint as Ckpt
 from .callback import Callback
 

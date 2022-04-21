@@ -1,3 +1,3 @@
 from . import checkpoint
 from .checkpoint import Checkpoint
-from ._lr import LrScheduleFreq
+from .learning_rate import LrScheduleFreq
