@@ -19,7 +19,7 @@ class LrSchedueler(Callback):
     _writer: Optional[_SummaryWriter]
     freq: learning_rate.LrScheduleFreq
 
-    def __init__(self, scheduler: torch.optim.lr_scheduler._LRScheduler, freq: learning_rate.LrScheduleFreq, tf_board_writer: Optional[_SummaryWriter] = None) -> None:
+    def __init__(self, scheduler: torch.optim.lr_scheduler._LRScheduler, freq: learning_rate.LrScheduleFreq = learning_rate.LrScheduleFreq.EPOCH, tf_board_writer: Optional[_SummaryWriter] = None) -> None:
         super().__init__()
         self.__lr_scheduler = scheduler
         assert isinstance(tf_board_writer, _SummaryWriter), "[Callback Error]: The given writer does not performs to SummaryWriter protocol."

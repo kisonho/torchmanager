@@ -3,7 +3,7 @@ import copy
 from .train import configs
 from torchmanager import callbacks
 from torchmanager.core import os, torch
-from torchmanager.core._typing import Iterable, Generic, Module, Tuple
+from torchmanager.core.typing import Iterable, Generic, Module, Tuple
 from torchmanager.managers import * # type: ignore
 
 class NightlyManager(Manager, Generic[Module]):

@@ -1,5 +1,5 @@
 from torchmanager.callbacks import Callback as _Callback # type: ignore
-from torchmanager.core._typing import Callable, Dict, Optional
+from torchmanager.core.typing import Callable, Dict, Optional
 
 class _Training(_Callback):
     """A Protected Training callback"""

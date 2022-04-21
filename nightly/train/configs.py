@@ -1,9 +1,10 @@
 # import typing modules
 from __future__ import annotations
-from typing import Any, Optional, Type
 
 # import required modules
-import abc, argparse, logging, os, torch
+import argparse, logging
+from torchmanager.core import abc, os, torch
+from torchmanager.core.typing import Any, Optional, Type
 
 class Config(abc.ABC):
     """An abstract configuration class"""
