@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Tuple
 from .callbacks import Callback
 from .core import devices, math, torch, view
 from .core.typing import Any, Callable, Dict, Generic, List, Module, Optional, SizedIterable, Type, Union

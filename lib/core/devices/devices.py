@@ -5,7 +5,7 @@ from typing import Any, Iterable, Optional, Protocol, Tuple, Union, runtime_chec
 # import required modules
 import abc, torch, warnings
 
-CPU = torch.device('CPU')
+CPU = torch.device('cpu')
 GPU = torch.device('cuda')
 
 @runtime_checkable

@@ -49,5 +49,10 @@ class Callback:
         pass
 
     def on_train_start(self, initial_epoch: int = 0) -> None:
-        """The callback when training starts"""
+        """
+        The callback when training starts
+        
+        - Parameters:
+            - initial_epoch: An `int` of initial epoch index
+        """
         pass
