@@ -51,7 +51,7 @@ class Manager(Generic[Module]):
         assert e >= 0, f"[Training Error]: The epoch index must be a non_negative integer, got {e}."
         self.__current_epoch = e
     
-    def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer]=None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]]=None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]]={}) -> None:
+    def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]] = None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]] = {}) -> None:
         """
         Constructor
         
@@ -75,7 +75,7 @@ class Manager(Generic[Module]):
         else:
             self.__compiled = False
 
-    def _compile(self, optimizer: Optional[torch.optim.Optimizer]=None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]]=None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]]={}) -> None:
+    def _compile(self, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]] = None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]] = {}) -> None:
         """
         Compiles the manager
         
@@ -108,7 +108,7 @@ class Manager(Generic[Module]):
         # initialize optimizer
         self.optimizer = optimizer
 
-    def _train(self, dataset: SizedIterable, iterations: Optional[int] = None, device: torch.device=torch.device('cpu'), use_multi_gpus: bool=False, show_verbose: bool=False, verbose_type: view.VerboseType = view.VerboseType.ALL, callbacks_list: List[Callback]=[]) -> Dict[str, float]:
+    def _train(self, dataset: SizedIterable, iterations: Optional[int] = None, device: torch.device = devices.CPU, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, callbacks_list: List[Callback] = []) -> Dict[str, float]:
         """
         The single training step for an epoch
 
@@ -177,7 +177,7 @@ class Manager(Generic[Module]):
         if torch.cuda.is_available(): torch.cuda.empty_cache()
         return summary
 
-    def compile(self, optimizer: torch.optim.Optimizer, loss_fn: Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]], metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]]={}) -> None:
+    def compile(self, optimizer: torch.optim.Optimizer, loss_fn: Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]], metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]] = {}) -> None:
         """
         Compiles the manager
         
@@ -224,13 +224,14 @@ class Manager(Generic[Module]):
             assert initial_epoch >= 0, f"[Training Error]: The initial_epoch must be a non_negative integer, got {initial_epoch}."
             assert initial_epoch < epochs, f"[Training Error]: The initial_epoch must be smaller than total epochs, got epochs={epochs} but initial_epoch={initial_epoch}."
             self.__current_epoch = initial_epoch
+        else: initial_epoch = 0
 
         # initialize
         view.logging.basicConfig(level=view.logging.INFO, format="%(message)s")
         logger = view.logging.getLogger("Training")
         learning_rate.initial_step_lr_scheduler(lr_scheduler, self.__current_epoch)
         cpu, device = devices.find(device)
-        for c in callbacks_list: c.on_train_start()
+        for c in callbacks_list: c.on_train_start(initial_epoch)
         
         # multi gpus support
         raw_model = self.model
@@ -295,9 +296,15 @@ class Manager(Generic[Module]):
         """
         # load checkpoint
         ckpt = Checkpoint.from_saved(*args, **kwargs)
-        manager = cls(ckpt.model, ckpt.optimizer, loss_fn=ckpt.loss_fn, metrics=ckpt.metrics)
-        manager.current_epoch = ckpt.last_epoch
-        return manager
+
+        # recover model to manager
+        if isinstance(ckpt.model, torch.nn.Module):
+            manager = cls(ckpt.model, ckpt.optimizer, loss_fn=ckpt.loss_fn, metrics=ckpt.metrics)
+            manager.current_epoch = ckpt.last_epoch
+            return manager
+        elif isinstance(ckpt.model, Manager):
+            return ckpt.model
+        else: raise TypeError(f"[Ckpt Error]: The saved checkpoint contains a model with type of {type(ckpt.model)} that cannot be recoverred to a `Manager`.")
 
     def train_step(self, x_train: Any, y_train: Any) -> Dict[str, float]:
         """
@@ -333,7 +340,7 @@ class Manager(Generic[Module]):
 
         return summary
 
-    def test(self, dataset: Any, device: Optional[torch.device]=None, use_multi_gpus: bool=False, show_verbose: bool=False) -> Dict[str, float]:
+    def test(self, dataset: Any, device: Optional[torch.device] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
         """
         Test target model
 

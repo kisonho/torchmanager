@@ -1,8 +1,10 @@
 from __future__ import annotations
-from ..core import abc, torch
-from ..core.typing import Any, Dict, Generic, Module, Optional, OrderedDict, Type, Protocol, runtime_checkable
+from ..core import torch
+from ..core.typing import Any, Dict, Generic, Optional, OrderedDict, Type, TypeVar
 
-class Checkpoint(Generic[Module]):
+T = TypeVar('T')
+
+class Checkpoint(Generic[T]):
     '''
     The callback to save the latest checkpoint for each epoch
 
@@ -10,7 +12,7 @@ class Checkpoint(Generic[Module]):
         - last_epoch: An `int` of the last epoch index
         - loss_fn: An optional `Loss` object
         - metrics: An optional `dict` with name in `str` and value of the `Metric` objects for metrics
-        - model: A `torch.nn.Module` to be saved
+        - model: Any type of model to be saved
         - optimizer: A `torch.nn.Optimizer` to be saved
         - save_weights_only: A `bool` flag of if only save state_dict of model
     '''
@@ -18,11 +20,11 @@ class Checkpoint(Generic[Module]):
     last_epoch: int
     loss_fn: Optional[torch.nn.Module]
     metrics: Dict[str, torch.nn.Module]
-    model: Module
+    model: T
     optimizer: Optional[torch.optim.Optimizer]
     save_weights_only: bool
 
-    def __init__(self, model: Module, last_epoch: int=0, optimizer: Optional[torch.optim.Optimizer]=None, loss_fn: Optional[torch.nn.Module]=None, metrics: Optional[Dict[str, torch.nn.Module]]=None, save_weights_only: bool=False) -> None:
+    def __init__(self, model: T, last_epoch: int=0, optimizer: Optional[torch.optim.Optimizer]=None, loss_fn: Optional[torch.nn.Module]=None, metrics: Optional[Dict[str, torch.nn.Module]]=None, save_weights_only: bool=False) -> None:
         '''
         Constructor
 
@@ -42,7 +44,7 @@ class Checkpoint(Generic[Module]):
         self.save_weights_only = save_weights_only
 
     @classmethod
-    def from_saved(cls: Type[Checkpoint[torch.nn.Module]], ckpt_path: str, model: Optional[torch.nn.Module]=None) -> Checkpoint[torch.nn.Module]:
+    def from_saved(cls: Type[Checkpoint[Any]], ckpt_path: str, model: Optional[torch.nn.Module] = None) -> Checkpoint[Any]:
         '''
         Load checkpoint from a saved checkpoint file
 
@@ -61,7 +63,8 @@ class Checkpoint(Generic[Module]):
             ckpt["model"] = model
         else:
             if model is not None:
-                m: torch.nn.Module = ckpt["model"]
+                m = ckpt["model"]
+                assert isinstance(m, torch.nn.Module), "[Ckpt Error]: This saved model is not a valid PyTorch module. It cannot be loaded as weights into a given model."
                 model.load_state_dict(m.state_dict())
                 ckpt["model"] = m
         return cls(**ckpt)
@@ -70,5 +73,6 @@ class Checkpoint(Generic[Module]):
         self.last_epoch = epoch
         ckpt = self.__dict__
         if self.save_weights_only is True:
+            assert isinstance(self.model, torch.nn.Module), "[Ckpt Error]: This saved model is not a valid PyTorch module. It cannot be loaded with weights only."
             ckpt["model"] = self.model.state_dict()
         torch.save(ckpt, ckpt_path)

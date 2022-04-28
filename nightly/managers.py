@@ -79,20 +79,21 @@ class NightlyManager(Manager, Generic[Module]):
         # train model
         return self.fit(training_dataset, config.epochs, initial_epoch=config.initial_epoch, lr_scheduler=lr_scheduler, show_verbose=config.show_verbose, use_multi_gpus=config.use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
 
-def clone(model: torch.nn.Module, clone_fn: Callable[[str, torch.nn.Module], torch.nn.Module]):
+def clone(model: torch.nn.Module, clone_fn: Optional[Callable[[str, torch.nn.Module], torch.nn.Module]] = None):
     """
     Clone a given `torch.nn.Module` and modifies the inside module by given function
 
     - Parameters:
         - model: A target `torch.nn.Module` to clone
-        - clone_fn: A function that accept an `str` of layer name and a `torch.nn.Module` of the layer while returns a `torch.nn.Module` of replaced layer
+        - clone_fn: An optional function that accept an `str` of layer name and a `torch.nn.Module` of the layer while returns a `torch.nn.Module` of replaced layer
     - Returns: A copied and modified `torch.nn.Module`
     """
     # copy model
     copied_model = copy.deepcopy(model)
 
     # loop for each module inside the copied model
-    for name, m in copied_model.named_modules():
-        m = clone_fn(name, m)
+    for name, m in copied_model.named_children():
+        if len(list(m.children())) > 0: m = clone(m, clone_fn)
+        if clone_fn is not None: m = clone_fn(name, m)
         setattr(copied_model, name, m)
     return copied_model

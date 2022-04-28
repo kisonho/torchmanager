@@ -7,6 +7,13 @@ class LrScheduleFreq(Enum):
     BATCH = 1
 
 def initial_step_lr_scheduler(lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler], initial_epoch: int = 0) -> None:
+    """
+    Initialize learning rate scheduler for the initial epochs before training starts
+
+    - Parameters:
+        - lr_scheduler: The given lr scheduler in `torch.optim.lr_scheduler._LRScheduler`
+        - initial_epoch: An `int` of the intial epoch index
+    """
     # go to initial epoch
     if lr_scheduler is not None and initial_epoch > 0:
         # disable verbose
@@ -22,6 +29,13 @@ def initial_step_lr_scheduler(lr_scheduler: Optional[torch.optim.lr_scheduler._L
         lr_scheduler.verbose = verbose
 
 def update_lr(lr_scheduler: torch.optim.lr_scheduler._LRScheduler) -> Dict[str, float]:
+    """
+    Update lr scheduler and returns the current learning rate as a summary
+
+    - Parameters:
+        - lr_scheduler: A `torch.optim.lr_scheduler._LRScheduler` to update
+    - Returns: A `dict` of lr summary
+    """
     # update lr
     lr_scheduler.step()
     lr_list = lr_scheduler.get_last_lr()

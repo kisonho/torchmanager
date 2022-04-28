@@ -49,3 +49,6 @@ class LrSchedueler(Callback):
                 result: Dict[str, float] = {}
                 result["train"] = summary[key]
                 self._writer.add_scalars(key, result, epoch + 1)
+
+    def on_train_start(self, initial_epoch: int = 0) -> None:
+        learning_rate.initial_step_lr_scheduler(self.__lr_scheduler, initial_epoch)

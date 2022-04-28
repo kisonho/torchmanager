@@ -1,25 +1,28 @@
 from __future__ import annotations
+from typing import Any
 from ..core import os, sys, view
-from ..core.typing import Dict, Enum, Generic, Module, Optional
+from ..core.typing import Dict, Enum, Generic, Optional, TypeVar
 from ..train.checkpoint import Checkpoint as Ckpt
 from .callback import Callback
 
-class LastCheckpoint(Callback, Generic[Module]):
+T = TypeVar('T')
+
+class LastCheckpoint(Callback, Generic[T]):
     """
     The callback to save the last checkpoint during training
 
     - Properties:
         - ckpt_path: A `str` of checkpoint path
     """
-    _checkpoint: Ckpt[Module]
+    _checkpoint: Ckpt[T]
     ckpt_path: str
 
-    def __init__(self, model: Module, ckpt_path: str, **kwargs) -> None:
+    def __init__(self, model: Any, ckpt_path: str, **kwargs) -> None:
         """
         Constructor
 
         - Parameters:
-            - model: A target `torch.nn.Module`
+            - model: Any type of model to be saved
             - ckpt_path: A `str` of the checkpoint path
             - **kwargs: Other arguments in `Checkpoint` constructor
         """
@@ -30,7 +33,7 @@ class LastCheckpoint(Callback, Generic[Module]):
     def on_epoch_end(self, epoch: int, *args, **kwargs) -> None:
         self._checkpoint.save(epoch, self.ckpt_path)
 
-class Checkpoint(LastCheckpoint, Generic[Module]):
+class Checkpoint(LastCheckpoint, Generic[T]):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         view.warnings.warn("[Deprecation Warning]: Checkpoint callback has been renamed to LastCheckpoint and was deprecated from v 1.0.0, it will be removed at v1.1.0.", DeprecationWarning)
@@ -49,7 +52,7 @@ class MonitorType(Enum):
         else:
             raise ValueError(f'[MonitorType Error]: Monitor type {self} is not supported.')
 
-class BestCheckpoint(LastCheckpoint, Generic[Module]):
+class BestCheckpoint(LastCheckpoint, Generic[T]):
     """
     The callback to save the latest checkpoint for each epoch
 

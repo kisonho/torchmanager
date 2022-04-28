@@ -1,9 +1,12 @@
 # import typing modules
 from __future__ import annotations
-from typing import Any, Iterable, List, Optional, Protocol, Tuple, Union, runtime_checkable
+from typing import Any, Iterable, Optional, Protocol, Tuple, Union, runtime_checkable
 
 # import required modules
 import abc, torch, warnings
+
+CPU = torch.device('CPU')
+GPU = torch.device('cuda')
 
 @runtime_checkable
 class _DeviceMovable(Protocol):
@@ -24,7 +27,7 @@ def data_parallel(raw_model: torch.nn.Module, *args, **kwargs) -> Tuple[Union[to
         model = torch.nn.parallel.DataParallel(raw_model, *args, **kwargs)
         return model, True
     else:
-        warnings.warn(f"[Device Warning]: CUDA is not available, unable to use multi-gpus.", ResourceWarning)
+        warnings.warn(f"[Device Warning]: CUDA is not available, unable to use multi-GPUs.", ResourceWarning)
         return raw_model, False
 
 def empty_cache() -> None:
@@ -39,13 +42,11 @@ def find(specified: Optional[torch.device] = None) -> Tuple[torch.device, torch.
         - specified: An optional `torch.device` of specified
     - Returns: A `tuple` of CPU in `torch.device` and available device in `torch.device`
     """
-    cpu = torch.device("cpu")
     if specified is None:
-        gpu = torch.device("cuda")
-        return (cpu, gpu) if torch.cuda.is_available() else (cpu, cpu)
+        return (CPU, GPU) if torch.cuda.is_available() else (CPU, CPU)
     else:
         warnings.warn(f"[Device Warning]: Using specified device {specified}.", ResourceWarning)
-        return cpu, specified
+        return CPU, specified
 
 def move_to_device(target: Any, device: torch.device) -> Any:
     """

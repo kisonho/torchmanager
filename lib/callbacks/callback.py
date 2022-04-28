@@ -48,6 +48,6 @@ class Callback:
         """The callback when training ends"""
         pass
 
-    def on_train_start(self) -> None:
+    def on_train_start(self, initial_epoch: int = 0) -> None:
         """The callback when training starts"""
         pass
