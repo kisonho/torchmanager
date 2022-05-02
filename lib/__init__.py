@@ -2,4 +2,4 @@ from . import callbacks, core, losses, metrics, train
 from .core.view import VerboseType
 from .managers import Manager
 
-version = "1.0.3b3"
+version = "1.0.3"
