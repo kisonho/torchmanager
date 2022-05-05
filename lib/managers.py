@@ -258,15 +258,7 @@ class Manager(Generic[Module]):
             iterations -= batch_iterations
 
             # validate
-            val_message = f"Epoch {epoch + 1}/{epochs}: "
             val_summary = self.test(val_dataset, use_multi_gpus=use_multi_gpus) if val_dataset is not None else {}
-            summary.update({f"val_{name}": value for name, value in val_summary.items()})
-
-            # print summary info
-            for i, (name, value) in enumerate(summary.items()):
-                if i > 0: val_message += ", "
-                val_message += f"{name}={value:.4f}"
-            logger.info(val_message)
 
             # step lr scheduler
             if lr_scheduler is not None:
@@ -277,6 +269,14 @@ class Manager(Generic[Module]):
             for c in callbacks_list:
                 c.on_epoch_end(epoch, summary=summary, val_summary=val_summary)
             self.current_epoch += 1
+
+            # print summary info
+            val_message = f"Epoch {epoch + 1}/{epochs}: "
+            summary.update({f"val_{name}": value for name, value in val_summary.items()})
+            for i, (name, value) in enumerate(summary.items()):
+                if i > 0: val_message += ", "
+                val_message += f"{name}={value:.4f}"
+            logger.info(val_message)
 
         # remove model from gpu
         self.model = raw_model.to(cpu)

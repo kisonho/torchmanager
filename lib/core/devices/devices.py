@@ -1,19 +1,12 @@
-# import typing modules
 from __future__ import annotations
-from typing import Any, Iterable, Optional, Protocol, Tuple, Union, runtime_checkable
+from typing import Any, Iterable, Optional, Tuple, Union
 
-# import required modules
-import abc, torch, warnings
+import torch, warnings
+
+from .protocols import _DeviceMovable
 
 CPU = torch.device('cpu')
 GPU = torch.device('cuda')
-
-@runtime_checkable
-class _DeviceMovable(Protocol):
-    """The device movable protocol"""
-    @abc.abstractmethod
-    def to(self, device: torch.device) -> Any:
-        raise NotImplementedError
 
 def data_parallel(raw_model: torch.nn.Module, *args, **kwargs) -> Tuple[Union[torch.nn.Module, torch.nn.parallel.DataParallel], bool]:
     """
