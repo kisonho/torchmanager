@@ -1,8 +1,9 @@
 from __future__ import annotations
-from typing import Tuple
+
+from torchmanager_core import devices, gc, math, torch, view
+from torchmanager_core.typing import Any, Callable, Dict, Generic, List, Module, Optional, SizedIterable, Type, Union
+
 from .callbacks import Callback
-from .core import devices, math, torch, view
-from .core.typing import Any, Callable, Dict, Generic, List, Module, Optional, SizedIterable, Type, Union
 from .losses import Loss, MultiLosses, MultiOutputsLosses
 from .metrics import Metric
 from .train import Checkpoint, learning_rate
@@ -121,6 +122,10 @@ class Manager(Generic[Module]):
             - callbacks_list: A `list` of callbacks in `Callback`
         - Returns: A summary of `dict` with keys as `str` and values as `float`
         """
+        # reset loss and metrics
+        self.compiled_losses.reset()
+        for _, m in self.metric_fns.items(): m.reset()
+
         # run deprecated method
         summary = self.train(dataset, device=device, use_multi_gpus=use_multi_gpus, show_verbose=show_verbose, callbacks_list=callbacks_list)
         if summary != NotImplemented:
@@ -247,8 +252,6 @@ class Manager(Generic[Module]):
         for epoch in range(self.current_epoch, epochs):
             # initialize epoch
             logger.info(f"Training epoch {epoch + 1}/{epochs}")
-            self.compiled_losses.reset()
-            for _, m in self.metric_fns.items(): m.reset()
             self.model.train()
             for c in callbacks_list: c.on_epoch_start(epoch)
             batch_iterations = len(training_dataset) if len(training_dataset) < iterations else iterations
@@ -323,8 +326,7 @@ class Manager(Generic[Module]):
         loss = self.compiled_losses(y, y_train)
 
         # forward metrics
-        for name, fn in self.compiled_metrics.items():
-            fn(y, y_train)
+        for name, fn in self.compiled_metrics.items(): fn(y, y_train)
 
         # backward pass
         loss.backward()

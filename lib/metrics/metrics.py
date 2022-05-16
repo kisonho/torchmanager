@@ -1,5 +1,5 @@
-from ..core import torch, view
-from ..core.typing import Any, Callable, List, Optional
+from torchmanager_core import torch, view
+from torchmanager_core.typing import Any, Callable, List, Optional, Union
 
 class Metric(torch.nn.Module):
     """
@@ -14,7 +14,7 @@ class Metric(torch.nn.Module):
     """
     # properties
     _metric_fn: Optional[Callable[[Any, Any], torch.Tensor]]
-    _results: List[float]
+    _results: List[Union[torch.Tensor, float]]
 
     @property
     def result(self) -> torch.Tensor:
@@ -33,7 +33,7 @@ class Metric(torch.nn.Module):
 
     def __call__(self, input: Any, target: Any) -> torch.Tensor:
         m: torch.Tensor = super().__call__(input, target)
-        self._results.append(float(m.detach()))
+        self._results.append(m.detach())
         return m
 
     def call(self, input: Any, target: Any) -> torch.Tensor:

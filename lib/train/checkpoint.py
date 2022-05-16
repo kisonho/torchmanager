@@ -1,6 +1,6 @@
 from __future__ import annotations
-from ..core import torch
-from ..core.typing import Any, Dict, Generic, Optional, OrderedDict, Type, TypeVar
+from torchmanager_core import torch
+from torchmanager_core.typing import Any, Dict, Generic, Optional, OrderedDict, Type, TypeVar
 
 T = TypeVar('T')
 

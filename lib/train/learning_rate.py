@@ -1,6 +1,7 @@
-from ..core import torch
-from ..core.typing import Dict, Enum, Optional
-from ..core.view.verbose import _VerboseControllable
+from torchmanager_core import torch
+from torchmanager_core.typing import Dict, Enum, Optional
+from torchmanager_core.view import logging
+from torchmanager_core.view.verbose import _VerboseControllable
 
 class LrScheduleFreq(Enum):
     EPOCH = 0
@@ -20,6 +21,7 @@ def initial_step_lr_scheduler(lr_scheduler: Optional[torch.optim.lr_scheduler._L
         assert isinstance(lr_scheduler, _VerboseControllable), "[Runtime Error]: lr_scheduler does not performs to the VerboseControllable protocol."
         verbose = lr_scheduler.verbose
         lr_scheduler.verbose = False
+        logging.info(f"Intializing learning rate with {initial_epoch} epochs...")
 
         # steps to initial epoch
         for _ in range(initial_epoch):

@@ -1,5 +1,6 @@
-from ..core import functional as F, torch
-from ..core.typing import Any
+from torchmanager_core import functional as F, torch
+from torchmanager_core.typing import Any
+
 from .losses import Loss
 
 class CrossEntropy(Loss):

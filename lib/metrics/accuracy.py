@@ -1,4 +1,5 @@
-from ..core import torch
+from torchmanager_core import torch
+
 from .metrics import Metric
 
 class Accuracy(Metric):
