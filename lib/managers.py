@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Tuple
 
 from torchmanager_core import devices, gc, math, torch, view
 from torchmanager_core.typing import Any, Callable, Dict, Generic, List, Module, Optional, SizedIterable, Type, Union
@@ -137,12 +138,13 @@ class Manager(Generic[Module]):
         progress_bar = view.tqdm(total=iterations) if show_verbose else None
 
         # batch loop
-        for batch, (x_train, y_train) in enumerate(dataset):
+        for batch, data in enumerate(dataset):
             # on batch start
             for c in callbacks_list:
                 c.on_batch_start(batch)
 
             # move x_train and y_train to device
+            x_train, y_train = self._unpack_data(data)
             if use_multi_gpus is not True:
                 x_train = devices.move_to_device(x_train, device)
             y_train = devices.move_to_device(y_train, device)
@@ -178,10 +180,15 @@ class Manager(Generic[Module]):
             progress_bar.close()
 
         # summarize
-        summary = {name: float(fn.result.detach()) for name, fn in self.metric_fns.items()}
+        summary = {name: float(fn.result.detach()) for name, fn in self.metric_fns.items() if not name.startswith("val_")}
         summary["loss"] = float(self.compiled_losses.result.detach())
         if torch.cuda.is_available(): torch.cuda.empty_cache()
         return summary
+
+    def _unpack_data(self, data: Any) -> Tuple[Any, Any]:
+        """Unpacks data"""
+        (x_train, y_train) = data
+        return x_train, y_train
 
     def compile(self, optimizer: torch.optim.Optimizer, loss_fn: Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]], metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]] = {}) -> None:
         """
@@ -326,7 +333,8 @@ class Manager(Generic[Module]):
         loss = self.compiled_losses(y, y_train)
 
         # forward metrics
-        for name, fn in self.compiled_metrics.items(): fn(y, y_train)
+        for name, fn in self.compiled_metrics.items():
+            if not name.startswith("val_"): fn(y, y_train)
 
         # backward pass
         loss.backward()
@@ -336,6 +344,7 @@ class Manager(Generic[Module]):
         try: summary["loss"] = float(self.compiled_losses.result.detach())
         except Exception as e: raise RuntimeError("[Runtime Error]: Cannot fetch loss.") from e
         for name, fn in self.metric_fns.items():
+            if name.startswith("val_"): continue
             try: summary[name] = float(fn.result.detach())
             except Exception as metric_error:
                 runtime_error = RuntimeError(f"[Runtime Error]: Cannot fetch metric '{name}'.")
@@ -391,8 +400,9 @@ class Manager(Generic[Module]):
         # disable auto gradients
         with torch.no_grad():
             # batch loop
-            for x_test, y_test in dataset:
+            for data in dataset:
                 # move x_test, y_test to device
+                x_test, y_test = self._unpack_data(data)
                 if use_multi_gpus is not True and isinstance(x_test, torch.Tensor):
                     x_test = devices.move_to_device(x_test, device)
                 y_test = devices.move_to_device(y_test, device)
@@ -412,6 +422,7 @@ class Manager(Generic[Module]):
             # summarize
             summary: Dict[str, float] = {}
             for name, fn in self.metric_fns.items():
+                if name.startswith("val_"): name.replace("val_", "")
                 try: summary[name] = float(fn.result.detach())
                 except Exception as metric_error:
                     runtime_error = RuntimeError(f"Cannot fetrch metric '{name}'.")
