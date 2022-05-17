@@ -422,7 +422,7 @@ class Manager(Generic[Module]):
             # summarize
             summary: Dict[str, float] = {}
             for name, fn in self.metric_fns.items():
-                if name.startswith("val_"): name.replace("val_", "")
+                if name.startswith("val_"): name = name.replace("val_", "")
                 try: summary[name] = float(fn.result.detach())
                 except Exception as metric_error:
                     runtime_error = RuntimeError(f"Cannot fetrch metric '{name}'.")
@@ -453,6 +453,7 @@ class Manager(Generic[Module]):
 
         # forward metrics
         for name, fn in self.compiled_metrics.items():
+            if name.startswith("val_"): name = name.replace("val_", "")
             try:
                 fn(y, y_test)
                 summary[name] = float(fn.result.detach())
