@@ -225,7 +225,6 @@ class Manager(Generic[Module]):
         if epochs is not None:
             assert epochs > 0, f"[Training Error]: The epochs must be a positive integer, got {epochs}."
             assert iterations is None, f"[Training Error]: The iterations must be given as `None` when epochs is given, got {iterations}."
-            iterations = int(epochs * len(training_dataset))
         else:
             assert iterations is not None, f"[Training Error]: The iterations must be given if epochs is not given."
             assert iterations > 0, f"[Training Error]: The iterations must be a positive integer, got {iterations}."
@@ -261,11 +260,12 @@ class Manager(Generic[Module]):
             logger.info(f"Training epoch {epoch + 1}/{epochs}")
             self.model.train()
             for c in callbacks_list: c.on_epoch_start(epoch)
-            batch_iterations = len(training_dataset) if len(training_dataset) < iterations else iterations
+            if iterations is not None: batch_iterations = iterations if len(training_dataset) < iterations else iterations
+            else: batch_iterations = None
 
             # train for one epoch
             summary = self._train(training_dataset, iterations=batch_iterations, device=device, use_multi_gpus=use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
-            iterations -= batch_iterations
+            if iterations is not None and batch_iterations is not None: iterations -= batch_iterations
 
             # validate
             val_summary = self.test(val_dataset, use_multi_gpus=use_multi_gpus) if val_dataset is not None else {}
@@ -427,8 +427,7 @@ class Manager(Generic[Module]):
                 except Exception as metric_error:
                     runtime_error = RuntimeError(f"Cannot fetrch metric '{name}'.")
                     raise runtime_error from metric_error
-            if self.loss_fn is not None:
-                summary["loss"] = float(self.compiled_losses.result.detach())
+            if self.loss_fn is not None: summary["loss"] = float(self.compiled_losses.result.detach())
 
         # reset model and loss
         if raw_model is not None: self.model = raw_model.to(cpu)
