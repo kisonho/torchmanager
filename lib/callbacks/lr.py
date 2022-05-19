@@ -27,10 +27,10 @@ class LrSchedueler(Callback):
         self._writer = tf_board_writer
         self.freq = freq
 
-    def on_batch_end(self, *args, **kwargs) -> None:
+    def on_batch_end(self, *args: Any, **kwargs: Any) -> None:
         if self.freq == learning_rate.LrScheduleFreq.BATCH: self.__lr_scheduler.step()
 
-    def on_epoch_end(self, epoch: int, *args, **kwargs) -> None:
+    def on_epoch_end(self, epoch: int, *args: Any, **kwargs: Any) -> None:
         # update lr scheduler
         if self.freq == learning_rate.LrScheduleFreq.EPOCH: self.__lr_scheduler.step()
         

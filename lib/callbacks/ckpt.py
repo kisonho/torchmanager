@@ -18,7 +18,7 @@ class LastCheckpoint(Callback, Generic[T]):
     _checkpoint: Ckpt[T]
     ckpt_path: str
 
-    def __init__(self, model: Any, ckpt_path: str, **kwargs) -> None:
+    def __init__(self, model: Any, ckpt_path: str, **kwargs: Any) -> None:
         """
         Constructor
 
@@ -31,7 +31,7 @@ class LastCheckpoint(Callback, Generic[T]):
         self._checkpoint = Ckpt(model, **kwargs)
         self.ckpt_path = os.path.normpath(ckpt_path)
 
-    def on_epoch_end(self, epoch: int, *args, **kwargs) -> None:
+    def on_epoch_end(self, epoch: int, summary: Dict[str, float] = ..., val_summary: Optional[Dict[str, float]] = ...) -> None:
         self._checkpoint.save(epoch, self.ckpt_path)
 
 class Checkpoint(LastCheckpoint, Generic[T]):
@@ -67,7 +67,7 @@ class BestCheckpoint(LastCheckpoint, Generic[T]):
     monitor: str
     monitor_type: MonitorType
 
-    def __init__(self, monitor: str, *args, monitor_type: MonitorType=MonitorType.MAX, **kwargs) -> None:
+    def __init__(self, monitor: str, model: Any, ckpt_path: str, monitor_type: MonitorType=MonitorType.MAX, **kwargs: Any) -> None:
         """
         Constructor
 
@@ -75,19 +75,19 @@ class BestCheckpoint(LastCheckpoint, Generic[T]):
             - monitor: A `str` of monitored metric
             - monitor_type: A `MonitorType` of either `MIN` of `MAX` mode for the best model
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(model, ckpt_path, **kwargs)
         self.monitor = monitor
         self.monitor_type = monitor_type
         self.best_score = monitor_type.init_score
 
-    def on_epoch_end(self, *args, summary: Dict[str, float]={}, val_summary: Optional[Dict[str, float]]=None, **kwargs) -> None:
+    def on_epoch_end(self, epoch: int, summary: Dict[str, float] = ..., val_summary: Optional[Dict[str, float]] = ...) -> None:
         # get score
         score = val_summary[self.monitor] if val_summary is not None else summary[self.monitor]
 
         # save when best
         if score >= self.best_score and self.monitor_type == MonitorType.MAX:
             self.best_score = score
-            super().on_epoch_end(*args, **kwargs)
+            super().on_epoch_end(epoch, summary, val_summary)
         elif score <= self.best_score and self.monitor_type == MonitorType.MIN:
             self.best_score = score
-            super().on_epoch_end(*args, **kwargs)
+            super().on_epoch_end(epoch, summary, val_summary)
