@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 from torchmanager_core import os, sys, view
-from torchmanager_core.typing import Any, Dict, Enum, Generic, Optional, TypeVar
+from torchmanager_core.typing import Any, Dict, Enum, Generic, Optional, TypeVar, Union
 
 from ..train.checkpoint import Checkpoint as Ckpt
 from .callback import Callback
 
 T = TypeVar('T')
 
-class LastCheckpoint(Callback, Generic[T]):
+class _Checkpoint(Callback, Generic[T]):
     """
     The callback to save the last checkpoint during training
 
@@ -34,6 +34,31 @@ class LastCheckpoint(Callback, Generic[T]):
     def on_epoch_end(self, epoch: int, summary: Dict[str, float] = ..., val_summary: Optional[Dict[str, float]] = ...) -> None:
         self._checkpoint.save(epoch, self.ckpt_path)
 
+class LastCheckpoint(_Checkpoint, Generic[T]):
+    """
+    Last checkpoint with frequency control support
+    
+    - Properties:
+        - freq: An `int` of checkpoint epoch frequency
+    """
+    __freq: int
+
+    @property
+    def freq(self) -> int:
+        return self.__freq
+    
+    @freq.setter
+    def freq(self, f: int) -> None:
+        assert f > 0, f"[Checkpoint Error]: Frequency must be a positive number, got {f}. "
+        self.__freq = f
+
+    def __init__(self, model: Any, ckpt_path: str, freq: int = 1, **kwargs: Any) -> None:
+        super().__init__(model, ckpt_path, **kwargs)
+        self.freq = freq
+
+    def on_epoch_end(self, epoch: int, summary: Dict[str, float] = ..., val_summary: Optional[Dict[str, float]] = ...) -> None:
+        if epoch % self.freq == 0: super().on_epoch_end(epoch, summary, val_summary)
+
 class Checkpoint(LastCheckpoint, Generic[T]):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -53,7 +78,7 @@ class MonitorType(Enum):
         else:
             raise ValueError(f'[MonitorType Error]: Monitor type {self} is not supported.')
 
-class BestCheckpoint(LastCheckpoint, Generic[T]):
+class BestCheckpoint(_Checkpoint, Generic[T]):
     """
     The callback to save the latest checkpoint for each epoch
 
