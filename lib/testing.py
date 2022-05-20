@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from torchmanager_core import devices, torch, view
-from torchmanager_core.typing import Any, Dict, Generic, Module, Optional, SizedIterable, Tuple, Type
+from torchmanager_core.typing import Any, Dict, Generic, Module, Optional, SizedIterable, Type
 
 from .train import Checkpoint
 from .losses import Loss
+from .metrics import Metric
 from .basic import DataManager, BaseManager
 
 class Manager(DataManager, BaseManager, Generic[Module]):
@@ -14,13 +15,20 @@ class Manager(DataManager, BaseManager, Generic[Module]):
     * extends: `.manager.Manager`
 
     - Properties:
-        - compiled_losses: The loss function in `Metric` that must be exist
-        - compiled_optimizer: The `torch.optim.Optimizer` that must be exist
-        - loss_fn: A `Callable` method that takes the truth and predictions in `torch.Tensor` and returns a loss `torch.Tensor`
-        - metrics: A `dict` of metrics with a name in `str` and a `Callable` method that takes the truth and predictions in `torch.Tensor` and returns a loss `torch.Tensor`
-        - model: A target `torch.nn.Module` to be trained
-        - optimizer: A `torch.optim.Optimizer` to train the model
+        - compiled_losses: The loss function in `Loss` that must be exist
+        - compiled_metrics: The `dict` of metrics in `Metric` that does not contain losses
     """
+    model: Module
+    
+    @property
+    def compiled_losses(self) -> Loss:
+        assert self.loss_fn is not None, "[Training Error]: loss_fn is not given, compiles the manager with loss_fn first."
+        return self.loss_fn
+
+    @property
+    def compiled_metrics(self) -> Dict[str, Metric]:
+        return {name: m for name, m in self.metric_fns.items() if "loss" not in name}
+    
     @classmethod
     def from_checkpoint(cls: Type[Manager[torch.nn.Module]], ckpt: Checkpoint) -> Manager[torch.nn.Module]:
         return super().from_checkpoint(ckpt) # type: ignore

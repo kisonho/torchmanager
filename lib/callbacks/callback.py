@@ -4,7 +4,7 @@ from torchmanager_core.typing import Dict, Optional
 
 class Callback:
     """
-    A training callback
+    An empty basic training callback
     """
     def on_batch_end(self, batch: int, summary: Dict[str, float]={}) -> None:
         """

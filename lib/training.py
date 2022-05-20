@@ -17,9 +17,11 @@ class Manager(_Manager, Generic[Module]):
     * [Deprecation Warning]: Method `train` becomes protected from v1.0.2, the public method will be removed from v1.2.0. Override `_train` method instead.
 
     - Properties:
-        - current_epoch: An `int` of current epoch index
+        - current_epoch: The `int` index of current training epoch
+        - compiled_optimizer: The `torch.optim.Optimizer` that must be exist
     """
     __current_epoch: int
+    model: Module
 
     @property
     def current_epoch(self) -> int:
@@ -29,6 +31,11 @@ class Manager(_Manager, Generic[Module]):
     def current_epoch(self, e: int) -> None:
         assert e >= 0, f"[Training Error]: The epoch index must be a non_negative integer, got {e}."
         self.__current_epoch = e
+
+    @property
+    def compiled_optimizer(self) -> torch.optim.Optimizer:
+        assert self.optimizer is not None, "[Training Error]: optimizer is not given."
+        return self.optimizer
 
     def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]] = None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]] = ...) -> None:
         super().__init__(model, optimizer, loss_fn, metrics)
@@ -176,15 +183,15 @@ class Manager(_Manager, Generic[Module]):
             # validate
             val_summary = self.test(val_dataset, use_multi_gpus=use_multi_gpus) if val_dataset is not None else {}
 
-            # step lr scheduler
-            if lr_scheduler is not None:
-                lr_summary = learning_rate.update_lr(lr_scheduler)
-                summary.update(lr_summary)
-
             # on epoch end
             for c in callbacks_list:
                 c.on_epoch_end(epoch, summary=summary, val_summary=val_summary)
             self.current_epoch += 1
+
+            # step lr scheduler
+            if lr_scheduler is not None:
+                lr_summary = learning_rate.update_lr(lr_scheduler)
+                summary.update(lr_summary)
 
             # print summary info
             val_message = f"Epoch {epoch + 1}/{epochs}: "

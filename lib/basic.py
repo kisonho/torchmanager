@@ -13,8 +13,6 @@ class BaseManager(Generic[Module]):
 
     - Properties:
         - compiled: A `bool` flag of if the manager has been compiled
-        - compiled_losses: The loss function in `Metric` that must be exist
-        - compiled_optimizer: The `torch.optim.Optimizer` that must be exist
         - loss_fn: A `Callable` method that takes the truth and predictions in `torch.Tensor` and returns a loss `torch.Tensor`
         - metrics: A `dict` of metrics with a name in `str` and a `Callable` method that takes the truth and predictions in `torch.Tensor` and returns a loss `torch.Tensor`
         - model: A target `torch.nn.Module` to be trained
@@ -30,20 +28,6 @@ class BaseManager(Generic[Module]):
     @property
     def compiled(self) -> bool:
         return self.__compiled
-    
-    @property
-    def compiled_losses(self) -> Loss:
-        assert self.loss_fn is not None, "[Training Error]: loss_fn is not given, compiles the manager with loss_fn first."
-        return self.loss_fn
-
-    @property
-    def compiled_metrics(self) -> Dict[str, Metric]:
-        return {name: m for name, m in self.metric_fns.items() if "loss" not in name}
-
-    @property
-    def compiled_optimizer(self) -> torch.optim.Optimizer:
-        assert self.optimizer is not None, "[Training Error]: optimizer is not given."
-        return self.optimizer
     
     def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]] = None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]] = {}) -> None:
         """
