@@ -1,6 +1,6 @@
 from torchmanager_core import torch
 
-from .metrics import Metric
+from .metric import Metric
 
 class Accuracy(Metric):
     """The traditional accuracy metric to compare two `torch.Tensor`"""

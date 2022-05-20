@@ -1,7 +1,7 @@
 from torchmanager_core import functional as F, torch
 from torchmanager_core.typing import Any
 
-from .losses import Loss
+from .loss import Loss
 
 class CrossEntropy(Loss):
     """The cross entropy loss"""

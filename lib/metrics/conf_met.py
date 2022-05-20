@@ -1,6 +1,6 @@
 from torchmanager_core import torch
 
-from .metrics import Metric
+from .metric import Metric
 
 class ConfusionMetrics(Metric):
     """The mIoU metric for segmentation"""
