@@ -181,7 +181,7 @@ class Manager(_Manager, Generic[Module]):
             if iterations is not None and batch_iterations is not None: iterations -= batch_iterations
 
             # validate
-            val_summary = self.test(val_dataset, use_multi_gpus=use_multi_gpus) if val_dataset is not None else {}
+            val_summary = self.test(val_dataset, device=device, use_multi_gpus=use_multi_gpus) if val_dataset is not None else {}
 
             # on epoch end
             for c in callbacks_list:
