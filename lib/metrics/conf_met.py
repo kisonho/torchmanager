@@ -1,4 +1,5 @@
 from torchmanager_core import torch
+from torchmanager_core.typing import Optional
 
 from .metric import Metric
 
@@ -6,8 +7,15 @@ class ConfusionMetrics(Metric):
     """The mIoU metric for segmentation"""
     __num_classes: int
 
-    def __init__(self, num_classes: int) -> None:
-        super().__init__()
+    def __init__(self, num_classes: int, target: Optional[str] = None) -> None:
+        """
+        Constructor
+
+        - Parameters:
+            - num_classes: An `int` of the total number of classes
+            - target: A `str` of target name in `input` and `target` during direct calling
+        """
+        super().__init__(target=target)
         self.__num_classes = num_classes
 
     def _fast_hist(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
@@ -35,17 +43,3 @@ class ConfusionMetrics(Metric):
         
         # calculate mean IoU
         return conf_mat
-
-class MIoU(ConfusionMetrics):
-    """The mIoU metric for segmentation"""
-    def __init__(self, num_classes: int) -> None:
-        super().__init__(num_classes)
-
-    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        # argmax for input
-        input = input.argmax(1).to(target.dtype)
-        
-        # calculate mean IoU
-        hist = super().forward(input, target)
-        iou = torch.diag(hist) / (hist.sum(1) + hist.sum(0) - torch.diag(hist))
-        return iou.nanmean()

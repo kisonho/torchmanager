@@ -1,3 +1,4 @@
+from typing import Dict
 from torchmanager_core import torch, view
 from torchmanager_core.typing import Any, Callable, List, Optional, Union
 
@@ -15,23 +16,33 @@ class Metric(torch.nn.Module):
     # properties
     _metric_fn: Optional[Callable[[Any, Any], torch.Tensor]]
     _results: List[Union[torch.Tensor, float]]
+    _target: Optional[str]
 
     @property
     def result(self) -> torch.Tensor:
         return torch.tensor(self._results).mean()
 
-    def __init__(self, metric_fn: Optional[Callable[[Any, Any], torch.Tensor]]=None) -> None:
+    def __init__(self, metric_fn: Optional[Callable[[Any, Any], torch.Tensor]] = None, target: Optional[str] = None) -> None:
         """
         Constructor
 
         - Parameters:
             - metric_fn: An optional `Callable` metrics function that accepts `Any` kind of prediction input and target and returns a metric `torch.Tensor`. A `call` method must be overriden if this parameter is set as `None`.
+            - target: A `str` of target name in `input` and `target` during direct calling
         """
         super().__init__()
-        self._results = []
         self._metric_fn = metric_fn
+        self._results = []
+        self._target = target
 
     def __call__(self, input: Any, target: Any) -> torch.Tensor:
+        # unpack input and target
+        if self._target is not None:
+            assert isinstance(input, dict) and isinstance(target, dict), "[Metric Error]: Given input or target is not a valid dictionary."
+            assert self._target in input and self._target in target, f"[Metric Error]: Target {self._target} cannot be found not in input or target"
+            input, target = input[self._target], target[self._target]
+
+        # call
         m: torch.Tensor = super().__call__(input, target)
         self._results.append(m.detach())
         return m

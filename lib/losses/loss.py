@@ -10,14 +10,15 @@ class Loss(Metric):
     * Could be use as a decorator of a function
     * Loss tensor is stayed in memory until reset is called
     """
-    def __init__(self, loss_fn: Optional[Callable[[Any, Any], torch.Tensor]] = None) -> None:
+    def __init__(self, loss_fn: Optional[Callable[[Any, Any], torch.Tensor]] = None, target: Optional[str] = None) -> None:
         """
         Constructor
 
         - Parameters:
             - loss_fn: A `Callable` function that accepts input or `y_pred` in `Any` kind and target or `y_true` in `Any` kind as inputs and gives a loss in `torch.Tensor`
+            - target: A `str` of target name in `input` and `target` during direct calling
         """
-        super().__init__(loss_fn)
+        super().__init__(loss_fn, target=target)
 
     def forward(self, input: Any, target: Any) -> torch.Tensor:
         if isinstance(self._metric_fn, torch.nn.parallel.DataParallel):
@@ -37,8 +38,8 @@ class MultiLosses(Loss):
     def losses(self) -> torch.nn.ModuleList:
         return self.__losses
 
-    def __init__(self, losses: List[Loss]) -> None:
-        super().__init__(self.forward)
+    def __init__(self, losses: List[Loss], target: Optional[str] = None) -> None:
+        super().__init__(target=target)
         self.__losses = torch.nn.ModuleList(losses)
 
     def forward(self, input: Any, target: Any) -> torch.Tensor:

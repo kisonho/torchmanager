@@ -1,4 +1,5 @@
 from torchmanager_core import torch
+from torchmanager_core.typing import Optional
 
 from .metric import Metric
 
@@ -16,8 +17,15 @@ class SparseCategoricalAccuracy(Accuracy):
     """
     dim: int
 
-    def __init__(self, dim: int = -1) -> None:
-        super().__init__()
+    def __init__(self, dim: int = -1, target: Optional[str] = None) -> None:
+        """
+        Constructor
+
+        - Parameters:
+            - dim: An `int` of the classification dimension
+            - target: A `str` of target name in `input` and `target` during direct calling
+        """
+        super().__init__(target=target)
         self.dim = dim
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:

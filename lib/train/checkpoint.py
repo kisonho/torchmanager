@@ -1,5 +1,5 @@
 from __future__ import annotations
-from torchmanager_core import torch
+from torchmanager_core import devices, torch
 from torchmanager_core.typing import Any, Dict, Generic, Optional, OrderedDict, Type, TypeVar
 
 T = TypeVar('T')
@@ -50,10 +50,10 @@ class Checkpoint(Generic[T]):
 
         - Parameters:
             - ckpt_path: A `str` of file path
-            - model: An optional `torch.nn.Module` for structure when only weights is saved
+            - model: An optional `torch.nn.Module` to be loaded
         '''
         # load checkpint dictionary
-        ckpt: Dict[str, Any] = torch.load(ckpt_path)
+        ckpt: Dict[str, Any] = torch.load(ckpt_path, map_location=devices.CPU)
 
         # load model
         if ckpt["save_weights_only"] is True:
@@ -62,11 +62,15 @@ class Checkpoint(Generic[T]):
             model.load_state_dict(state_dict)
             ckpt["model"] = model
         else:
+            # remove data parallel wrap
+            if isinstance(ckpt["model"], torch.nn.parallel.DataParallel):
+                ckpt["model"] = ckpt["model"].module
+
+            # load model structure with checkpoint weights
             if model is not None:
-                m = ckpt["model"]
-                assert isinstance(m, torch.nn.Module), "[Ckpt Error]: This saved model is not a valid PyTorch module. It cannot be loaded as weights into a given model."
-                model.load_state_dict(m.state_dict())
-                ckpt["model"] = m
+                assert isinstance(ckpt["model"], torch.nn.Module), "[Ckpt Error]: This saved model is not a valid PyTorch module. It cannot be loaded as weights into a given model."
+                model.load_state_dict(ckpt["model"].state_dict())
+                ckpt["model"] = model
         return cls(**ckpt)
 
     def save(self, epoch: int, ckpt_path: str) -> None:

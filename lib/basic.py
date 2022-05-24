@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Iterable
 
 from torchmanager_core import torch, view
 from torchmanager_core.typing import Any, Callable, Dict, Generic, Module, Optional, Tuple, Type, Union
@@ -62,14 +63,14 @@ class BaseManager(Generic[Module]):
             - optimizer: An optional `torch.optim.Optimizer` to train the model
         """
         # initialize loss
-        if isinstance(loss_fn, MultiOutputsLosses):
+        if isinstance(loss_fn, MultiOutputsLosses) and len(loss_fn.losses) > 1:
             loss_fn_mapping: Dict[str, Loss] = {f"{name}_loss": fn for name, fn in loss_fn.losses.items()} # type: ignore
             self.metric_fns.update(loss_fn_mapping)
         elif isinstance(loss_fn, dict):
             loss_fn_mapping: Dict[str, Loss] = {f"{name}_loss": fn for name, fn in loss_fn.items()}
             self.metric_fns.update(loss_fn_mapping)
             loss_fn = MultiLosses([l for l in loss_fn_mapping.values()])
-        elif loss_fn is not None:
+        elif loss_fn is not None and not isinstance(loss_fn, Loss):
             loss_fn = Loss(loss_fn)
             view.warnings.warn("[Deprecated Warning]: parsing `loss_fn` as a function was deprecated from v0.9.3 and will no longer be available from v1.1.0, use losses.Loss object instead.", DeprecationWarning)
         self.loss_fn = loss_fn
@@ -123,6 +124,14 @@ class BaseManager(Generic[Module]):
         return ckpt
 
 class DataManager:
-    @staticmethod
-    def unpack_data(data: Tuple[Any, Any]) -> Tuple[Any, Any]:
-        return data
+    def unpack_data(self, data: Any) -> Tuple[Any, Any]:
+        """
+        Unpacks data to input and target
+        
+        - Parameters:
+            - data: `Any` kind of data object
+        - Returns: A `tuple` of `Any` kind of input and `Any` kind of target
+        """
+        if len(data) == 2 and isinstance(data, Iterable):
+            return tuple(data)
+        else: return NotImplemented

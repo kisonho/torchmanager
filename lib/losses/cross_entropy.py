@@ -1,13 +1,13 @@
 from torchmanager_core import functional as F, torch
-from torchmanager_core.typing import Any
+from torchmanager_core.typing import Any, Optional
 
 from .loss import Loss
 
 class CrossEntropy(Loss):
     """The cross entropy loss"""
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args, target: Optional[str] = None, **kwargs) -> None:
         loss_fn = torch.nn.CrossEntropyLoss(*args, **kwargs)
-        super().__init__(loss_fn)
+        super().__init__(loss_fn, target=target)
 
     def forward(self, input: Any, target: Any) -> torch.Tensor:
         assert self._metric_fn is not None, "[Loss Error]: Crossentropy loss has not been initialized."
@@ -20,7 +20,7 @@ class FocalCrossEntropy(Loss):
     _calculate_average: bool
     _ignore_index: int
 
-    def __init__(self, alpha: float = 1, gamma: float = 0, calculate_average: bool = True, ignore_index: int = 255):
+    def __init__(self, alpha: float = 1, gamma: float = 0, calculate_average: bool = True, ignore_index: int = 255, target: Optional[str] = None):
         """
         Constructor
 
@@ -29,7 +29,7 @@ class FocalCrossEntropy(Loss):
             - gamma: A `float` of gamma in focal cross entropy
             - calculate_average: A `bool` flag of if calculate average for the focal loss
         """
-        super().__init__()
+        super().__init__(target=target)
         self._alpha = alpha
         self._gamma = gamma
         self._ignore_index = ignore_index
