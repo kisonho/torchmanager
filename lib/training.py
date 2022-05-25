@@ -60,7 +60,7 @@ class Manager(_Manager, Generic[Module]):
         # run deprecated method
         summary = self.train(dataset, device=device, use_multi_gpus=use_multi_gpus, show_verbose=show_verbose, callbacks_list=callbacks_list)
         if summary != NotImplemented:
-            view.warnings.warn("[Deprecated Warning]: Method `train` will be set to private in a future version. Override `_train` instead.", PendingDeprecationWarning)
+            view.warnings.warn("[Deprecated Warning]: Method `train` will be set to protected in v1.1.0 and will be removed in v1.2.0, override `_train` instead.", PendingDeprecationWarning)
             return summary
 
         # initialize progress bar

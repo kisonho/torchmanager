@@ -1,3 +1,4 @@
+import warnings
 import torch
 from torchmanager_core.typing import Optional
 
@@ -18,7 +19,7 @@ class InstanceIoU(ConfusionMetrics):
         iou = torch.diag(hist) / (hist.sum(1) + hist.sum(0) - torch.diag(hist))
         return iou.nanmean()
 
-class MIoU(Metric):
+class MeanIoU(Metric):
     """
     The mIoU metric for segmentation
     
@@ -46,3 +47,8 @@ class MIoU(Metric):
         iou = (intersection + self._smooth) / (union + self._smooth)
         thresholded = torch.clamp(20 * (iou - 0.5), 0, 10).ceil() / 10
         return thresholded.mean()
+
+class MIoU(InstanceIoU):
+    def __init__(self, num_classes: int, target: Optional[str] = None) -> None:
+        super().__init__(num_classes, target)
+        warnings.warn("The class `MIoU` will be renamed to `InstanceIoU` in v1.1.0, and will be removed in v1.2.0.")

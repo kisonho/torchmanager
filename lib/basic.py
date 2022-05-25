@@ -72,7 +72,7 @@ class BaseManager(Generic[Module]):
             loss_fn = MultiLosses([l for l in loss_fn_mapping.values()])
         elif loss_fn is not None and not isinstance(loss_fn, Loss):
             loss_fn = Loss(loss_fn)
-            view.warnings.warn("[Deprecated Warning]: parsing `loss_fn` as a function was deprecated from v0.9.3 and will no longer be available from v1.1.0, use losses.Loss object instead.", DeprecationWarning)
+            view.warnings.warn("[Deprecated Warning]: parsing `loss_fn` as a function was deprecated from v1.0.0 and will no longer be available from v1.1.0, use losses.Loss object instead.", DeprecationWarning)
         self.loss_fn = loss_fn
 
         # initialize metrics
@@ -80,7 +80,7 @@ class BaseManager(Generic[Module]):
             if isinstance(fn, Metric):
                 self.metric_fns[name] = fn
             else:
-                view.warnings.warn("[Deprecated Warning]: parsing a metric in `metrics` as a function was deprecated from v0.9.3 and will no longer be available from v1.1.0, use `metrics.Metric` object instead.", DeprecationWarning)
+                view.warnings.warn("[Deprecated Warning]: parsing a metric in `metrics` as a function was deprecated from v1.0.0 and will no longer be available from v1.1.0, use `metrics.Metric` object instead.", DeprecationWarning)
                 self.metric_fns[name] = Metric(fn)
 
         # initialize optimizer
