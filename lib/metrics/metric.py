@@ -1,4 +1,3 @@
-from typing import Dict
 from torchmanager_core import torch, view
 from torchmanager_core.typing import Any, Callable, List, Optional, Union
 
