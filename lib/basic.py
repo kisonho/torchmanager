@@ -20,7 +20,6 @@ class BaseManager(Generic[Module]):
         - optimizer: A `torch.optim.Optimizer` to train the model
     """
     # properties
-    __compiled: bool
     loss_fn: Optional[Loss]
     metric_fns: Dict[str, Metric]
     model: Module
@@ -28,7 +27,7 @@ class BaseManager(Generic[Module]):
 
     @property
     def compiled(self) -> bool:
-        return self.__compiled
+        return True if self.loss_fn is not None and self.optimizer is not None else False
     
     def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]] = None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]] = {}) -> None:
         """
@@ -46,12 +45,6 @@ class BaseManager(Generic[Module]):
 
         # compile
         self._compile(optimizer, loss_fn, metrics)
-
-        # check compiled
-        if self.loss_fn is not None and self.optimizer is not None:
-            self.__compiled = True
-        else:
-            self.__compiled = False
 
     def _compile(self, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]] = None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]] = {}) -> None:
         """
@@ -96,7 +89,6 @@ class BaseManager(Generic[Module]):
             - optimizer: A `torch.optim.Optimizer` to train the model
         """
         self._compile(optimizer, loss_fn, metrics)
-        self.__compiled = True
 
     @classmethod
     def from_checkpoint(cls: Type[BaseManager[torch.nn.Module]], ckpt: Checkpoint) -> BaseManager[torch.nn.Module]:
