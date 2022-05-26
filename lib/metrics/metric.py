@@ -61,7 +61,7 @@ class Metric(torch.nn.Module):
         # run deprecated method
         m = self.call(input, target)
         if m != NotImplemented:
-            view.warnings.warn("[Deprecated Warning]: Method `call` was deprecated since version v1.0.0, the public method will be removed from 1.1.0. Override `forward` instead.", DeprecationWarning)
+            view.warnings.warn("[Deprecation Warning]: Method `call` was deprecated since version v1.0.0, the public method will be removed from 1.1.0. Override `forward` instead.", DeprecationWarning)
             return m
 
         # main method
