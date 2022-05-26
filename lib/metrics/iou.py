@@ -51,4 +51,4 @@ class MeanIoU(Metric):
 class MIoU(InstanceIoU):
     def __init__(self, num_classes: int, target: Optional[str] = None) -> None:
         super().__init__(num_classes, target)
-        warnings.warn("The class `MIoU` will be renamed to `InstanceIoU` in v1.1.0, and will be removed in v1.2.0.")
+        warnings.warn("[Deprecation Warning]: The class `MIoU` will be renamed to `InstanceIoU` in v1.1.0, and will be removed in v1.2.0.")
