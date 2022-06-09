@@ -5,8 +5,6 @@ Summary: PyTorch training manager (v1.0.1)
 Home-page: https://github.com/kisonho/torchmanager.git
 Author: Kison Ho
 Author-email: unfit-gothic.0q@icloud.com
-License: UNKNOWN
-Platform: UNKNOWN
 Requires-Python: >=3.8
 Description-Content-Type: text/markdown
 License-File: LICENSE
@@ -83,4 +81,3 @@ class CustomManager(Manager):
 	def train_step(x_train: torch.Tensor, y_train: torch.Tensor) -> Dict[str, float]:
 		...
 ```
-
