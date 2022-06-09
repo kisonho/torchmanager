@@ -4,6 +4,7 @@ from torchmanager_core.view import logging
 from torchmanager_core.view.verbose import _VerboseControllable
 
 class LrScheduleFreq(Enum):
+    """The frequency enum of learning rate schedule"""
     EPOCH = 0
     BATCH = 1
 

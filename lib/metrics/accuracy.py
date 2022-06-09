@@ -29,28 +29,12 @@ class SparseCategoricalAccuracy(Accuracy):
         self.dim = dim
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        """
-        calculate the accuracy
-        
-        - Parameters:
-            - input: The prediction, or `y_pred`, in `Any` kind
-            - target: The label, or `y_true`, in `Any` kind
-        - Returns: The metric in `torch.Tensor`
-        """
         input = input.argmax(dim=self.dim)
         return super().forward(input, target)
 
 class CategoricalAccuracy(SparseCategoricalAccuracy):
     """The accuracy metric for categorical labels"""
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        """
-        calculate the accuracy
-        
-        - Parameters:
-            - input: The prediction, or `y_pred`, in `Any` kind
-            - target: The onehot label, or `y_true`, in `Any` kind
-        - Returns: The metric in `torch.Tensor`
-        """
         target = target.argmax(dim=self.dim)
         return super().forward(input, target)
 

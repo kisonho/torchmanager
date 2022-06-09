@@ -214,11 +214,6 @@ class Manager(_Manager, Generic[Module]):
 
     @classmethod
     def from_checkpoint(cls: Type[Manager[torch.nn.Module]], *args, **kwargs) -> Manager[torch.nn.Module]:
-        """
-        Method to load a manager from a saved `Checkpoint`. The manager will not be compiled with a loss function and its metrics.
-
-        - Returns: A loaded `Manager`
-        """
         # load checkpoint
         ckpt = Checkpoint.from_saved(*args, **kwargs)
         manager: Manager = super().from_checkpoint(ckpt) # type: ignore
@@ -261,11 +256,6 @@ class Manager(_Manager, Generic[Module]):
         return summary
 
     def to_checkpoint(self) -> Checkpoint[Module]:
-        """
-        Convert the current manager to a checkpoint
-        
-        - Returns: A `Checkpoint` with its model in `Module` type
-        """
         ckpt = super().to_checkpoint()
         ckpt.last_epoch = self.current_epoch
         return ckpt

@@ -3,9 +3,7 @@ from __future__ import annotations
 from torchmanager_core.typing import Dict, Optional
 
 class Callback:
-    """
-    An empty basic training callback
-    """
+    """An empty basic training callback"""
     def on_batch_end(self, batch: int, summary: Dict[str, float]={}) -> None:
         """
         The callback when batch ends

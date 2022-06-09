@@ -58,6 +58,8 @@ class MultiLosses(Loss):
 class MultiOutputsLosses(Loss):
     """
     A loss with multiple losses for multiple outputs
+
+    - [Pending Depreciation Warning]: `MultiOutputsLosses` will be deprecated in v1.1.0, use `MultiLosses` along with `target` parameter for each loss instead.
     
     - Properties:
         - losses: A `dict` of loss metrics in `Metric`

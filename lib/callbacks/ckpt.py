@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from torchmanager_core import os, sys, view
-from torchmanager_core.typing import Any, Dict, Enum, Generic, Optional, TypeVar, Union
+from torchmanager_core.typing import Any, Dict, Enum, Generic, Optional, TypeVar
 
-from ..train.checkpoint import Checkpoint as Ckpt
+from ..train import Checkpoint as Ckpt
 from .callback import Callback
 
 T = TypeVar('T')

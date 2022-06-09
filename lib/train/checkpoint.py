@@ -16,7 +16,6 @@ class Checkpoint(Generic[T]):
         - optimizer: A `torch.nn.Optimizer` to be saved
         - save_weights_only: A `bool` flag of if only save state_dict of model
     '''
-    # properties
     last_epoch: int
     loss_fn: Optional[torch.nn.Module]
     metrics: Dict[str, torch.nn.Module]
@@ -74,6 +73,13 @@ class Checkpoint(Generic[T]):
         return cls(**ckpt)
 
     def save(self, epoch: int, ckpt_path: str) -> None:
+        """
+        Saves current checkpoint
+
+        - Parameters:
+            - epoch: The `int` index of current epoch to save
+            - ckpt_path: The `str` of checkpoint path to save
+        """
         self.last_epoch = epoch
         ckpt = self.__dict__
         if self.save_weights_only is True:

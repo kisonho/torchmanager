@@ -5,4 +5,5 @@ from . import callbacks, core, losses, metrics, train
 from .testing import Manager as TestingManager
 from .training import Manager
 
-version = "1.0.4"
+TrainingManager = Manager
+version = "1.0.5b1"

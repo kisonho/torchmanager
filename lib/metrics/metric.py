@@ -9,10 +9,9 @@ class Metric(torch.nn.Module):
     * Metric tensor is released from memory as soon as the result returned
     * [Deprecation Warning]: Method `call` is deprecated from v1.0.0 and will be removed from v1.1.0, override the `forward` method instead."
 
-    - Parameters:
+    - Properties:
         - result: The `torch.Tensor` of average metric results
     """
-    # properties
     _metric_fn: Optional[Callable[[Any, Any], torch.Tensor]]
     _results: List[Union[torch.Tensor, float]]
     _target: Optional[str]
