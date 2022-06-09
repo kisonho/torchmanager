@@ -1,5 +1,6 @@
 from torchmanager_core import torch
 from torchmanager_core.typing import Any, Callable, Dict, List, Optional
+from torchmanager_core.view import warnings
 
 from ..metrics import Metric
 
@@ -70,6 +71,7 @@ class MultiOutputsLosses(Loss):
     def __init__(self, loss_fns: Dict[str, Loss]) -> None:
         super().__init__()
         self.__losses = torch.nn.ModuleDict(loss_fns)
+        warnings.warn("[Pending Depreciation Warning]: `MultiOutputsLosses` will be deprecated in v1.1.0, use `MultiLosses` along with `target` parameter for each loss instead.", PendingDeprecationWarning)
 
     def forward(self, input: Dict[str, torch.Tensor], target: Dict[str, torch.Tensor]) -> torch.Tensor:
         # initilaize

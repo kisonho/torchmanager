@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Iterable
 
 from torchmanager_core import torch, view
-from torchmanager_core.typing import Any, Callable, Dict, Generic, Module, Optional, Tuple, Type, Union
+from torchmanager_core.typing import Any, Callable, Dict, Generic, Module, Optional, SizedIterable, Tuple, Type, Union
 
 from .losses import Loss, MultiLosses, MultiOutputsLosses
 from .metrics import Metric
@@ -116,7 +116,7 @@ class BaseManager(Generic[Module]):
         return ckpt
 
 class DataManager:
-    def unpack_data(self, data: Any) -> Tuple[Any, Any]:
+    def unpack_data(self, data: SizedIterable[Any]) -> Tuple[Any, Any]:
         """
         Unpacks data to input and target
         
@@ -124,6 +124,6 @@ class DataManager:
             - data: `Any` kind of data object
         - Returns: A `tuple` of `Any` kind of input and `Any` kind of target
         """
-        if len(data) == 2 and isinstance(data, Iterable):
+        if len(data) == 2:
             return tuple(data)
         else: return NotImplemented

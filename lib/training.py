@@ -47,9 +47,11 @@ class Manager(_Manager, Generic[Module]):
 
         - Parameters:
             - dataset: A `SizedIterable` training dataset
+            - iterations: An optional `int` of total training iterations, must be smaller than the size of dataset
             - device: A `torch.device` where the data is moved to, should be same as the model
             - use_multi_gpus: A `bool` flag of if using multi gpus
             - show_verbose: A `bool` flag of if showing progress bar
+            - verbose_type: A `view.VerboseType` that controls the display of verbose
             - callbacks_list: A `list` of callbacks in `Callback`
         - Returns: A summary of `dict` with keys as `str` and values as `float`
         """
@@ -95,7 +97,7 @@ class Manager(_Manager, Generic[Module]):
                     progress_summary = {name: s for name, s in summary.items() if "loss" not in name}
                 elif verbose_type == view.VerboseType.ALL:
                     progress_summary = summary
-                else: progress_summary = None
+                else: raise TypeError(f"[Runtime Error]: Verbose type {verbose_type} is not supported.")
 
                 # update progress bar
                 progress_bar.set_postfix(progress_summary)
@@ -149,7 +151,7 @@ class Manager(_Manager, Generic[Module]):
             assert initial_epoch >= 0, f"[Training Error]: The initial_epoch must be a non_negative integer, got {initial_epoch}."
             assert initial_epoch < epochs, f"[Training Error]: The initial_epoch must be smaller than total epochs, got epochs={epochs} but initial_epoch={initial_epoch}."
             self.current_epoch = initial_epoch
-        else: initial_epoch = 0
+        else: initial_epoch = self.current_epoch
 
         # initialize
         view.logging.basicConfig(level=view.logging.INFO, format="%(message)s")
@@ -168,11 +170,11 @@ class Manager(_Manager, Generic[Module]):
         devices.move_to_device([self.model, self.compiled_losses, self.metric_fns], device)
 
         # epoch loop
-        for epoch in range(self.current_epoch, epochs):
+        for self.current_epoch in range(initial_epoch, epochs):
             # initialize epoch
-            logger.info(f"Training epoch {epoch + 1}/{epochs}")
+            logger.info(f"Training epoch {self.current_epoch + 1}/{epochs}")
             self.model.train()
-            for c in callbacks_list: c.on_epoch_start(epoch)
+            for c in callbacks_list: c.on_epoch_start(self.current_epoch)
             if iterations is not None: batch_iterations = iterations if len(training_dataset) < iterations else iterations
             else: batch_iterations = None
 
@@ -185,8 +187,7 @@ class Manager(_Manager, Generic[Module]):
 
             # on epoch end
             for c in callbacks_list:
-                c.on_epoch_end(epoch, summary=summary, val_summary=val_summary)
-            self.current_epoch += 1
+                c.on_epoch_end(self.current_epoch, summary=summary, val_summary=val_summary)
 
             # step lr scheduler
             if lr_scheduler is not None:
@@ -194,7 +195,7 @@ class Manager(_Manager, Generic[Module]):
                 summary.update(lr_summary)
 
             # print summary info
-            val_message = f"Epoch {epoch + 1}/{epochs}: "
+            val_message = f"Epoch {self.current_epoch + 1}/{epochs}: "
             summary.update({f"val_{name}": value for name, value in val_summary.items()})
             for i, (name, value) in enumerate(summary.items()):
                 if i > 0: val_message += ", "
