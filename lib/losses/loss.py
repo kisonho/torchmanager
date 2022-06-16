@@ -16,8 +16,8 @@ class Loss(Metric):
         Constructor
 
         - Parameters:
-            - loss_fn: A `Callable` function that accepts input or `y_pred` in `Any` kind and target or `y_true` in `Any` kind as inputs and gives a loss in `torch.Tensor`
-            - target: A `str` of target name in `input` and `target` during direct calling
+            - loss_fn: An optional `Callable` function that accepts input or `y_pred` in `Any` kind and target or `y_true` in `Any` kind as inputs and gives a loss in `torch.Tensor`
+            - target: An optional `str` of target name in `input` and `target` during direct calling
         """
         super().__init__(loss_fn, target=target)
 
