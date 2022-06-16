@@ -62,7 +62,7 @@ class LastCheckpoint(_Checkpoint, Generic[T]):
 class Checkpoint(LastCheckpoint, Generic[T]):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        view.warnings.warn("[Deprecation Warning]: Checkpoint callback has been renamed to LastCheckpoint and was deprecated from v 1.0.0, it will be removed at v1.1.0.", DeprecationWarning)
+        view.warnings.warn("[Deprecation Warning]: Checkpoint callback has been renamed to LastCheckpoint and was deprecated from v 1.0.0, and will be removed at v1.1.0.", DeprecationWarning)
 
 class MonitorType(Enum):
     """The enum of monitor types"""

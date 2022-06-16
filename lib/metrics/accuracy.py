@@ -1,5 +1,6 @@
 from torchmanager_core import torch
 from torchmanager_core.typing import Optional
+from torchmanager_core.view import warnings
 
 from .metric import Metric
 
@@ -11,11 +12,23 @@ class Accuracy(Metric):
 class SparseCategoricalAccuracy(Accuracy):
     """
     The accuracy metric for normal integer labels
+
+    * [Pending Deprecation Warning]: The property `dim` will be deprecated from v1.1.0, and no longer be available in v1.2.0
     
     - Properties:
         - dim: An `int` of the probability dim index for the input
     """
-    dim: int
+    _dim: int
+
+    @property
+    def dim(self) -> int:
+        warnings.warn("[Pending Deprecation Warning]: The property `dim` will be deprecated from v1.1.0, and no longer be available in v1.2.0.", PendingDeprecationWarning)
+        return self._dim
+
+    @dim.setter
+    def dim(self, dim: int) -> None:
+        warnings.warn("[Pending Deprecation Warning]: The property `dim` will be deprecated from v1.1.0, and no longer be available in v1.2.0.", PendingDeprecationWarning)
+        self._dim = dim
 
     def __init__(self, dim: int = -1, target: Optional[str] = None) -> None:
         """
@@ -26,16 +39,16 @@ class SparseCategoricalAccuracy(Accuracy):
             - target: A `str` of target name in `input` and `target` during direct calling
         """
         super().__init__(target=target)
-        self.dim = dim
+        self._dim = dim
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        input = input.argmax(dim=self.dim)
+        input = input.argmax(dim=self._dim)
         return super().forward(input, target)
 
 class CategoricalAccuracy(SparseCategoricalAccuracy):
     """The accuracy metric for categorical labels"""
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        target = target.argmax(dim=self.dim)
+        target = target.argmax(dim=self._dim)
         return super().forward(input, target)
 
 class MAE(Metric):

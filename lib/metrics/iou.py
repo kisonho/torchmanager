@@ -25,7 +25,7 @@ class MeanIoU(Metric):
     
     * [Pending Deprecation Warning]: The old `MIoU` metric in v1.0.3 calculates iIoU and has been renamed to `InstanceIoU` in v1.1.0, and will be removed in v1.2.0.
     """
-    __dim: int
+    _dim: int
     _smooth: float
 
     def __init__(self, dim: int = 1, smooth: float = 1e-4, target: Optional[str] = None) -> None:
@@ -37,11 +37,11 @@ class MeanIoU(Metric):
             - smooth: A `float` of smooth value to avoid zero devision
         """
         super().__init__(target=target)
-        self.__dim = dim
+        self._dim = dim
         self._smooth = smooth
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        input = input.argmax(self.__dim)
+        input = input.argmax(self._dim)
         intersection = (input & target).float().sum()
         union = (input | target).float().sum()
         iou = (intersection + self._smooth) / (union + self._smooth)
