@@ -116,7 +116,7 @@ class BaseManager(Generic[Module]):
         return ckpt
 
 class DataManager:
-    def unpack_data(self, data: SizedIterable[Any]) -> Tuple[Any, Any]:
+    def unpack_data(self, data: SizedIterable) -> Tuple[Any, Any]:
         """
         Unpacks data to input and target
         
