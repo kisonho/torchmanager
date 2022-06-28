@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import Iterable
 
 from torchmanager_core import torch, view
 from torchmanager_core.typing import Any, Callable, Dict, Generic, Module, Optional, SizedIterable, Tuple, Type, Union
@@ -28,7 +27,7 @@ class BaseManager(Generic[Module]):
     @property
     def compiled(self) -> bool:
         return True if self.loss_fn is not None and self.optimizer is not None else False
-    
+
     def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]] = None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]] = {}) -> None:
         """
         Constructor
@@ -117,7 +116,7 @@ class BaseManager(Generic[Module]):
 
 class DataManager:
     """The manager to load data during training or testing"""
-    def unpack_data(self, data: SizedIterable[Any]) -> Tuple[Any, Any]:
+    def unpack_data(self, data: SizedIterable) -> Tuple[Any, Any]:
         """
         Unpacks data to input and target
         

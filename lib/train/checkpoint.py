@@ -28,7 +28,7 @@ class Checkpoint(Generic[T]):
         Constructor
 
         - Parameters:
-            - model: A target `torch.nn.Module`
+            - model: Any type of model to be saved
             - epoch: An `int` of epoch index
             - optimizer: An optional `torch.optim.Optimizer` to be recorded
             - loss_fn: An optional `torch.nn.Module` for loss function to be recorded
