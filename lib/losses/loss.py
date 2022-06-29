@@ -1,3 +1,4 @@
+from torch import Tensor
 from torchmanager_core import torch
 from torchmanager_core.typing import Any, Callable, Dict, List, Optional
 from torchmanager_core.view import warnings
@@ -45,15 +46,14 @@ class MultiLosses(Loss):
 
     def forward(self, input: Any, target: Any) -> torch.Tensor:
         # initilaize
-        loss = torch.tensor(0, dtype=torch.float)
+        loss = 0
 
         # get all losses
         for fn in self.losses:
             assert isinstance(fn, Loss), f"[Runtime Error]: Function {fn} is not a Loss object."
             l = fn(input, target)
-            loss = loss.to(l.device)
             loss += l
-        return loss
+        return loss if isinstance(loss, torch.Tensor) else torch.tensor(loss, dtype=torch.float)
 
 class MultiOutputsLosses(Loss):
     """
@@ -77,15 +77,14 @@ class MultiOutputsLosses(Loss):
 
     def forward(self, input: Dict[str, torch.Tensor], target: Dict[str, torch.Tensor]) -> torch.Tensor:
         # initilaize
-        loss = torch.tensor(0, dtype=torch.float)
+        loss = 0
 
         # loop for losses
         for k, fn in self.losses.items():
             assert isinstance(fn, Loss), f"[Runtime Error]: Function {fn} is not a Loss object."
             l = fn(input[k], target[k])
-            loss = loss.to(l.device)
             loss += l
-        return loss
+        return loss if isinstance(loss, torch.Tensor) else torch.tensor(loss, dtype=torch.float)
 
 def loss(fn: Callable[[Any, Any], torch.Tensor]) -> Loss:
     """

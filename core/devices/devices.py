@@ -2,7 +2,7 @@ from typing import Any, Iterable, Optional, Tuple, Union
 
 import torch, warnings
 
-from .protocols import _DeviceMovable
+from .protocols import DeviceMovable
 
 CPU = torch.device('cpu')
 GPU = torch.device('cuda')
@@ -42,14 +42,14 @@ def find(specified: Optional[torch.device] = None) -> Tuple[torch.device, torch.
 
 def move_to_device(target: Any, device: torch.device) -> Any:
     """
-    Move a target variable to device
+    Recurrently move a target variable to device if elements perform to `DeviceMovable` protocol
     
     - Parameters:
         - target: `Any` type of target
         - device: A `torch.device` of target device
     - Returns: The same type of target but moved to target device
     """
-    if isinstance(target, _DeviceMovable):
+    if isinstance(target, DeviceMovable):
         target = target.to(device)
     elif isinstance(target, dict):
         target = {k: move_to_device(t, device) for k, t in target.items()}

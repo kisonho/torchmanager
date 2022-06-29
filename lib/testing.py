@@ -1,11 +1,12 @@
 from torchmanager_core import devices, torch, view
 from torchmanager_core.typing import Any, Dict, Generic, Module, Optional, SizedIterable
+from torchmanager_core.view import warnings
 
 from .losses import Loss
 from .metrics import Metric
 from .basic import DataManager, BaseManager
 
-class Manager(DataManager, BaseManager, Generic[Module]):
+class Manager(BaseManager, DataManager, Generic[Module]):
     """
     A testing manager, only used for testing
 
@@ -20,6 +21,7 @@ class Manager(DataManager, BaseManager, Generic[Module]):
     @property
     def compiled_losses(self) -> Loss:
         assert self.loss_fn is not None, "[Training Error]: loss_fn is not given, compiles the manager with loss_fn first."
+        warnings.warn("[Pending Deprecation Warning]: The compiled_losses property in a `TestingManager` will be deprecated from v1.1.0 and will be removed from v1.2.0.", PendingDeprecationWarning)
         return self.loss_fn
 
     @property
@@ -55,8 +57,8 @@ class Manager(DataManager, BaseManager, Generic[Module]):
             else: raw_model = None
 
             if not isinstance(self.loss_fn, torch.nn.parallel.DataParallel) and self.loss_fn is not None:
-                raw_loss_fn = self.compiled_losses
-                paralleled_loss_fn = torch.nn.parallel.DataParallel(self.compiled_losses)
+                raw_loss_fn = self.loss_fn
+                paralleled_loss_fn = torch.nn.parallel.DataParallel(self.loss_fn)
                 self.loss_fn = Loss(paralleled_loss_fn)
             else: raw_loss_fn = None
         else:
@@ -66,7 +68,7 @@ class Manager(DataManager, BaseManager, Generic[Module]):
         # set module status
         try:
             self.model.eval()
-            devices.move_to_device([self.model, self.loss_fn, self.metric_fns], device)
+            self.to(device)
         except: pass
 
         # initialize progress bar
@@ -103,7 +105,7 @@ class Manager(DataManager, BaseManager, Generic[Module]):
                 except Exception as metric_error:
                     runtime_error = RuntimeError(f"Cannot fetrch metric '{name}'.")
                     raise runtime_error from metric_error
-            if self.loss_fn is not None: summary["loss"] = float(self.compiled_losses.result.detach())
+            if self.loss_fn is not None: summary["loss"] = float(self.loss_fn.result.detach())
 
         # reset model and loss
         if raw_model is not None: self.model = raw_model.to(cpu)

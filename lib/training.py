@@ -29,6 +29,11 @@ class Manager(_Manager, Generic[Module]):
     def current_epoch(self, e: int) -> None:
         assert e >= 0, f"[Training Error]: The epoch index must be a non_negative integer, got {e}."
         self.__current_epoch = e
+    
+    @property
+    def compiled_losses(self) -> Loss:
+        assert self.loss_fn is not None, "[Training Error]: loss_fn is not given, compiles the manager with loss_fn first."
+        return self.loss_fn
 
     @property
     def compiled_optimizer(self) -> torch.optim.Optimizer:
@@ -59,7 +64,7 @@ class Manager(_Manager, Generic[Module]):
 
         # run deprecated method
         summary = self.train(dataset, device=device, use_multi_gpus=use_multi_gpus, show_verbose=show_verbose, callbacks_list=callbacks_list)
-        if summary != NotImplemented:
+        if summary is not NotImplemented:
             view.warnings.warn("[Deprecation Warning]: Method `train` will be set to protected in v1.1.0 and will be removed in v1.2.0, override `_train` instead.", PendingDeprecationWarning)
             return summary
 
@@ -112,7 +117,7 @@ class Manager(_Manager, Generic[Module]):
         # summarize
         summary = {name: float(fn.result.detach()) for name, fn in self.metric_fns.items() if not name.startswith("val_")}
         summary["loss"] = float(self.compiled_losses.result.detach())
-        if torch.cuda.is_available(): torch.cuda.empty_cache()
+        devices.empty_cache()
         return summary
 
     def fit(self, training_dataset: Any, epochs: Optional[int] = None, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None, val_dataset: Optional[Any] = None, device: Optional[torch.device] = None, use_multi_gpus: bool = False, callbacks_list: List[Callback] = [], **kwargs) -> torch.nn.Module:

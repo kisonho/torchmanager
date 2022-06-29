@@ -1,5 +1,5 @@
-from torchmanager_core import torch, view
-from torchmanager_core.typing import Any, Callable, Dict, Generic, Module, Optional, SizedIterable, Tuple, Union
+from torchmanager_core import devices, torch, view
+from torchmanager_core.typing import Any, Callable, Dict, Generic, Module, Optional, OrderedDict, SizedIterable, Tuple, Union
 
 from .losses import Loss, MultiLosses, MultiOutputsLosses
 from .metrics import Metric
@@ -8,6 +8,8 @@ from .train import Checkpoint
 class BaseManager(Generic[Module]):
     """
     The basic manager
+
+    * Implements: `torchmanager_core.devices.DeviceMovable`, `.train.StateDictLoadable`
 
     - Properties:
         - compiled: A `bool` flag of if the manager has been compiled
@@ -106,6 +108,49 @@ class BaseManager(Generic[Module]):
         elif isinstance(ckpt.model, BaseManager):
             return ckpt.model
         else: raise TypeError(f"[Ckpt Error]: The saved checkpoint contains a model with type of {type(ckpt.model)} that cannot be recoverred to a `Manager`.")
+
+    def load_state_dict(self, state_dict: OrderedDict[str, Any]) -> None:
+        # load state dict elements
+        assert "model" in state_dict, "[Load Error]: The given dictionary does not have 'model' element."
+        assert "optimizer" in state_dict, "[Load Error]: The given dictionary does not have 'optimizer' element."
+        assert "loss_fn" in state_dict, "[Load Error]: The given dictionary does not have 'loss_fn' element."
+        assert "metrics" in state_dict, "[Load Error]: The given dictionary does not have 'metrics' element."
+        model: OrderedDict[str, Any] = state_dict["model"]
+        optimizer: Optional[Dict[str, Any]] = state_dict["optimizer"]
+        loss_fn: Optional[OrderedDict[str, Any]] = state_dict["loss_fn"]
+        metrics: Dict[str, OrderedDict[str, Any]] = state_dict["metrics"]
+        
+        # load state dict to current model, optimizer, loss_fn, and metrics
+        self.model.load_state_dict(model) # type: ignore
+        if optimizer is not None: 
+            assert self.optimizer is not None, "[Load Error]: The manager has not been compiled with 'optimizer' given."
+            self.optimizer.load_state_dict(optimizer)
+        if loss_fn is not None:
+            assert self.loss_fn is not None, "[Load Error]: The manager has not been compiled with 'loss_fn' given."
+            self.loss_fn.load_state_dict(loss_fn)
+        assert metrics is not None, "[Load Error]: The given dictionary must have 'metrics' element not to be None."
+        for k, m in metrics.items():
+            assert k in self.metric_fns, f"[Load Error]: The manager does not have a metric named '{k}'."
+            self.metric_fns[k].load_state_dict(m)
+
+    def state_dict(self) -> OrderedDict[str, Any]:
+        return OrderedDict({
+            "model": self.model.state_dict(),
+            "optimizer": self.optimizer.state_dict() if self.optimizer is not None else None,
+            "loss_fn": self.loss_fn.state_dict() if self.loss_fn is not None else None,
+            "metrics": {k: m.state_dict() for k, m in self.metric_fns.items()}
+        })
+
+    def to(self, device: torch.device) -> Any:
+        """
+        Move the elements in the manager to a target device
+
+        - Parameters:
+            - device: A target `torch.device`
+        """
+        self.model = self.model.to(device)
+        if self.loss_fn is not None: self.loss_fn = self.loss_fn.to(device)
+        for k, m in self.metric_fns.items(): self.metric_fns[k] = m.to(device)
 
     def to_checkpoint(self) -> Checkpoint[Module]:
         """
