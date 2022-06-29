@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from torchmanager_core import tensorboard, torch
 from torchmanager_core.typing import Dict, Optional, Tuple
 

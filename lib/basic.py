@@ -1,7 +1,5 @@
-from __future__ import annotations
-
 from torchmanager_core import torch, view
-from torchmanager_core.typing import Any, Callable, Dict, Generic, Module, Optional, SizedIterable, Tuple, Type, Union
+from torchmanager_core.typing import Any, Callable, Dict, Generic, Module, Optional, SizedIterable, Tuple, Union
 
 from .losses import Loss, MultiLosses, MultiOutputsLosses
 from .metrics import Metric
@@ -90,12 +88,17 @@ class BaseManager(Generic[Module]):
         self._compile(optimizer, loss_fn, metrics)
 
     @classmethod
-    def from_checkpoint(cls: Type[BaseManager[torch.nn.Module]], ckpt: Checkpoint) -> BaseManager[torch.nn.Module]:
+    def from_checkpoint(cls, ckpt: Union[Checkpoint[Any], str]):
         """
         Method to load a manager from a saved `Checkpoint`. The manager will not be compiled with a loss function and its metrics.
 
+        - Parameters:
+            - ckpt: Either a `Checkpoint` of `Any` object or a `str` of checkpoint path
         - Returns: A loaded `Manager`
         """
+        # load checkpoint
+        if not isinstance(ckpt, Checkpoint): ckpt = Checkpoint.from_saved(ckpt)
+
         # recover model to manager
         if isinstance(ckpt.model, torch.nn.Module):
             manager = cls(ckpt.model, ckpt.optimizer, loss_fn=ckpt.loss_fn, metrics=ckpt.metrics)

@@ -1,7 +1,5 @@
-from __future__ import annotations
-
 from torchmanager_core import devices, math, torch, view
-from torchmanager_core.typing import Any, Callable, Dict, Generic, List, Module, Optional, SizedIterable, Type, Union
+from torchmanager_core.typing import Any, Callable, Dict, Generic, List, Module, Optional, SizedIterable, Union
 
 from .callbacks import Callback
 from .losses import Loss
@@ -212,14 +210,6 @@ class Manager(_Manager, Generic[Module]):
         """The single training step for an epoch"""
         return NotImplemented
 
-    @classmethod
-    def from_checkpoint(cls: Type[Manager[torch.nn.Module]], *args, **kwargs) -> Manager[torch.nn.Module]:
-        # load checkpoint
-        ckpt = Checkpoint.from_saved(*args, **kwargs)
-        manager: Manager = super().from_checkpoint(ckpt) # type: ignore
-        manager.current_epoch = ckpt.last_epoch
-        return manager
-
     def train_step(self, x_train: Any, y_train: Any) -> Dict[str, float]:
         """
         A single training step
@@ -252,7 +242,6 @@ class Manager(_Manager, Generic[Module]):
             except Exception as metric_error:
                 runtime_error = RuntimeError(f"[Runtime Error]: Cannot fetch metric '{name}'.")
                 raise runtime_error from metric_error
-
         return summary
 
     def to_checkpoint(self) -> Checkpoint[Module]:

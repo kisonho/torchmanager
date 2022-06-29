@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from torchmanager_core.typing import Dict, Optional
 
 class Callback:

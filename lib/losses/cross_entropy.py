@@ -1,5 +1,5 @@
 from torchmanager_core import functional as F, torch
-from torchmanager_core.typing import Any, Dict, Optional, Union
+from torchmanager_core.typing import Any, Optional
 
 from .loss import Loss
 

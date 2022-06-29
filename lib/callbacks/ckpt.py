@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from torchmanager_core import os, sys, view
 from torchmanager_core.typing import Any, Dict, Enum, Generic, Optional, TypeVar
 

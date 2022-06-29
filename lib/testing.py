@@ -1,9 +1,6 @@
-from __future__ import annotations
-
 from torchmanager_core import devices, torch, view
-from torchmanager_core.typing import Any, Dict, Generic, Module, Optional, SizedIterable, Type
+from torchmanager_core.typing import Any, Dict, Generic, Module, Optional, SizedIterable
 
-from .train import Checkpoint
 from .losses import Loss
 from .metrics import Metric
 from .basic import DataManager, BaseManager
@@ -28,10 +25,6 @@ class Manager(DataManager, BaseManager, Generic[Module]):
     @property
     def compiled_metrics(self) -> Dict[str, Metric]:
         return {name: m for name, m in self.metric_fns.items() if "loss" not in name}
-    
-    @classmethod
-    def from_checkpoint(cls: Type[Manager[torch.nn.Module]], ckpt: Checkpoint) -> Manager[torch.nn.Module]:
-        return super().from_checkpoint(ckpt) # type: ignore
 
     def test(self, dataset: Any, device: Optional[torch.device] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
         """

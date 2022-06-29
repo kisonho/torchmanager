@@ -1,6 +1,5 @@
-from __future__ import annotations
 from torchmanager_core import devices, torch
-from torchmanager_core.typing import Any, Dict, Generic, Optional, OrderedDict, Type, TypeVar
+from torchmanager_core.typing import Any, Dict, Generic, Optional, OrderedDict, TypeVar
 
 T = TypeVar('T')
 
@@ -43,7 +42,7 @@ class Checkpoint(Generic[T]):
         self.save_weights_only = save_weights_only
 
     @classmethod
-    def from_saved(cls: Type[Checkpoint[Any]], ckpt_path: str, model: Optional[torch.nn.Module] = None) -> Checkpoint[Any]:
+    def from_saved(cls, ckpt_path: str, model: Optional[torch.nn.Module] = None):
         '''
         Load checkpoint from a saved checkpoint file
 
