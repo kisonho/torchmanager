@@ -1,4 +1,4 @@
-from torchmanager_core import torch, view
+from torchmanager_core import torch, view, _raise
 from torchmanager_core.typing import Any, Callable, List, Optional, Union
 
 class Metric(torch.nn.Module):
@@ -36,8 +36,8 @@ class Metric(torch.nn.Module):
     def __call__(self, input: Any, target: Any) -> torch.Tensor:
         # unpack input and target
         if self._target is not None:
-            assert isinstance(input, dict) and isinstance(target, dict), "[Metric Error]: Given input or target is not a valid dictionary."
-            assert self._target in input and self._target in target, f"[Metric Error]: Target {self._target} cannot be found not in input or target"
+            assert isinstance(input, dict) and isinstance(target, dict), _raise(TypeError("Given input or target is not a valid dictionary."))
+            assert self._target in input and self._target in target, _raise(TypeError(f"Target {self._target} cannot be found not in input or target"))
             input, target = input[self._target], target[self._target]
 
         # call
@@ -60,13 +60,13 @@ class Metric(torch.nn.Module):
         # run deprecated method
         m = self.call(input, target)
         if m != NotImplemented:
-            view.warnings.warn("[Deprecation Warning]: Method `call` was deprecated since version v1.0.0, the public method will be removed from 1.1.0. Override `forward` instead.", DeprecationWarning)
+            view.warnings.warn("Method `call` was deprecated since version v1.0.0, the public method will be removed from 1.1.0. Override `forward` instead.", DeprecationWarning)
             return m
 
         # main method
         if self._metric_fn is not None:
             return self._metric_fn(input, target)
-        else: raise NotImplementedError("[Metric Error]: metric_fn is not given.")
+        else: raise NotImplementedError("metric_fn is not given.")
     
     def reset(self) -> None:
         """Reset the current results list"""

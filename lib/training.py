@@ -1,4 +1,4 @@
-from torchmanager_core import devices, math, torch, view
+from torchmanager_core import devices, math, torch, view, _raise
 from torchmanager_core.typing import Any, Callable, Dict, Generic, List, Module, Optional, SizedIterable, Union
 
 from .callbacks import Callback
@@ -27,17 +27,17 @@ class Manager(_Manager, Generic[Module]):
 
     @current_epoch.setter
     def current_epoch(self, e: int) -> None:
-        assert e >= 0, f"[Training Error]: The epoch index must be a non_negative integer, got {e}."
-        self.__current_epoch = e
+        if e < 0: raise ValueError(f"The epoch index must be a non_negative integer, got {e}.")
+        else: self.__current_epoch = e
     
     @property
     def compiled_losses(self) -> Loss:
-        assert self.loss_fn is not None, "[Training Error]: loss_fn is not given, compiles the manager with loss_fn first."
+        assert self.loss_fn is not None, _raise(NotImplementedError("loss_fn is not given, compiles the manager with loss_fn first."))
         return self.loss_fn
 
     @property
     def compiled_optimizer(self) -> torch.optim.Optimizer:
-        assert self.optimizer is not None, "[Training Error]: optimizer is not given."
+        assert self.optimizer is not None, _raise(NotImplementedError("optimizer is not given."))
         return self.optimizer
 
     def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]] = None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]] = ...) -> None:
@@ -65,7 +65,7 @@ class Manager(_Manager, Generic[Module]):
         # run deprecated method
         summary = self.train(dataset, device=device, use_multi_gpus=use_multi_gpus, show_verbose=show_verbose, callbacks_list=callbacks_list)
         if summary is not NotImplemented:
-            view.warnings.warn("[Deprecation Warning]: Method `train` will be set to protected in v1.1.0 and will be removed in v1.2.0, override `_train` instead.", PendingDeprecationWarning)
+            view.warnings.warn("Method `train` will be set to protected in v1.1.0 and will be removed in v1.2.0, override `_train` instead.", PendingDeprecationWarning)
             return summary
 
         # initialize progress bar
@@ -138,21 +138,21 @@ class Manager(_Manager, Generic[Module]):
         - Returns: A trained `torch.nn.Module`
         """
         # arguments checking
-        assert self.compiled is True, "[Training Error]: Manager has not yet been compiled. Either loss_fn or optimizer, or both, are not given."
-        assert isinstance(training_dataset, SizedIterable), "[Runtime Error]: The training_dataset must be both Sized and Iterable."
+        assert self.compiled is True, _raise(ValueError("Manager has not yet been compiled. Either loss_fn or optimizer, or both, are not given."))
+        assert isinstance(training_dataset, SizedIterable), "The training_dataset must be both Sized and Iterable."
         if epochs is not None:
-            assert epochs > 0, f"[Training Error]: The epochs must be a positive integer, got {epochs}."
-            assert iterations is None, f"[Training Error]: The iterations must be given as `None` when epochs is given, got {iterations}."
+            assert epochs > 0, _raise(ValueError(f"The epochs must be a positive integer, got {epochs}."))
+            assert iterations is None, _raise(ValueError(f"The iterations must be given as `None` when epochs is given, got {iterations}."))
         else:
-            assert iterations is not None, f"[Training Error]: The iterations must be given if epochs is not given."
-            assert iterations > 0, f"[Training Error]: The iterations must be a positive integer, got {iterations}."
-            assert epochs is None, f"[Training Error]: The epochs must be given as `None` when iterations is given, got {epochs}."
+            assert iterations is not None, _raise(ValueError(f"The iterations must be given if epochs is not given."))
+            assert iterations > 0, _raise(ValueError(f"The iterations must be a positive integer, got {iterations}."))
+            assert epochs is None,_raise(ValueError( f"The epochs must be given as `None` when iterations is given, got {epochs}."))
             epochs = math.ceil(iterations / len(training_dataset))
 
         # initialize initial epoch
         if initial_epoch is not None: 
-            assert initial_epoch >= 0, f"[Training Error]: The initial_epoch must be a non_negative integer, got {initial_epoch}."
-            assert initial_epoch < epochs, f"[Training Error]: The initial_epoch must be smaller than total epochs, got epochs={epochs} but initial_epoch={initial_epoch}."
+            assert initial_epoch >= 0, _raise(ValueError(f"The initial_epoch must be a non_negative integer, got {initial_epoch}."))
+            assert initial_epoch < epochs, _raise(ValueError(f"The initial_epoch must be smaller than total epochs, got epochs={epochs} but initial_epoch={initial_epoch}."))
             self.current_epoch = initial_epoch
         else: initial_epoch = self.current_epoch
 

@@ -9,10 +9,6 @@ class CrossEntropy(Loss):
         loss_fn = torch.nn.CrossEntropyLoss(*args, **kwargs)
         super().__init__(loss_fn, target=target)
 
-    def forward(self, input: Any, target: Any) -> torch.Tensor:
-        assert self._metric_fn is not None, "[Loss Error]: Crossentropy loss has not been initialized."
-        return self._metric_fn(input, target)
-
 class Dice(Loss):
     """The dice loss"""
     _smooth: int

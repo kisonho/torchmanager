@@ -22,12 +22,12 @@ class SparseCategoricalAccuracy(Accuracy):
 
     @property
     def dim(self) -> int:
-        warnings.warn("[Pending Deprecation Warning]: The property `dim` will be deprecated from v1.1.0, and no longer be available in v1.2.0.", PendingDeprecationWarning)
+        warnings.warn("The property `dim` will be deprecated from v1.1.0, and no longer be available in v1.2.0.", PendingDeprecationWarning)
         return self._dim
 
     @dim.setter
     def dim(self, dim: int) -> None:
-        warnings.warn("[Pending Deprecation Warning]: The property `dim` will be deprecated from v1.1.0, and no longer be available in v1.2.0.", PendingDeprecationWarning)
+        warnings.warn("The property `dim` will be deprecated from v1.1.0, and no longer be available in v1.2.0.", PendingDeprecationWarning)
         self._dim = dim
 
     def __init__(self, dim: int = -1, target: Optional[str] = None) -> None:

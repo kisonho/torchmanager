@@ -1,4 +1,4 @@
-from torchmanager_core import devices, torch, view
+from torchmanager_core import devices, torch, view, _raise
 from torchmanager_core.typing import Any, Dict, Generic, Module, Optional, SizedIterable
 from torchmanager_core.view import warnings
 
@@ -20,8 +20,8 @@ class Manager(BaseManager, DataManager, Generic[Module]):
     
     @property
     def compiled_losses(self) -> Loss:
-        assert self.loss_fn is not None, "[Training Error]: loss_fn is not given, compiles the manager with loss_fn first."
-        warnings.warn("[Pending Deprecation Warning]: The compiled_losses property in a `TestingManager` will be deprecated from v1.1.0 and will be removed from v1.2.0.", PendingDeprecationWarning)
+        assert self.loss_fn is not None,  _raise(NotImplementedError("[Training Error]: loss_fn is not given, compiles the manager with loss_fn first."))
+        warnings.warn("The compiled_losses property in a `TestingManager` will be deprecated from v1.1.0 and will be removed from v1.2.0.", PendingDeprecationWarning)
         return self.loss_fn
 
     @property
@@ -40,7 +40,7 @@ class Manager(BaseManager, DataManager, Generic[Module]):
         - Returns: A `dict` of validation summary
         """
         # arguments checking
-        assert isinstance(dataset, SizedIterable), "[Runtime Error]: The dataset must be both Sized and Iterable."
+        assert isinstance(dataset, SizedIterable), _raise(ValueError("The dataset must be both Sized and Iterable."))
 
         # initialize function
         if self.loss_fn is not None: self.loss_fn.reset()
@@ -135,7 +135,7 @@ class Manager(BaseManager, DataManager, Generic[Module]):
                 fn(y, y_test)
                 summary[name] = float(fn.result.detach())
             except Exception as metric_error:
-                runtime_error = RuntimeError(f"[Runtime Error]: Cannot fetch metric '{name}'.")
+                runtime_error = RuntimeError(f"Cannot fetch metric '{name}'.")
                 raise runtime_error from metric_error
 
         # forward loss

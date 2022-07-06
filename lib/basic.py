@@ -1,4 +1,4 @@
-from torchmanager_core import devices, torch, view
+from torchmanager_core import torch, view, _raise
 from torchmanager_core.typing import Any, Callable, Dict, Generic, Module, Optional, OrderedDict, SizedIterable, Tuple, Union
 
 from .losses import Loss, MultiLosses, MultiOutputsLosses
@@ -64,15 +64,15 @@ class BaseManager(Generic[Module]):
             loss_fn = MultiLosses([l for l in loss_fn_mapping.values()])
         elif loss_fn is not None and not isinstance(loss_fn, Loss):
             loss_fn = Loss(loss_fn)
-            view.warnings.warn("[Deprecation Warning]: parsing `loss_fn` as a function was deprecated from v1.0.0 and will no longer be available from v1.1.0, use losses.Loss object instead.", DeprecationWarning)
+            view.warnings.warn("Parsing `loss_fn` as a function was deprecated from v1.0.0 and will no longer be available from v1.1.0, use losses.Loss object instead.", DeprecationWarning)
         self.loss_fn = loss_fn
 
         # initialize metrics
         for name, fn in metrics.items():
-            assert "loss" not in name, "[Manager Error]: Keyward 'loss' should not be contained in metrics."
+            assert "loss" not in name, _raise(NameError("[Manager Error]: Keyward 'loss' should not be contained in metrics."))
             if isinstance(fn, Metric): self.metric_fns[name] = fn
             else:
-                view.warnings.warn("[Deprecation Warning]: parsing a metric in `metrics` as a function was deprecated from v1.0.0 and will no longer be available from v1.1.0, use `metrics.Metric` object instead.", DeprecationWarning)
+                view.warnings.warn("Parsing a metric in `metrics` as a function was deprecated from v1.0.0 and will no longer be available from v1.1.0, use `metrics.Metric` object instead.", DeprecationWarning)
                 self.metric_fns[name] = Metric(fn)
 
         # initialize optimizer
@@ -111,10 +111,10 @@ class BaseManager(Generic[Module]):
 
     def load_state_dict(self, state_dict: OrderedDict[str, Any]) -> None:
         # load state dict elements
-        assert "model" in state_dict, "[Load Error]: The given dictionary does not have 'model' element."
-        assert "optimizer" in state_dict, "[Load Error]: The given dictionary does not have 'optimizer' element."
-        assert "loss_fn" in state_dict, "[Load Error]: The given dictionary does not have 'loss_fn' element."
-        assert "metrics" in state_dict, "[Load Error]: The given dictionary does not have 'metrics' element."
+        assert "model" in state_dict, _raise(KeyError("The given dictionary does not have 'model' element."))
+        assert "optimizer" in state_dict, _raise(KeyError("The given dictionary does not have 'optimizer' element."))
+        assert "loss_fn" in state_dict, _raise(KeyError("The given dictionary does not have 'loss_fn' element."))
+        assert "metrics" in state_dict, _raise(KeyError("The given dictionary does not have 'metrics' element."))
         model: OrderedDict[str, Any] = state_dict["model"]
         optimizer: Optional[Dict[str, Any]] = state_dict["optimizer"]
         loss_fn: Optional[OrderedDict[str, Any]] = state_dict["loss_fn"]
@@ -123,14 +123,14 @@ class BaseManager(Generic[Module]):
         # load state dict to current model, optimizer, loss_fn, and metrics
         self.model.load_state_dict(model) # type: ignore
         if optimizer is not None: 
-            assert self.optimizer is not None, "[Load Error]: The manager has not been compiled with 'optimizer' given."
+            assert self.optimizer is not None, _raise(ValueError("The manager has not been compiled with 'optimizer' given."))
             self.optimizer.load_state_dict(optimizer)
         if loss_fn is not None:
-            assert self.loss_fn is not None, "[Load Error]: The manager has not been compiled with 'loss_fn' given."
+            assert self.loss_fn is not None, _raise(ValueError("The manager has not been compiled with 'loss_fn' given."))
             self.loss_fn.load_state_dict(loss_fn)
-        assert metrics is not None, "[Load Error]: The given dictionary must have 'metrics' element not to be None."
+        assert metrics is not None, _raise(ValueError("The given dictionary must have 'metrics' element not to be None."))
         for k, m in metrics.items():
-            assert k in self.metric_fns, f"[Load Error]: The manager does not have a metric named '{k}'."
+            assert k in self.metric_fns, _raise(KeyError(f"The manager does not have a metric named '{k}'."))
             self.metric_fns[k].load_state_dict(m)
 
     def state_dict(self) -> OrderedDict[str, Any]:

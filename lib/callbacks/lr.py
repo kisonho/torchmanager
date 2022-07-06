@@ -1,4 +1,4 @@
-from torchmanager_core import torch
+from torchmanager_core import torch, _raise
 from torchmanager_core.typing import Any, Dict, Optional, Protocol, runtime_checkable
 
 from ..train import learning_rate
@@ -23,7 +23,7 @@ class LrSchedueler(Callback):
     def __init__(self, scheduler: torch.optim.lr_scheduler._LRScheduler, freq: learning_rate.LrScheduleFreq = learning_rate.LrScheduleFreq.EPOCH, tf_board_writer: Optional[_SummaryWriter] = None) -> None:
         super().__init__()
         self.__lr_scheduler = scheduler
-        assert isinstance(tf_board_writer, _SummaryWriter) or tf_board_writer is None, "[Callback Error]: The given writer does not performs to SummaryWriter protocol."
+        assert isinstance(tf_board_writer, _SummaryWriter) or tf_board_writer is None, _raise(TypeError("[Callback Error]: The given writer does not performs to SummaryWriter protocol."))
         self._writer = tf_board_writer
         self.freq = freq
 

@@ -1,5 +1,4 @@
-from torch import Tensor
-from torchmanager_core import torch
+from torchmanager_core import torch, _raise
 from torchmanager_core.typing import Any, Callable, Dict, List, Optional
 from torchmanager_core.view import warnings
 
@@ -50,7 +49,7 @@ class MultiLosses(Loss):
 
         # get all losses
         for fn in self.losses:
-            assert isinstance(fn, Loss), f"[Runtime Error]: Function {fn} is not a Loss object."
+            assert isinstance(fn, Loss), _raise(TypeError(f"Function {fn} is not a Loss object."))
             l = fn(input, target)
             loss += l
         return loss if isinstance(loss, torch.Tensor) else torch.tensor(loss, dtype=torch.float)
@@ -73,7 +72,7 @@ class MultiOutputsLosses(Loss):
     def __init__(self, loss_fns: Dict[str, Loss]) -> None:
         super().__init__()
         self.__losses = torch.nn.ModuleDict(loss_fns)
-        warnings.warn("[Pending Depreciation Warning]: `MultiOutputsLosses` will be deprecated in v1.1.0, use `MultiLosses` along with `target` parameter for each loss instead.", PendingDeprecationWarning)
+        warnings.warn("`MultiOutputsLosses` will be deprecated in v1.1.0, use `MultiLosses` along with `target` parameter for each loss instead.", PendingDeprecationWarning)
 
     def forward(self, input: Dict[str, torch.Tensor], target: Dict[str, torch.Tensor]) -> torch.Tensor:
         # initilaize
@@ -81,7 +80,7 @@ class MultiOutputsLosses(Loss):
 
         # loop for losses
         for k, fn in self.losses.items():
-            assert isinstance(fn, Loss), f"[Runtime Error]: Function {fn} is not a Loss object."
+            assert isinstance(fn, Loss), _raise(TypeError(f"Function {fn} is not a Loss object."))
             l = fn(input[k], target[k])
             loss += l
         return loss if isinstance(loss, torch.Tensor) else torch.tensor(loss, dtype=torch.float)

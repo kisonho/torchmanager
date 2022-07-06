@@ -8,3 +8,6 @@ try: from torch.utils import tensorboard
 except ImportError:
     view.warnings.warn("[Core Warning]: Module tensorboard is not installed.", ImportWarning)
     tensorboard = NotImplemented
+
+def _raise(e: Exception) -> None:
+    raise e

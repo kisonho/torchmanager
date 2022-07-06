@@ -1,4 +1,4 @@
-from torchmanager_core import devices, torch
+from torchmanager_core import devices, torch, _raise
 from torchmanager_core.typing import Any, Dict, Generic, Optional, OrderedDict, TypeVar
 
 from .protocols import StateDictLoadable
@@ -54,7 +54,7 @@ class Checkpoint(Generic[T]):
         '''
         # load checkpint dictionary
         ckpt: Dict[str, Any] = torch.load(ckpt_path, map_location=devices.CPU)
-        assert isinstance(model, StateDictLoadable) or model is None, "[Checkpoint Error]: The given model does not perform to `StateDictLoadable` protocol."
+        assert isinstance(model, StateDictLoadable) or model is None, _raise(TypeError("[Checkpoint Error]: The given model does not perform to `StateDictLoadable` protocol."))
 
         # load model
         if ckpt["save_weights_only"] is True:
@@ -68,7 +68,7 @@ class Checkpoint(Generic[T]):
 
             # load model structure with checkpoint weights
             if model is not None:
-                assert isinstance(ckpt["model"], StateDictLoadable), "[Ckpt Error]: The saved model does not perform to `StateDictLoadable` protocol. It cannot be loaded into the given model"
+                assert isinstance(ckpt["model"], StateDictLoadable), _raise(TypeError("The saved model does not perform to `StateDictLoadable` protocol. It cannot be loaded into the given model"))
                 model.load_state_dict(ckpt["model"].state_dict())
                 ckpt["model"] = model
         return cls(**ckpt)
@@ -84,7 +84,7 @@ class Checkpoint(Generic[T]):
         self.last_epoch = epoch
         ckpt = self.__dict__
         if self.save_weights_only is True:
-            assert isinstance(self.model, StateDictLoadable), "[Ckpt Error]: This saved model does not perform to `StateDictLoadable` protocol to save weights only."
+            assert isinstance(self.model, StateDictLoadable), _raise(TypeError("This saved model does not perform to `StateDictLoadable` protocol to save weights only."))
             ckpt["model"] = self.model.state_dict()
         elif isinstance(ckpt["model"], torch.nn.parallel.DataParallel):
             ckpt["model"] = ckpt["model"].module

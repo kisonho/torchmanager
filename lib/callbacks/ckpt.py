@@ -1,4 +1,4 @@
-from torchmanager_core import os, sys, view
+from torchmanager_core import os, sys, view, _raise
 from torchmanager_core.typing import Any, Dict, Enum, Generic, Optional, TypeVar
 
 from ..train import Checkpoint as Ckpt
@@ -47,7 +47,7 @@ class LastCheckpoint(_Checkpoint, Generic[T]):
     
     @freq.setter
     def freq(self, f: int) -> None:
-        assert f > 0, f"[Checkpoint Error]: Frequency must be a positive number, got {f}. "
+        assert f > 0, _raise(ValueError(f"Frequency must be a positive number, got {f}. "))
         self.__freq = f
 
     def __init__(self, model: Any, ckpt_path: str, freq: int = 1, **kwargs: Any) -> None:
@@ -60,7 +60,7 @@ class LastCheckpoint(_Checkpoint, Generic[T]):
 class Checkpoint(LastCheckpoint, Generic[T]):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        view.warnings.warn("[Deprecation Warning]: Checkpoint callback has been renamed to LastCheckpoint and was deprecated from v1.0.0, and will be removed at v1.1.0.", DeprecationWarning)
+        view.warnings.warn("Checkpoint callback has been renamed to LastCheckpoint and was deprecated from v1.0.0, and will be removed at v1.1.0.", DeprecationWarning)
 
 class MonitorType(Enum):
     """The enum of monitor types"""
@@ -74,7 +74,7 @@ class MonitorType(Enum):
         elif self == MonitorType.MIN:
             return sys.float_info.max
         else:
-            raise ValueError(f'[MonitorType Error]: Monitor type {self} is not supported.')
+            raise ValueError(f'Monitor type {self} is not supported.')
 
 class BestCheckpoint(_Checkpoint, Generic[T]):
     """
