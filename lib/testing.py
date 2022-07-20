@@ -10,7 +10,7 @@ class Manager(BaseManager, DataManager, Generic[Module]):
     """
     A testing manager, only used for testing
 
-    * extends: `.manager.Manager`
+    * extends: `.basic.BaseManager`, `.basic.DataManager`
 
     - Properties:
         - compiled_losses: The loss function in `Loss` that must be exist
