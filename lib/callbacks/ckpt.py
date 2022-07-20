@@ -74,7 +74,7 @@ class MonitorType(Enum):
         elif self == MonitorType.MIN:
             return sys.float_info.max
         else:
-            raise ValueError(f'Monitor type {self} is not supported.')
+            raise TypeError(f'Monitor type {self} is not supported.')
 
 class BestCheckpoint(_Checkpoint, Generic[T]):
     """
