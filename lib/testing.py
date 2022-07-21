@@ -20,7 +20,7 @@ class Manager(BaseManager, DataManager, Generic[Module]):
     
     @property
     def compiled_losses(self) -> Loss:
-        assert self.loss_fn is not None,  _raise(NotImplementedError("[Training Error]: loss_fn is not given, compiles the manager with loss_fn first."))
+        assert self.loss_fn is not None,  _raise(NotImplementedError("loss_fn is not given, compiles the manager with loss_fn first."))
         warnings.warn("The compiled_losses property in a `TestingManager` will be deprecated from v1.1.0 and will be removed from v1.2.0.", PendingDeprecationWarning)
         return self.loss_fn
 

@@ -1,7 +1,7 @@
 from torchmanager_core import devices, math, torch, view, _raise
 from torchmanager_core.typing import Any, Callable, Dict, Generic, List, Module, Optional, SizedIterable, Union
 
-from .callbacks import Callback
+from .callbacks import Callback, StopTraining
 from .losses import Loss
 from .metrics import Metric
 from .train import Checkpoint, learning_rate
@@ -146,7 +146,7 @@ class Manager(_Manager, Generic[Module]):
         else:
             assert iterations is not None, _raise(ValueError(f"The iterations must be given if epochs is not given."))
             assert iterations > 0, _raise(ValueError(f"The iterations must be a positive integer, got {iterations}."))
-            assert epochs is None,_raise(ValueError( f"The epochs must be given as `None` when iterations is given, got {epochs}."))
+            assert epochs is None, _raise(ValueError( f"The epochs must be given as `None` when iterations is given, got {epochs}."))
             epochs = math.ceil(iterations / len(training_dataset))
 
         # initialize initial epoch
@@ -190,7 +190,9 @@ class Manager(_Manager, Generic[Module]):
 
             # on epoch end
             for c in callbacks_list:
-                c.on_epoch_end(self.current_epoch, summary=summary, val_summary=val_summary)
+                try: c.on_epoch_end(self.current_epoch, summary=summary, val_summary=val_summary)
+                except StopTraining: break
+                except Exception: raise
 
             # step lr scheduler
             if lr_scheduler is not None:
@@ -240,12 +242,12 @@ class Manager(_Manager, Generic[Module]):
 
         # summary result
         try: summary["loss"] = float(self.compiled_losses.result.detach())
-        except Exception as e: raise RuntimeError("[Runtime Error]: Cannot fetch loss.") from e
+        except Exception as e: raise RuntimeError("Cannot fetch loss.") from e
         for name, fn in self.metric_fns.items():
             if name.startswith("val_"): continue
             try: summary[name] = float(fn.result.detach())
             except Exception as metric_error:
-                runtime_error = RuntimeError(f"[Runtime Error]: Cannot fetch metric '{name}'.")
+                runtime_error = RuntimeError(f"Cannot fetch metric '{name}'.")
                 raise runtime_error from metric_error
         return summary
 

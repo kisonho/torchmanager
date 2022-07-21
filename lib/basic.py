@@ -69,7 +69,7 @@ class BaseManager(Generic[Module]):
 
         # initialize metrics
         for name, fn in metrics.items():
-            assert "loss" not in name, _raise(NameError("[Manager Error]: Keyward 'loss' should not be contained in metrics."))
+            assert "loss" not in name, _raise(NameError("Keyward 'loss' should not be contained in metrics."))
             if isinstance(fn, Metric): self.metric_fns[name] = fn
             else:
                 view.warnings.warn("Parsing a metric in `metrics` as a function was deprecated from v1.0.0 and will no longer be available from v1.1.0, use `metrics.Metric` object instead.", DeprecationWarning)
@@ -107,7 +107,7 @@ class BaseManager(Generic[Module]):
             return manager
         elif isinstance(ckpt.model, BaseManager):
             return ckpt.model
-        else: raise TypeError(f"[Ckpt Error]: The saved checkpoint contains a model with type of {type(ckpt.model)} that cannot be recoverred to a `Manager`.")
+        else: raise TypeError(f"The saved checkpoint contains a model with type of {type(ckpt.model)} that cannot be recoverred to a `Manager`.")
 
     def load_state_dict(self, state_dict: OrderedDict[str, Any]) -> None:
         # load state dict elements
