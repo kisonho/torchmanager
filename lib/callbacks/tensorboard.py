@@ -39,16 +39,10 @@ class TensorBoard(Callback):
         self._writer.add_graph(model, input_to_model=inputs)
 
     def on_epoch_end(self, epoch: int, summary: Dict[str, float]={}, val_summary: Optional[Dict[str, float]]=None) -> None:
-        # fetch keys
-        keys = list(summary.keys())
-        if val_summary is not None: keys += list(val_summary.keys())
-        keys = set(keys)
-
         # write results to Tensorboard
-        for key in keys:
+        for key in summary.keys():
             result: Dict[str, float] = {}
-            if key in summary:
-                result["train"] = summary[key]
+            result["train"] = summary[key]
             if val_summary is not None and key in val_summary:
                 result["val"] = val_summary[key]
             self.writer.add_scalars(key, result, epoch + 1)
