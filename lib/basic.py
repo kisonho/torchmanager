@@ -141,7 +141,7 @@ class BaseManager(Generic[Module]):
             "metrics": {k: m.state_dict() for k, m in self.metric_fns.items()}
         })
 
-    def to(self, device: torch.device) -> Any:
+    def to(self, device: torch.device) -> None:
         """
         Move the elements in the manager to a target device
 

@@ -42,10 +42,6 @@ class Manager(BaseManager, DataManager, Generic[Module]):
         # arguments checking
         assert isinstance(dataset, SizedIterable), _raise(ValueError("The dataset must be both Sized and Iterable."))
 
-        # initialize function
-        if self.loss_fn is not None: self.loss_fn.reset()
-        for _, m in self.metric_fns.items(): m.reset()
-
         # find available device
         cpu, device = devices.find(device)
 
@@ -56,7 +52,7 @@ class Manager(BaseManager, DataManager, Generic[Module]):
                 self.model = torch.nn.parallel.DataParallel(self.model)
             else: raw_model = None
 
-            if not isinstance(self.loss_fn, torch.nn.parallel.DataParallel) and self.loss_fn is not None:
+            if self.loss_fn is not None and not self.loss_fn.training:
                 raw_loss_fn = self.loss_fn
                 paralleled_loss_fn = torch.nn.parallel.DataParallel(self.loss_fn)
                 self.loss_fn = Loss(paralleled_loss_fn)
@@ -66,10 +62,10 @@ class Manager(BaseManager, DataManager, Generic[Module]):
             raw_loss_fn = None
 
         # set module status
-        try:
-            self.model.eval()
-            self.to(device)
-        except: pass
+        self.model.eval()
+        if self.loss_fn is not None: self.loss_fn.eval().reset()
+        for _, m in self.metric_fns.items(): m.eval().reset()
+        self.to(device)
 
         # initialize progress bar
         if len(dataset) == 0: return {}
