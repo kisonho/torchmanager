@@ -58,9 +58,14 @@ class Manager(_Manager, Generic[Module]):
             - callbacks_list: A `list` of callbacks in `Callback`
         - Returns: A summary of `dict` with keys as `str` and values as `float`
         """
+        # initialize status
+        self.model.train()
+        self.compiled_losses.train()
+        for m in self.compiled_metrics.values(): m.train()
+
         # reset loss and metrics
         self.compiled_losses.reset()
-        for _, m in self.metric_fns.items(): m.reset()
+        for m in self.metric_fns.values(): m.reset()
 
         # run deprecated method
         summary = self.train(dataset, device=device, use_multi_gpus=use_multi_gpus, show_verbose=show_verbose, callbacks_list=callbacks_list)
@@ -176,7 +181,6 @@ class Manager(_Manager, Generic[Module]):
         for self.current_epoch in range(initial_epoch, epochs):
             # initialize epoch
             logger.info(f"Training epoch {self.current_epoch + 1}/{epochs}")
-            self.model.train()
             for c in callbacks_list: c.on_epoch_start(self.current_epoch)
             if iterations is not None: batch_iterations = iterations if len(training_dataset) < iterations else iterations
             else: batch_iterations = None
