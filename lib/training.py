@@ -238,7 +238,7 @@ class Manager(_Manager, Generic[Module]):
 
         # forward metrics
         for name, fn in self.compiled_metrics.items():
-            if not name.startswith("val_"): fn(y, y_train)
+            if not name.startswith("val_") and "loss" not in name: fn(y, y_train)
 
         # backward pass
         loss.backward()

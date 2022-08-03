@@ -5,25 +5,24 @@ from .loss import Loss
 
 class CrossEntropy(Loss):
     """The cross entropy loss"""
-    def __init__(self, *args, target: Optional[str] = None, **kwargs) -> None:
+    def __init__(self, *args: Any, target: Optional[str] = None, weight: float = 1, **kwargs: Any) -> None:
         loss_fn = torch.nn.CrossEntropyLoss(*args, **kwargs)
-        super().__init__(loss_fn, target=target)
+        super().__init__(loss_fn, target=target, weight=weight)
 
 class Dice(Loss):
     """The dice loss"""
     _smooth: int
     _softmax_input: bool
 
-    def __init__(self, smooth: int = 1, softmax_input: bool = True, target: Optional[str] = None) -> None:
+    def __init__(self, smooth: int = 1, softmax_input: bool = True, **kwargs: Any) -> None:
         """
         Constructor
 
         - Parameters:
             - smooth: An `int` of smooth value to avoid dividing zero
             - softmax_input: A `bool` flag of if softmax the input
-            - target: An optional `str` of target name in `input` and `target` during direct calling
         """
-        super().__init__(target=target)
+        super().__init__(**kwargs)
         self._smooth = smooth
         self._softmax_input = softmax_input
 
@@ -41,9 +40,9 @@ class DiceCE(CrossEntropy, Dice):
     _ce_lambda: float
     _dice_lambda: float
 
-    def __init__(self, *args, ce_lambda: float = 1, dice_lambda: float = 1, smooth: int = 1, target: Optional[str] = None, **kwargs) -> None:
-        CrossEntropy.__init__(self, *args, target=target, **kwargs)
-        Dice.__init__(self, smooth=smooth, target=target)
+    def __init__(self, *args, ce_lambda: float = 1, dice_lambda: float = 1, smooth: int = 1, target: Optional[str] = None, weight: float = 1, **kwargs) -> None:
+        CrossEntropy.__init__(self, *args, target=target, weight=weight, **kwargs)
+        Dice.__init__(self, smooth=smooth, target=target, weight=weight)
         self._ce_lambda = ce_lambda
         self._dice_lambda = dice_lambda
 
@@ -59,7 +58,7 @@ class FocalCrossEntropy(Loss):
     _calculate_average: bool
     _ignore_index: int
 
-    def __init__(self, alpha: float = 1, gamma: float = 0, calculate_average: bool = True, ignore_index: int = 255, target: Optional[str] = None):
+    def __init__(self, alpha: float = 1, gamma: float = 0, calculate_average: bool = True, ignore_index: int = 255, **kwargs: Any):
         """
         Constructor
 
@@ -67,8 +66,9 @@ class FocalCrossEntropy(Loss):
             - alpha: A `float` of alpha in focal cross entropy
             - gamma: A `float` of gamma in focal cross entropy
             - calculate_average: A `bool` flag of if calculate average for the focal loss
+            - ignore_index: An `int` of Specified target value that is ignored
         """
-        super().__init__(target=target)
+        super().__init__(**kwargs)
         self._alpha = alpha
         self._gamma = gamma
         self._ignore_index = ignore_index
@@ -88,6 +88,6 @@ class FocalCrossEntropy(Loss):
 
 class KLDiv(Loss):
     """KL-Div Loss"""
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, target: Optional[str] = None, weight: float = 1, **kwargs: Any) -> None:
         loss_fn = torch.nn.KLDivLoss(*args, **kwargs)
-        super().__init__(loss_fn)
+        super().__init__(loss_fn, target=target, weight=weight)

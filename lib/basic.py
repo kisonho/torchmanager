@@ -69,7 +69,6 @@ class BaseManager(Generic[Module]):
 
         # initialize metrics
         for name, fn in metrics.items():
-            assert "loss" not in name, _raise(NameError("Keyward 'loss' should not be contained in metrics."))
             if isinstance(fn, Metric): self.metric_fns[name] = fn
             else:
                 view.warnings.warn("Parsing a metric in `metrics` as a function was deprecated from v1.0.0 and will no longer be available from v1.1.0, use `metrics.Metric` object instead.", DeprecationWarning)

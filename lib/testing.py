@@ -127,6 +127,7 @@ class Manager(BaseManager, DataManager, Generic[Module]):
         # forward metrics
         for name, fn in self.compiled_metrics.items():
             if name.startswith("val_"): name = name.replace("val_", "")
+            elif "loss" in name: continue
             try:
                 fn(y, y_test)
                 summary[name] = float(fn.result.detach())
