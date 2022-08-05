@@ -1,5 +1,5 @@
 from torchmanager_core import torch, view, _raise
-from torchmanager_core.typing import Any, Callable, List, Optional, Union
+from torchmanager_core.typing import Any, Callable, List, Optional
 
 class Metric(torch.nn.Module):
     """
@@ -13,7 +13,7 @@ class Metric(torch.nn.Module):
         - result: The `torch.Tensor` of average metric results
     """
     _metric_fn: Optional[Callable[[Any, Any], torch.Tensor]]
-    _results: List[Union[torch.Tensor, float]]
+    _results: List[torch.Tensor]
     _target: Optional[str]
 
     @property

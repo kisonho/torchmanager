@@ -74,7 +74,7 @@ class MultiLosses(Loss):
             loss += l
 
         # return loss
-        assert isinstance(loss, torch.Tensor), _raise(TypeError(""))
+        assert isinstance(loss, torch.Tensor), _raise(TypeError("The total loss is not a valid `torch.Tensor`."))
         return loss
 
 class MultiOutputsLosses(Loss):
@@ -109,7 +109,7 @@ class MultiOutputsLosses(Loss):
             loss += l
 
         # return loss
-        assert isinstance(loss, torch.Tensor), _raise(TypeError(""))
+        assert isinstance(loss, torch.Tensor), _raise(TypeError("The total loss is not a valid `torch.Tensor`."))
         return loss
 
 def loss(fn: Callable[[Any, Any], torch.Tensor]) -> Loss:
