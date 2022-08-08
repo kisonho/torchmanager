@@ -34,7 +34,7 @@ class Manager(BaseManager, DataManager, Generic[Module]):
 
         - Parameters:
             - dataset: Either `SizedIterable` or `data.DataLoader` to load the dataset
-            - device: An optional `torch.device` to test on
+            - device: An optional `torch.device` to test on if not using multi-GPUs or an optional default `torch.device` for testing otherwise
             - use_multi_gpus: A `bool` flag to use multi gpus during testing
             - show_verbose: A `bool` flag to show the progress bar during testing
         - Returns: A `dict` of validation summary
@@ -43,7 +43,8 @@ class Manager(BaseManager, DataManager, Generic[Module]):
         assert isinstance(dataset, SizedIterable), _raise(ValueError("The dataset must be both Sized and Iterable."))
 
         # find available device
-        cpu, device = devices.find(device)
+        cpu, device = devices.find(None if use_multi_gpus else device)
+        devices.set_default(device)
 
         # multi gpu support
         if use_multi_gpus is True:

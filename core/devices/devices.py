@@ -1,3 +1,4 @@
+from operator import index
 from typing import Any, Iterable, Optional, Tuple, Union
 
 import torch, warnings
@@ -5,7 +6,13 @@ import torch, warnings
 from .protocols import DeviceMovable
 
 CPU = torch.device('cpu')
+'''The main CPU'''
+DEFAULT = torch.cuda.current_device() if torch.cuda.is_available() else CPU
+'''The default device'''
 GPU = torch.device('cuda')
+'''The overall CUDA devices'''
+GPUS = [torch.device(i) for i in range(torch.cuda.device_count())]
+'''The list of available CUDA devices'''
 
 def data_parallel(raw_model: torch.nn.Module, *args, **kwargs) -> Tuple[Union[torch.nn.Module, torch.nn.parallel.DataParallel], bool]:
     """
@@ -56,3 +63,6 @@ def move_to_device(target: Any, device: torch.device) -> Any:
     elif isinstance(target, Iterable):
         target = [move_to_device(t, device) for t in target]
     return target
+
+def set_default(d: torch.device) -> None:
+    if d.index is not None and d.type == "cuda": torch.cuda.set_device(d)

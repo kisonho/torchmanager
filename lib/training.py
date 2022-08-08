@@ -136,7 +136,7 @@ class Manager(_Manager, Generic[Module]):
             - lr_scheduelr: An optioanl `torch.optim.lr_scheduler._LRScheduler` to update the lr per epoch
             - is_dynamic_pruning: A `bool` flag of if using dynamic pruning
             - val_dataset: An optional validation `Any`
-            - device: An optional `torch.device` where the data is moved to, gpu will be used when available if not specified.
+            - device: An optional `torch.device` to test on if not using multi-GPUs or an optional default `torch.device` for testing otherwise
             - use_multi_gpus: A `bool` flag of if using multi gpus
             - callbacks_list: A `list` of callbacks in `Callback`
             - **kwargs: Additional keyword arguments that will be passed to `train` method.
@@ -165,7 +165,8 @@ class Manager(_Manager, Generic[Module]):
         view.logging.basicConfig(level=view.logging.INFO, format="%(message)s")
         logger = view.logging.getLogger("Training")
         learning_rate.initial_step_lr_scheduler(lr_scheduler, self.current_epoch)
-        cpu, device = devices.find(device)
+        cpu, device = devices.find(None if use_multi_gpus else device)
+        devices.set_default(device)
         for c in callbacks_list: c.on_train_start(initial_epoch)
         
         # multi gpus support

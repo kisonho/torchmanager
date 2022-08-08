@@ -117,5 +117,29 @@ def loss(fn: Callable[[Any, Any], torch.Tensor]) -> Loss:
     The loss wrapping function that wrap a function into a loss
 
     * Use as a decorator
+    ```
+    import torch
+
+    @loss
+    def some_loss_fn(input: Any, target: Any) -> torch.Tensor:
+        return ...
+    ```
     """
     return Loss(fn)
+
+def loss_fn(target: Optional[str] = None, weight: float = 1) -> Callable[[Callable[[Any, Any], torch.Tensor]], Loss]:
+    """
+    The loss wrapping function that wrap a function with target and weight given into a loss
+
+    * Use as a decorator
+    ```
+    import torch
+
+    @loss_fn(target='out', weight=0.5)
+    def some_loss_fn(input: Any, target: Any) -> torch.Tensor:
+        return ...
+    ```
+    """
+    def wrapped_loss_fn(fn_to_wrap: Callable[[Any, Any], torch.Tensor]) -> Loss:
+        return Loss(fn_to_wrap, target=target, weight=weight)
+    return wrapped_loss_fn
