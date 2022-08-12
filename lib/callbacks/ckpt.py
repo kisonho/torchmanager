@@ -13,8 +13,16 @@ class _Checkpoint(Callback, Generic[T]):
     - Properties:
         - ckpt_path: A `str` of checkpoint path
     """
+    __ckpt_path: str
     _checkpoint: Ckpt[T]
-    ckpt_path: str
+
+    @property
+    def ckpt_path(self) -> str:
+        return self.__ckpt_path
+
+    @ckpt_path.setter
+    def ckpt_path(self, p: str) -> None:
+        self.__ckpt_path = os.path.normpath(p)
 
     def __init__(self, model: Any, ckpt_path: str, **kwargs: Any) -> None:
         """
@@ -56,11 +64,6 @@ class LastCheckpoint(_Checkpoint, Generic[T]):
 
     def on_epoch_end(self, epoch: int, summary: Dict[str, float] = ..., val_summary: Optional[Dict[str, float]] = ...) -> None:
         if epoch % self.freq == 0: super().on_epoch_end(epoch, summary, val_summary)
-
-class Checkpoint(LastCheckpoint, Generic[T]):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        view.warnings.warn("Checkpoint callback has been renamed to LastCheckpoint and was deprecated from v1.0.0, and will be removed at v1.1.0.", DeprecationWarning)
 
 class MonitorType(Enum):
     """The enum of monitor types"""

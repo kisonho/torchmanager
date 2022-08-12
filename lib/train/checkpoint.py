@@ -1,4 +1,4 @@
-from torchmanager_core import devices, torch, _raise
+from torchmanager_core import devices, os, torch, _raise
 from torchmanager_core.typing import Any, Dict, Generic, Optional, OrderedDict, TypeVar
 
 from .protocols import StateDictLoadable
@@ -86,6 +86,8 @@ class Checkpoint(Generic[T]):
         if self.save_weights_only is True:
             assert isinstance(self.model, StateDictLoadable), _raise(TypeError("This saved model does not perform to `StateDictLoadable` protocol to save weights only."))
             ckpt["model"] = self.model.state_dict()
-        elif isinstance(ckpt["model"], torch.nn.parallel.DataParallel):
-            ckpt["model"] = ckpt["model"].module
+        elif isinstance(ckpt["model"], torch.nn.parallel.DataParallel): ckpt["model"] = ckpt["model"].module
+        ckpt_path = os.path.normpath(ckpt_path)
+        ckpt_dir = os.path.dirname(ckpt_path)
+        os.makedirs(ckpt_dir, exist_ok=True)
         torch.save(ckpt, ckpt_path)

@@ -1,3 +1,4 @@
+import logging
 from torchmanager_core import devices, math, torch, view, _raise
 from torchmanager_core.typing import Any, Callable, Dict, Generic, List, Module, Optional, SizedIterable, Union
 
@@ -154,6 +155,10 @@ class Manager(_Manager, Generic[Module]):
             assert epochs is None, _raise(ValueError( f"The epochs must be given as `None` when iterations is given, got {epochs}."))
             epochs = math.ceil(iterations / len(training_dataset))
 
+        # initialize logger
+        view.logging.basicConfig(level=view.logging.INFO, format="%(message)s")
+        logger = view.logging.getLogger("Training")
+
         # initialize initial epoch
         if initial_epoch is not None: 
             assert initial_epoch >= 0, _raise(ValueError(f"The initial_epoch must be a non_negative integer, got {initial_epoch}."))
@@ -161,12 +166,11 @@ class Manager(_Manager, Generic[Module]):
             self.current_epoch = initial_epoch
         else: initial_epoch = self.current_epoch
 
-        # initialize
-        view.logging.basicConfig(level=view.logging.INFO, format="%(message)s")
-        logger = view.logging.getLogger("Training")
-        learning_rate.initial_step_lr_scheduler(lr_scheduler, self.current_epoch)
+        # initialize training
         cpu, device = devices.find(None if use_multi_gpus else device)
         devices.set_default(device)
+        if lr_scheduler is not None: view.warnings.warn("Parameter `lr_scheduler` will be deprecated after v1.1.0 and will be removed from v1.2.0, use `.callbacks.LrScheduler` callback instead.", PendingDeprecationWarning)
+        learning_rate.initial_step_lr_scheduler(lr_scheduler, self.current_epoch)
         for c in callbacks_list: c.on_train_start(initial_epoch)
         
         # multi gpus support
