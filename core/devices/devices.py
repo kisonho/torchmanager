@@ -1,4 +1,4 @@
-from typing import Any, Iterable, Optional, Tuple, Union
+from typing import Any, Iterable, Optional, Tuple, TypeVar, Union
 
 import torch, warnings
 
@@ -12,6 +12,8 @@ GPU = torch.device('cuda')
 '''The overall CUDA devices'''
 GPUS = [torch.device(i) for i in range(torch.cuda.device_count())]
 '''The list of available CUDA devices'''
+
+M = TypeVar('M', bound=DeviceMovable)
 
 def data_parallel(raw_model: torch.nn.Module, devices: list[torch.device] = GPUS, output_device: Optional[torch.device] = None) -> Tuple[Union[torch.nn.Module, torch.nn.parallel.DataParallel], bool]:
     """
@@ -66,21 +68,21 @@ def search(specified: Optional[Union[torch.device, list[torch.device]]] = None) 
         else: device = GPU
         return CPU, device, specified
 
-def move_to_device(target: Any, device: torch.device) -> Any:
+def move_to_device(target: Union[M, dict[str, Union[M, Any]], list[Union[M, Any]]], device: torch.device) -> Union[M, dict[str, Union[M, Any]], list[Union[M, Any]]]:
     """
     Recurrently move a target variable to device if elements perform to `DeviceMovable` protocol
     
     - Parameters:
-        - target: `Any` type of target
+        - target: Either a target in `DeviceMovable`, a `dict` of targets in `DeviceMovable`, or a `list` of targets in `DeviceMovable`, targets in a `list` or `dict` that does not perform to `DeviceMovable` protocol will be returned without changing
         - device: A `torch.device` of target device
     - Returns: The same type of target but moved to target device
     """
     if isinstance(target, DeviceMovable):
         target = target.to(device)
     elif isinstance(target, dict):
-        target = {k: move_to_device(t, device) for k, t in target.items()}
+        target = {k: move_to_device(t, device) if isinstance(target, DeviceMovable) else t for k, t in target.items()}
     elif isinstance(target, Iterable):
-        target = [move_to_device(t, device) for t in target]
+        target = [move_to_device(t, device) if isinstance(target, DeviceMovable) else t for t in target]
     return target
 
 def set_default(d: torch.device) -> None:
