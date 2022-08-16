@@ -1,5 +1,5 @@
 from torchmanager_core import devices, torch, view, _raise
-from torchmanager_core.typing import Any, Dict, Generic, Module, Optional, SizedIterable
+from torchmanager_core.typing import Any, Dict, Generic, Module, Optional, SizedIterable, Union
 from torchmanager_core.view import warnings
 
 from .losses import Loss
@@ -28,7 +28,7 @@ class Manager(BaseManager, DataManager, Generic[Module]):
     def compiled_metrics(self) -> Dict[str, Metric]:
         return {name: m for name, m in self.metric_fns.items() if "loss" not in name}
 
-    def test(self, dataset: Any, device: Optional[torch.device] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
+    def test(self, dataset: Any, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
         """
         Test target model
 
@@ -43,19 +43,22 @@ class Manager(BaseManager, DataManager, Generic[Module]):
         assert isinstance(dataset, SizedIterable), _raise(ValueError("The dataset must be both Sized and Iterable."))
 
         # find available device
-        cpu, device = devices.find(None if use_multi_gpus else device)
-        devices.set_default(device)
+        cpu, device, target_devices = devices.search(None if use_multi_gpus else device)
+        if device == cpu and len(target_devices) < 2: use_multi_gpus = False
+        devices.set_default(target_devices[0])
 
         # multi gpu support
         if use_multi_gpus is True:
+            # move model
             if not isinstance(self.model, torch.nn.parallel.DataParallel):
                 raw_model = self.model
-                self.model = torch.nn.parallel.DataParallel(self.model)
+                self.model, use_multi_gpus = devices.data_parallel(self.model, devices=target_devices)
             else: raw_model = None
 
+            # move loss function
             if self.loss_fn is not None and not self.loss_fn.training:
                 raw_loss_fn = self.loss_fn
-                paralleled_loss_fn = torch.nn.parallel.DataParallel(self.loss_fn)
+                paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.loss_fn, devices=target_devices)
                 self.loss_fn = Loss(paralleled_loss_fn)
             else: raw_loss_fn = None
         else:

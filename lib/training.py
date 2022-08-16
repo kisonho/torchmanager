@@ -1,4 +1,3 @@
-import logging
 from torchmanager_core import devices, math, torch, view, _raise
 from torchmanager_core.typing import Any, Callable, Dict, Generic, List, Module, Optional, SizedIterable, Union
 
@@ -126,7 +125,7 @@ class Manager(_Manager, Generic[Module]):
         devices.empty_cache()
         return summary
 
-    def fit(self, training_dataset: Any, epochs: Optional[int] = None, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None, val_dataset: Optional[Any] = None, device: Optional[torch.device] = None, use_multi_gpus: bool = False, callbacks_list: List[Callback] = [], **kwargs) -> torch.nn.Module:
+    def fit(self, training_dataset: Any, epochs: Optional[int] = None, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None, val_dataset: Optional[Any] = None, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, callbacks_list: List[Callback] = [], **kwargs) -> torch.nn.Module:
         """
         Training algorithm
 
@@ -167,8 +166,8 @@ class Manager(_Manager, Generic[Module]):
         else: initial_epoch = self.current_epoch
 
         # initialize training
-        cpu, device = devices.find(None if use_multi_gpus else device)
-        devices.set_default(device)
+        cpu, device, target_devices = devices.search(None if use_multi_gpus else device)
+        devices.set_default(target_devices[0])
         if lr_scheduler is not None: view.warnings.warn("Parameter `lr_scheduler` will be deprecated after v1.1.0 and will be removed from v1.2.0, use `.callbacks.LrScheduler` callback instead.", PendingDeprecationWarning)
         learning_rate.initial_step_lr_scheduler(lr_scheduler, self.current_epoch)
         for c in callbacks_list: c.on_train_start(initial_epoch)
@@ -176,9 +175,9 @@ class Manager(_Manager, Generic[Module]):
         # multi gpus support
         raw_model = self.model
         raw_loss_fn = self.compiled_losses
-        if use_multi_gpus is True: 
-            self.model, use_multi_gpus = devices.data_parallel(raw_model)
-            paralleled_loss_fn, _ = devices.data_parallel(self.compiled_losses)
+        if use_multi_gpus is True:
+            self.model, use_multi_gpus = devices.data_parallel(raw_model, devices=target_devices)
+            paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.compiled_losses, devices=target_devices)
             self.loss_fn = Loss(paralleled_loss_fn)
         devices.move_to_device([self.model, self.compiled_losses, self.metric_fns], device)
 
