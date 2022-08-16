@@ -23,7 +23,7 @@ def data_parallel(raw_model: torch.nn.Module, devices: list[torch.device] = GPUS
         - raw_model: A target `torch.nn.Module`
     - Returns: A `tuple` of either data paralleled `torch.nn.parallel.DataParallel` model if CUDA is available or a raw model if not, and a `bool` flag of if the model data paralleled successfuly.
     """
-    if torch.cuda.is_available():
+    if torch.cuda.is_available() and len(devices) > 1:
         device_ids = [d.index for d in devices]
         model = torch.nn.parallel.DataParallel(raw_model, device_ids=device_ids, output_device=output_device)
         return model, True
@@ -80,9 +80,9 @@ def move_to_device(target: Union[M, dict[str, Union[M, Any]], list[Union[M, Any]
     if isinstance(target, DeviceMovable):
         target = target.to(device)
     elif isinstance(target, dict):
-        target = {k: move_to_device(t, device) if isinstance(target, DeviceMovable) else t for k, t in target.items()}
+        target = {k: move_to_device(t, device) if isinstance(t, DeviceMovable) else t for k, t in target.items()}
     elif isinstance(target, Iterable):
-        target = [move_to_device(t, device) if isinstance(target, DeviceMovable) else t for t in target]
+        target = [move_to_device(t, device) if isinstance(t, DeviceMovable) else t for t in target]
     return target
 
 def set_default(d: torch.device) -> None:
