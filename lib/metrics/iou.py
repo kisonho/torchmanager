@@ -6,7 +6,11 @@ from .conf_met import ConfusionMetrics
 from .metric import Metric
 
 class InstanceIoU(ConfusionMetrics):
-    """The iIoU metric for segmentation"""
+    """
+    The iIoU metric for segmentation
+    
+    * extends: `.conf_met.ConfusionMetrics`
+    """
     def __init__(self, num_classes: int, target: Optional[str] = None) -> None:
         super().__init__(num_classes, target=target)
 
@@ -22,7 +26,8 @@ class InstanceIoU(ConfusionMetrics):
 class MeanIoU(Metric):
     """
     The mIoU metric for segmentation
-    
+
+    * extends: `torch.nn.Module`
     * [Pending Deprecation Warning]: The old `MIoU` metric in v1.0.3 calculates iIoU and has been renamed to `InstanceIoU` in v1.1.0, and will be removed in v1.2.0.
     """
     _dim: int

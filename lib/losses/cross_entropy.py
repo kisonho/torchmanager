@@ -4,13 +4,21 @@ from torchmanager_core.typing import Any, Optional
 from .loss import Loss
 
 class CrossEntropy(Loss):
-    """The cross entropy loss"""
+    """
+    The cross entropy loss
+    
+    * extends: `.loss.Loss`
+    """
     def __init__(self, *args: Any, target: Optional[str] = None, weight: float = 1, **kwargs: Any) -> None:
         loss_fn = torch.nn.CrossEntropyLoss(*args, **kwargs)
         super().__init__(loss_fn, target=target, weight=weight)
 
 class Dice(Loss):
-    """The dice loss"""
+    """
+    The dice loss
+    
+    * extends: `.loss.Loss`
+    """
     _smooth: int
     _softmax_input: bool
 
@@ -36,7 +44,11 @@ class Dice(Loss):
         return (2 * intersection.sum() + self._smooth) / (input.sum() + target.sum() + self._smooth)
 
 class DiceCE(CrossEntropy, Dice):
-    """Combined `Dice` loss and `CrossEntropy` loss"""
+    """
+    Combined `Dice` loss and `CrossEntropy` loss
+    
+    * extends: `CrossEntropy`, `Dice`
+    """
     _ce_lambda: float
     _dice_lambda: float
 
@@ -52,7 +64,11 @@ class DiceCE(CrossEntropy, Dice):
         return self._ce_lambda * ce + self._dice_lambda * dice
 
 class FocalCrossEntropy(Loss):
-    """The focal cross entropy loss"""
+    """
+    The focal cross entropy loss
+    
+    * extends: `.loss.Loss`
+    """
     _alpha: float
     _gamma: float
     _calculate_average: bool
@@ -87,7 +103,11 @@ class FocalCrossEntropy(Loss):
             return focal_loss.sum()
 
 class KLDiv(Loss):
-    """KL-Div Loss"""
+    """
+    KL-Div Loss
+    
+    * extends: `.loss.Loss`
+    """
     def __init__(self, *args: Any, target: Optional[str] = None, weight: float = 1, **kwargs: Any) -> None:
         loss_fn = torch.nn.KLDivLoss(*args, **kwargs)
         super().__init__(loss_fn, target=target, weight=weight)

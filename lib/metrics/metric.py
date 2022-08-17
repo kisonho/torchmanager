@@ -5,6 +5,7 @@ class Metric(torch.nn.Module):
     """
     The basic metric class
 
+    * extends: `torch.nn.Module`
     * Could be use as a decorator of a function
     * Metric tensor is released from memory as soon as the result returned
     * [Deprecation Warning]: Method `call` is deprecated from v1.0.0 and will be removed from v1.1.0, override the `forward` method instead."

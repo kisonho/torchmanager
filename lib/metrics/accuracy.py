@@ -5,7 +5,11 @@ from torchmanager_core.view import warnings
 from .metric import Metric
 
 class Accuracy(Metric):
-    """The traditional accuracy metric to compare two `torch.Tensor`"""
+    """
+    The traditional accuracy metric to compare two `torch.Tensor`
+    
+    * extends: `.metric.Metric`
+    """
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         return input.eq(target).to(torch.float32).mean()
 
@@ -13,6 +17,7 @@ class SparseCategoricalAccuracy(Accuracy):
     """
     The accuracy metric for normal integer labels
 
+    * extends: `Accuracy`
     * [Pending Deprecation Warning]: The property `dim` will be deprecated from v1.1.0, and no longer be available in v1.2.0
     
     - Properties:
@@ -46,13 +51,21 @@ class SparseCategoricalAccuracy(Accuracy):
         return super().forward(input, target)
 
 class CategoricalAccuracy(SparseCategoricalAccuracy):
-    """The accuracy metric for categorical labels"""
+    """
+    The accuracy metric for categorical labels
+    
+    * extends: `SparseCategoricalAccuracy`
+    """
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         target = target.argmax(dim=self._dim)
         return super().forward(input, target)
 
 class MAE(Metric):
-    """The Mean Absolute Error metric"""
+    """
+    The Mean Absolute Error metric
+    
+    * extends: `.metrics.Metric`
+    """
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         error = input - target
         error = error.abs()

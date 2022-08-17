@@ -1,12 +1,9 @@
 from torchmanager_core import torch, _raise
-from torchmanager_core.typing import Dict, Enum, Optional
+from torchmanager_core.typing import Dict, Optional
 from torchmanager_core.view import logging
 from torchmanager_core.view.verbose import _VerboseControllable
 
-class LrScheduleFreq(Enum):
-    """The frequency enum of learning rate schedule"""
-    EPOCH = 0
-    BATCH = 1
+from ..callbacks import Frequency as LrScheduleFreq
 
 def initial_step_lr_scheduler(lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler], initial_epoch: int = 0) -> None:
     """

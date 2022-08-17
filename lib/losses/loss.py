@@ -8,6 +8,8 @@ class Loss(Metric):
     """
     The main loss function
 
+    * extends: `..metrics.Metric`
+    * implements: `..callbacks.protocols.Weighted`
     * Could be use as a decorator of a function
     * Loss tensor is stayed in memory until reset is called
 
@@ -49,6 +51,8 @@ class Loss(Metric):
 class MultiLosses(Loss):
     """
     A loss with multiple losses
+
+    * extends: `.Loss`
     
     - Properties:
         - losses: A `list` of loss metrics in `Metric`
@@ -81,7 +85,8 @@ class MultiOutputsLosses(Loss):
     """
     A loss with multiple losses for multiple outputs
 
-    - [Pending Depreciation Warning]: `MultiOutputsLosses` will be deprecated in v1.1.0, use `MultiLosses` along with `target` parameter for each loss instead.
+    * extends: `.Loss`
+    * [Pending Depreciation Warning]: `MultiOutputsLosses` will be deprecated in v1.1.0, use `MultiLosses` along with `target` parameter for each loss instead.
     
     - Properties:
         - losses: A `dict` of loss metrics in `Metric`

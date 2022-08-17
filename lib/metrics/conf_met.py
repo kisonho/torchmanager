@@ -6,6 +6,8 @@ from .metric import Metric
 class Histogram(Metric):
     """
     The metric that calculates histogram
+
+    * extends: `.metric.Metric`
     
     - Properties:
         - num_classes: An `int` of the total number of classes
@@ -41,7 +43,11 @@ class Histogram(Metric):
         return hist
 
 class ConfusionMetrics(Histogram):
-    """The metric that calculates confusion metrics"""
+    """
+    The metric that calculates confusion metrics
+    
+    * extends: `Histogram`
+    """
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # initialize metrics
         conf_mat = torch.zeros((self.num_classes, self.num_classes), device=input.device)
