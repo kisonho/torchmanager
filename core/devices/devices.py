@@ -1,6 +1,6 @@
 from typing import Any, Iterable, Optional, Tuple, TypeVar, Union
 
-import logging, torch, warnings
+import torch, warnings
 
 from .protocols import DeviceMovable
 
@@ -48,9 +48,7 @@ def find(specified: Optional[torch.device] = None) -> Tuple[torch.device, torch.
     warnings.warn("This method will be deprecated from v1.1.0 and will be removed in v1.2.0, use `torchmanager_core.devices.search` instead.", PendingDeprecationWarning)
     if specified is None:
         return (CPU, GPU) if torch.cuda.is_available() else (CPU, CPU)
-    else:
-        logging.warn(f"Using specified device {specified if not isinstance(specified, list) else ','.join(specified)}.")
-        return CPU, specified
+    else: return CPU, specified
 
 def search(specified: Optional[Union[torch.device, list[torch.device]]] = None) -> Tuple[torch.device, torch.device, list[torch.device]]:
     """
@@ -63,7 +61,6 @@ def search(specified: Optional[Union[torch.device, list[torch.device]]] = None) 
     if specified is None:
         return (CPU, GPU, GPUS) if len(GPUS) > 0 else (CPU, CPU, [CPU])
     else:
-        logging.warn(f"Using specified device {specified if not isinstance(specified, list) else ','.join(str(specified))}.")
         if not isinstance(specified, list):
             device = specified
             specified = [specified]
