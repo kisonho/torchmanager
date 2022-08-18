@@ -1,13 +1,14 @@
 from torchmanager_core import torch
-from torchmanager_core.typing import Any, Dict, Optional, TypeVar
+from torchmanager_core.typing import Any, Dict, Generic, Optional, TypeVar
 
 from ..train import learning_rate
 from .callback import FrequencyCallback
 from .protocols import Frequency, SummaryWriteble
 
+Scheduler = TypeVar("Scheduler", bound=torch.optim.lr_scheduler._LRScheduler)
 Writer = TypeVar("Writer", bound=SummaryWriteble)
 
-class LrSchedueler(FrequencyCallback):
+class LrSchedueler(FrequencyCallback, Generic[Scheduler]):
     """
     The callback to step learning rate scheduler
 
@@ -16,18 +17,18 @@ class LrSchedueler(FrequencyCallback):
     - Parameters:
         - freq: An `..train.learning_rate.LrScheduleFreq` of the frequency to update learning rate
     """
-    __lr_scheduler: torch.optim.lr_scheduler._LRScheduler
+    __lr_scheduler: Scheduler
     __writer: Optional[SummaryWriteble]
 
     @property
-    def _scheduler(self) -> torch.optim.lr_scheduler._LRScheduler:
+    def _scheduler(self) -> Scheduler:
         return self.__lr_scheduler
 
     @property
     def _writer(self) -> Optional[SummaryWriteble]:
         return self.__writer
 
-    def __init__(self, scheduler: torch.optim.lr_scheduler._LRScheduler, freq: Frequency = Frequency.EPOCH, tf_board_writer: Optional[Writer] = None) -> None:
+    def __init__(self, scheduler: Scheduler, freq: Frequency = Frequency.EPOCH, tf_board_writer: Optional[Writer] = None) -> None:
         super().__init__(freq)
         self.__lr_scheduler = scheduler
         self.__writer = tf_board_writer

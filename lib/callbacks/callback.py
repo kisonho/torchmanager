@@ -1,4 +1,4 @@
-from torchmanager_core import abc
+from torchmanager_core import abc, torch
 from torchmanager_core.typing import Any, Dict, Optional
 
 from .protocols import Frequency
@@ -44,7 +44,7 @@ class Callback:
         """
         pass
 
-    def on_train_end(self) -> None:
+    def on_train_end(self, model: torch.nn.Module) -> None:
         """The callback when training ends"""
         pass
 

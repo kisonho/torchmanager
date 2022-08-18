@@ -3,7 +3,7 @@ from torchmanager_core.typing import Dict, Optional
 from torchmanager_core.view import logging
 from torchmanager_core.view.verbose import _VerboseControllable
 
-from ..callbacks import Frequency as LrScheduleFreq
+from ..callbacks.protocols import Frequency as LrScheduleFreq
 
 def initial_step_lr_scheduler(lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler], initial_epoch: int = 0) -> None:
     """

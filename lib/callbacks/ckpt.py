@@ -1,4 +1,4 @@
-from torchmanager_core import os, sys, _raise
+from torchmanager_core import os, sys, torch, _raise
 from torchmanager_core.typing import Any, Dict, Enum, Generic, Optional, TypeVar
 
 from ..train import Checkpoint as Ckpt
@@ -90,10 +90,11 @@ class BestCheckpoint(_Checkpoint, Generic[T]):
     """
     # properties
     best_score: float
+    load_best: bool
     monitor: str
     monitor_type: MonitorType
 
-    def __init__(self, monitor: str, model: Any, ckpt_path: str, monitor_type: MonitorType=MonitorType.MAX, **kwargs: Any) -> None:
+    def __init__(self, monitor: str, model: Any, ckpt_path: str, load_best: bool = False, monitor_type: MonitorType=MonitorType.MAX, **kwargs: Any) -> None:
         """
         Constructor
 
@@ -102,9 +103,10 @@ class BestCheckpoint(_Checkpoint, Generic[T]):
             - monitor_type: A `MonitorType` of either `MIN` of `MAX` mode for the best model
         """
         super().__init__(model, ckpt_path, **kwargs)
+        self.best_score = monitor_type.init_score
+        self.load_best = load_best
         self.monitor = monitor
         self.monitor_type = monitor_type
-        self.best_score = monitor_type.init_score
 
     def on_epoch_end(self, epoch: int, summary: Dict[str, float] = ..., val_summary: Optional[Dict[str, float]] = ...) -> None:
         # get score
@@ -117,3 +119,6 @@ class BestCheckpoint(_Checkpoint, Generic[T]):
         elif score <= self.best_score and self.monitor_type == MonitorType.MIN:
             self.best_score = score
             super().on_epoch_end(epoch, summary, val_summary)
+
+    def on_train_end(self, model: torch.nn.Module) -> None:
+        if self.load_best: _ = Ckpt.from_saved(self.ckpt_path, model=model)

@@ -175,7 +175,7 @@ class Manager(_Manager, Generic[Module]):
         # multi gpus support
         raw_model = self.model
         raw_loss_fn = self.compiled_losses
-        if use_multi_gpus is True and not isinstance(self.model, torch.nn.parallel.DataParallel):
+        if use_multi_gpus and not isinstance(self.model, torch.nn.parallel.DataParallel):
             self.model, use_multi_gpus = devices.data_parallel(raw_model, devices=target_devices)
         if use_multi_gpus and not isinstance(self.compiled_losses, torch.nn.parallel.DataParallel):
             paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.compiled_losses, devices=target_devices)
@@ -215,6 +215,9 @@ class Manager(_Manager, Generic[Module]):
                 if i > 0: val_message += ", "
                 val_message += f"{name}={value:.4f}"
             logger.info(val_message)
+
+        # on train end
+        for c in callbacks_list: c.on_train_end(raw_model)
 
         # remove model from gpu
         self.model = raw_model.to(cpu)

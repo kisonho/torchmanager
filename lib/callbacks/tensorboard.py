@@ -1,5 +1,5 @@
 from torchmanager_core import tensorboard, torch
-from torchmanager_core.typing import Dict, Optional, Tuple
+from torchmanager_core.typing import Any, Dict, Optional, Tuple
 
 from .callback import FrequencyCallback
 from .protocols import Frequency
@@ -39,7 +39,9 @@ class TensorBoard(FrequencyCallback):
         inputs = torch.randn(input_shape) if input_shape is not None else None
         self.writer.add_graph(model, input_to_model=inputs)
 
-    def step(self, summary: dict[str, float] = {}, val_summary: Optional[dict[str, float]] = None):
+    def _update(self, result: Any) -> None: pass
+
+    def step(self, summary: dict[str, float] = {}, val_summary: Optional[dict[str, float]] = None) -> None:
         # fetch keys
         keys = list(summary.keys())
         if val_summary is not None: keys += list(val_summary.keys())

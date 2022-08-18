@@ -82,9 +82,9 @@ def move_to_device(target: Union[M, dict[str, Union[M, Any]], list[Union[M, Any]
     if isinstance(target, DeviceMovable):
         target = target.to(device)
     elif isinstance(target, dict):
-        target = {k: move_to_device(t, device) if isinstance(target, DeviceMovable) else t for k, t in target.items()}
+        target = {k: move_to_device(t, device) if isinstance(t, DeviceMovable) else t for k, t in target.items()}
     elif isinstance(target, Iterable):
-        target = [move_to_device(t, device) if isinstance(target, DeviceMovable) else t for t in target]
+        target = [move_to_device(t, device) if isinstance(t, DeviceMovable) else t for t in target]
     return target
 
 def set_default(d: torch.device) -> None:
