@@ -28,6 +28,7 @@ class Manager(BaseManager, DataManager, Generic[Module]):
     def compiled_metrics(self) -> Dict[str, Metric]:
         return {name: m for name, m in self.metric_fns.items() if "loss" not in name}
 
+    @torch.no_grad()
     def test(self, dataset: Any, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
         """
         Test target model
@@ -47,23 +48,18 @@ class Manager(BaseManager, DataManager, Generic[Module]):
         if device == cpu and len(target_devices) < 2: use_multi_gpus = False
         devices.set_default(target_devices[0])
 
-        # multi gpu support
-        if use_multi_gpus is True:
-            # move model
-            if not isinstance(self.model, torch.nn.parallel.DataParallel):
-                raw_model = self.model
-                self.model, use_multi_gpus = devices.data_parallel(self.model, devices=target_devices)
-            else: raw_model = None
+        # move model
+        if use_multi_gpus and not isinstance(self.model, torch.nn.parallel.DataParallel):
+            raw_model = self.model
+            self.model, use_multi_gpus = devices.data_parallel(self.model, devices=target_devices)
+        else: raw_model = None
 
-            # move loss function
-            if self.loss_fn is not None and not self.loss_fn.training:
-                raw_loss_fn = self.loss_fn
-                paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.loss_fn, devices=target_devices)
-                self.loss_fn = Loss(paralleled_loss_fn)
-            else: raw_loss_fn = None
-        else:
-            raw_model = None
-            raw_loss_fn = None
+        # move loss function
+        if use_multi_gpus and self.loss_fn is not None and not isinstance(self.loss_fn, torch.nn.parallel.DataParallel):
+            raw_loss_fn = self.loss_fn
+            paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.loss_fn, devices=target_devices)
+            if use_multi_gpus: self.loss_fn = Loss(paralleled_loss_fn)
+        else: raw_loss_fn = None
 
         # set module status
         self.model.eval()
@@ -75,37 +71,35 @@ class Manager(BaseManager, DataManager, Generic[Module]):
         if len(dataset) == 0: return {}
         progress_bar = view.tqdm(total=len(dataset)) if show_verbose else None
 
-        # disable auto gradients
-        with torch.no_grad():
-            # batch loop
-            for data in dataset:
-                # move x_test, y_test to device
-                x_test, y_test = self.unpack_data(data)
-                if use_multi_gpus is not True and isinstance(x_test, torch.Tensor):
-                    x_test = devices.move_to_device(x_test, device)
-                y_test = devices.move_to_device(y_test, device)
+        # batch loop
+        for data in dataset:
+            # move x_test, y_test to device
+            x_test, y_test = self.unpack_data(data)
+            if use_multi_gpus is not True and isinstance(x_test, torch.Tensor):
+                x_test = devices.move_to_device(x_test, device)
+            y_test = devices.move_to_device(y_test, device)
 
-                # test for one step
-                step_summary = self.test_step(x_test, y_test)
+            # test for one step
+            step_summary = self.test_step(x_test, y_test)
 
-                # implement progress bar
-                if progress_bar is not None:
-                    progress_bar.set_postfix(step_summary)
-                    progress_bar.update()
-
-            # end epoch training
+            # implement progress bar
             if progress_bar is not None:
-                progress_bar.close()
-            
-            # summarize
-            summary: Dict[str, float] = {}
-            for name, fn in self.metric_fns.items():
-                if name.startswith("val_"): name = name.replace("val_", "")
-                try: summary[name] = float(fn.result.detach())
-                except Exception as metric_error:
-                    runtime_error = RuntimeError(f"Cannot fetrch metric '{name}'.")
-                    raise runtime_error from metric_error
-            if self.loss_fn is not None: summary["loss"] = float(self.loss_fn.result.detach())
+                progress_bar.set_postfix(step_summary)
+                progress_bar.update()
+
+        # end epoch training
+        if progress_bar is not None:
+            progress_bar.close()
+        
+        # summarize
+        summary: Dict[str, float] = {}
+        for name, fn in self.metric_fns.items():
+            if name.startswith("val_"): name = name.replace("val_", "")
+            try: summary[name] = float(fn.result.detach())
+            except Exception as metric_error:
+                runtime_error = RuntimeError(f"Cannot fetrch metric '{name}'.")
+                raise runtime_error from metric_error
+        if self.loss_fn is not None: summary["loss"] = float(self.loss_fn.result.detach())
 
         # reset model and loss
         if raw_model is not None: self.model = raw_model.to(cpu)

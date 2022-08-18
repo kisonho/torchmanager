@@ -175,10 +175,11 @@ class Manager(_Manager, Generic[Module]):
         # multi gpus support
         raw_model = self.model
         raw_loss_fn = self.compiled_losses
-        if use_multi_gpus is True:
+        if use_multi_gpus is True and not isinstance(self.model, torch.nn.parallel.DataParallel):
             self.model, use_multi_gpus = devices.data_parallel(raw_model, devices=target_devices)
+        if use_multi_gpus and not isinstance(self.compiled_losses, torch.nn.parallel.DataParallel):
             paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.compiled_losses, devices=target_devices)
-            self.loss_fn = Loss(paralleled_loss_fn)
+            if use_multi_gpus: self.loss_fn = Loss(paralleled_loss_fn)
         devices.move_to_device([self.model, self.compiled_losses, self.metric_fns], device)
 
         # epoch loop
@@ -217,7 +218,7 @@ class Manager(_Manager, Generic[Module]):
 
         # remove model from gpu
         self.model = raw_model.to(cpu)
-        self.loss_fn = raw_loss_fn
+        self.loss_fn = raw_loss_fn.to(cpu)
         devices.empty_cache()
         return self.model
 
@@ -236,7 +237,6 @@ class Manager(_Manager, Generic[Module]):
         """
         # forward pass
         summary: Dict[str, float] = {}
-        self.compiled_optimizer.zero_grad()
         y = self.model(x_train)
         loss = self.compiled_losses(y, y_train)
 
@@ -245,6 +245,7 @@ class Manager(_Manager, Generic[Module]):
             if not name.startswith("val_") and "loss" not in name: fn(y, y_train)
 
         # backward pass
+        self.compiled_optimizer.zero_grad()
         loss.backward()
         self.compiled_optimizer.step()
 
