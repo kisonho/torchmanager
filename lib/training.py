@@ -125,7 +125,7 @@ class Manager(_Manager, Generic[Module]):
         devices.empty_cache()
         return summary
 
-    def fit(self, training_dataset: Any, epochs: Optional[int] = None, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None, val_dataset: Optional[Any] = None, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, callbacks_list: List[Callback] = [], **kwargs) -> torch.nn.Module:
+    def fit(self, training_dataset: SizedIterable, epochs: Optional[int] = None, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None, val_dataset: Optional[Any] = None, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, callbacks_list: List[Callback] = [], **kwargs) -> torch.nn.Module:
         """
         Training algorithm
 
@@ -144,7 +144,6 @@ class Manager(_Manager, Generic[Module]):
         """
         # arguments checking
         assert self.compiled is True, _raise(ValueError("Manager has not yet been compiled. Either loss_fn or optimizer, or both, are not given."))
-        assert isinstance(training_dataset, SizedIterable), "The training_dataset must be both Sized and Iterable."
         if epochs is not None:
             assert epochs > 0, _raise(ValueError(f"The epochs must be a positive integer, got {epochs}."))
             assert iterations is None, _raise(ValueError(f"The iterations must be given as `None` when epochs is given, got {iterations}."))

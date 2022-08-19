@@ -24,7 +24,7 @@ class _Checkpoint(Callback, Generic[T]):
     def ckpt_path(self, p: str) -> None:
         self.__ckpt_path = os.path.normpath(p)
 
-    def __init__(self, model: Any, ckpt_path: str, **kwargs: Any) -> None:
+    def __init__(self, model: T, ckpt_path: str, **kwargs: Any) -> None:
         """
         Constructor
 
@@ -40,7 +40,7 @@ class _Checkpoint(Callback, Generic[T]):
     def on_epoch_end(self, epoch: int, summary: Dict[str, float] = ..., val_summary: Optional[Dict[str, float]] = ...) -> None:
         self._checkpoint.save(epoch, self.ckpt_path)
 
-class LastCheckpoint(_Checkpoint, Generic[T]):
+class LastCheckpoint(_Checkpoint[T], Generic[T]):
     """
     Last checkpoint with frequency control support
     
@@ -58,7 +58,7 @@ class LastCheckpoint(_Checkpoint, Generic[T]):
         assert f > 0, _raise(ValueError(f"Frequency must be a positive number, got {f}. "))
         self.__freq = f
 
-    def __init__(self, model: Any, ckpt_path: str, freq: int = 1, **kwargs: Any) -> None:
+    def __init__(self, model: T, ckpt_path: str, freq: int = 1, **kwargs: Any) -> None:
         super().__init__(model, ckpt_path, **kwargs)
         self.freq = freq
 
@@ -79,7 +79,7 @@ class MonitorType(Enum):
         else:
             raise TypeError(f'Monitor type {self} is not supported.')
 
-class BestCheckpoint(_Checkpoint, Generic[T]):
+class BestCheckpoint(_Checkpoint[T], Generic[T]):
     """
     The callback to save the latest checkpoint for each epoch
 
@@ -94,7 +94,7 @@ class BestCheckpoint(_Checkpoint, Generic[T]):
     monitor: str
     monitor_type: MonitorType
 
-    def __init__(self, monitor: str, model: Any, ckpt_path: str, load_best: bool = False, monitor_type: MonitorType=MonitorType.MAX, **kwargs: Any) -> None:
+    def __init__(self, monitor: str, model: T, ckpt_path: str, load_best: bool = False, monitor_type: MonitorType=MonitorType.MAX, **kwargs: Any) -> None:
         """
         Constructor
 

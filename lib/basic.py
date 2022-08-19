@@ -108,7 +108,7 @@ class BaseManager(Generic[Module]):
             return ckpt.model
         else: raise TypeError(f"The saved checkpoint contains a model with type of {type(ckpt.model)} that cannot be recoverred to a `Manager`.")
 
-    def load_state_dict(self, state_dict: OrderedDict[str, Any]) -> None:
+    def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> None:
         # load state dict elements
         assert "model" in state_dict, _raise(KeyError("The given dictionary does not have 'model' element."))
         assert "optimizer" in state_dict, _raise(KeyError("The given dictionary does not have 'optimizer' element."))
@@ -120,7 +120,7 @@ class BaseManager(Generic[Module]):
         metrics: Dict[str, OrderedDict[str, Any]] = state_dict["metrics"]
         
         # load state dict to current model, optimizer, loss_fn, and metrics
-        self.model.load_state_dict(model) # type: ignore
+        self.model.load_state_dict(model, strict=strict) # type: ignore
         if optimizer is not None: 
             assert self.optimizer is not None, _raise(ValueError("The manager has not been compiled with 'optimizer' given."))
             self.optimizer.load_state_dict(optimizer)

@@ -1,5 +1,5 @@
 from torchmanager_core import tensorboard, torch
-from torchmanager_core.typing import Any, Dict, Optional, Tuple
+from torchmanager_core.typing import Dict, Optional, Set, Tuple
 
 from .callback import FrequencyCallback
 from .protocols import Frequency
@@ -39,19 +39,21 @@ class TensorBoard(FrequencyCallback):
         inputs = torch.randn(input_shape) if input_shape is not None else None
         self.writer.add_graph(model, input_to_model=inputs)
 
-    def _update(self, result: Any) -> None: pass
+    def _update(self, result: Tuple[Set[str], Dict[str, float], Optional[Dict[str, float]]]) -> None:
+        keys, summary, val_summary = result
 
-    def step(self, summary: dict[str, float] = {}, val_summary: Optional[dict[str, float]] = None) -> None:
+        # write results to Tensorboard
+        for key in keys:
+            r: Dict[str, float] = {}
+            if key in summary:
+                r["train"] = summary[key]
+            if val_summary is not None and key in val_summary:
+                r["val"] = val_summary[key]
+            self.writer.add_scalars(key, r, self.current_step + 1)
+
+    def step(self, summary: dict[str, float] = {}, val_summary: Optional[Dict[str, float]] = None) -> Tuple[Set[str], dict[str, float], Optional[Dict[str, float]]]:
         # fetch keys
         keys = list(summary.keys())
         if val_summary is not None: keys += list(val_summary.keys())
         keys = set(keys)
-
-        # write results to Tensorboard
-        for key in keys:
-            result: Dict[str, float] = {}
-            if key in summary:
-                result["train"] = summary[key]
-            if val_summary is not None and key in val_summary:
-                result["val"] = val_summary[key]
-            self.writer.add_scalars(key, result, self.current_step + 1)
+        return keys, summary, val_summary

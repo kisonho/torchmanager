@@ -1,11 +1,11 @@
-from torchmanager_core import torch, _raise
+from torchmanager_core import _raise
 from torchmanager_core.typing import Dict, Optional
 from torchmanager_core.view import logging
-from torchmanager_core.view.verbose import _VerboseControllable
 
 from ..callbacks.protocols import Frequency as LrScheduleFreq
+from .protocols import LrSteping, _VerboseControllable
 
-def initial_step_lr_scheduler(lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler], initial_epoch: int = 0) -> None:
+def initial_step_lr_scheduler(lr_scheduler: Optional[LrSteping], initial_epoch: int = 0) -> None:
     """
     Initialize learning rate scheduler for the initial epochs before training starts
 
@@ -16,19 +16,22 @@ def initial_step_lr_scheduler(lr_scheduler: Optional[torch.optim.lr_scheduler._L
     # go to initial epoch
     if lr_scheduler is not None and initial_epoch > 0:
         # disable verbose
-        assert isinstance(lr_scheduler, _VerboseControllable), _raise(TypeError("lr_scheduler does not performs to the VerboseControllable protocol."))
-        verbose = lr_scheduler.verbose
-        lr_scheduler.verbose = False
-        logging.info(f"Intializing learning rate with {initial_epoch} epochs...")
+        if isinstance(lr_scheduler, _VerboseControllable):
+            verbose = lr_scheduler.verbose
+            lr_scheduler.verbose = False
+            logging.info(f"Intializing learning rate with {initial_epoch} epochs...")
+        else: verbose = None
 
         # steps to initial epoch
         for _ in range(initial_epoch):
             lr_scheduler.step()
 
         # reset verbose
-        lr_scheduler.verbose = verbose
+        if isinstance(lr_scheduler, _VerboseControllable):
+            assert verbose is not None, _raise(TypeError("Fetch verbose failed from the given scheduler."))
+            lr_scheduler.verbose = verbose
 
-def update_lr(lr_scheduler: torch.optim.lr_scheduler._LRScheduler) -> Dict[str, float]:
+def update_lr(lr_scheduler: LrSteping) -> Dict[str, float]:
     """
     Update lr scheduler and returns the current learning rate as a summary
 

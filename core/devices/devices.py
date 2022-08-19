@@ -13,8 +13,6 @@ GPU = torch.device('cuda')
 GPUS = [torch.device(i) for i in range(torch.cuda.device_count())]
 '''The list of available CUDA devices'''
 
-M = TypeVar('M', bound=DeviceMovable)
-
 def data_parallel(raw_model: torch.nn.Module, devices: list[torch.device] = GPUS, output_device: Optional[torch.device] = None) -> Tuple[Union[torch.nn.Module, torch.nn.parallel.DataParallel], bool]:
     """
     Make a `torch.nn.Module` data parallel
@@ -67,7 +65,7 @@ def search(specified: Optional[Union[torch.device, list[torch.device]]] = None) 
         else: device = GPU
         return CPU, device, specified
 
-def move_to_device(target: Union[M, dict[str, Union[M, Any]], list[Union[M, Any]]], device: torch.device) -> Union[M, dict[str, Union[M, Any]], list[Union[M, Any]]]:
+def move_to_device(target: Union[DeviceMovable,  dict[str, Union[DeviceMovable,  Any]], list[Union[DeviceMovable,  Any]]], device: torch.device) -> Union[DeviceMovable,  dict[str, Union[DeviceMovable,  Any]], list[Union[DeviceMovable,  Any]]]:
     """
     Recurrently move a target variable to device if elements perform to `DeviceMovable` protocol
     

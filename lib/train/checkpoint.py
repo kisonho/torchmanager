@@ -44,7 +44,7 @@ class Checkpoint(Generic[T]):
         self.save_weights_only = save_weights_only
 
     @classmethod
-    def from_saved(cls, ckpt_path: str, model: Any = None):
+    def from_saved(cls, ckpt_path: str, model: Optional[StateDictLoadable] = None):
         '''
         Load checkpoint from a saved checkpoint file
 
@@ -54,10 +54,10 @@ class Checkpoint(Generic[T]):
         '''
         # load checkpint dictionary
         ckpt: Dict[str, Any] = torch.load(ckpt_path, map_location=devices.CPU)
-        assert isinstance(model, StateDictLoadable) or model is None, _raise(TypeError("[Checkpoint Error]: The given model does not perform to `StateDictLoadable` protocol."))
 
         # load model
         if ckpt["save_weights_only"] is True:
+            assert model is not None, _raise(TypeError("Model must be given to load this checkpoint because `save_weights_only` was set to be `True`."))
             state_dict: OrderedDict[str, Any] = ckpt["model"]
             model.load_state_dict(state_dict)
             ckpt["model"] = model
@@ -68,7 +68,6 @@ class Checkpoint(Generic[T]):
 
             # load model structure with checkpoint weights
             if model is not None:
-                assert isinstance(ckpt["model"], StateDictLoadable), _raise(TypeError("The saved model does not perform to `StateDictLoadable` protocol. It cannot be loaded into the given model"))
                 model.load_state_dict(ckpt["model"].state_dict())
                 ckpt["model"] = model
         return cls(**ckpt)

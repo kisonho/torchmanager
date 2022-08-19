@@ -29,20 +29,17 @@ class Manager(BaseManager, DataManager, Generic[Module]):
         return {name: m for name, m in self.metric_fns.items() if "loss" not in name}
 
     @torch.no_grad()
-    def test(self, dataset: Any, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
+    def test(self, dataset: SizedIterable, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
         """
         Test target model
 
         - Parameters:
-            - dataset: Either `SizedIterable` or `data.DataLoader` to load the dataset
+            - dataset: A `SizedIterable` dataset
             - device: An optional `torch.device` to test on if not using multi-GPUs or an optional default `torch.device` for testing otherwise
             - use_multi_gpus: A `bool` flag to use multi gpus during testing
             - show_verbose: A `bool` flag to show the progress bar during testing
         - Returns: A `dict` of validation summary
         """
-        # arguments checking
-        assert isinstance(dataset, SizedIterable), _raise(ValueError("The dataset must be both Sized and Iterable."))
-
         # find available device
         cpu, device, target_devices = devices.search(None if use_multi_gpus else device)
         if device == cpu and len(target_devices) < 2: use_multi_gpus = False

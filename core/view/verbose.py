@@ -3,7 +3,6 @@ from enum import Enum
 
 import abc
 
-@runtime_checkable
 class _VerboseControllable(Protocol):
     """The learning rate scheduler protocol"""
     @property
