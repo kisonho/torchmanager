@@ -3,7 +3,7 @@ from enum import Enum
 
 import abc
 
-class _VerboseControllable(Protocol):
+class VerboseControllable(Protocol):
     """The learning rate scheduler protocol"""
     @property
     @abc.abstractmethod

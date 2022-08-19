@@ -1,4 +1,4 @@
 import logging, warnings
 from tqdm import tqdm
 
-from .verbose import VerboseType
+from .protocols import VerboseType

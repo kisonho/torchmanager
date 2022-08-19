@@ -1,6 +1,6 @@
 from torchmanager_core import abc
 from torchmanager_core.typing import Any, List, OrderedDict, Protocol, Optional
-from torchmanager_core.view.verbose import _VerboseControllable
+from torchmanager_core.view.protocols import VerboseControllable
 
 class StateDictLoadable(Protocol):
     """An object that can load state dict"""

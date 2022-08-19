@@ -3,7 +3,6 @@ from torch.nn import functional
 from torch.utils import data
 
 from . import devices, view
-
 try: from torch.utils import tensorboard
 except ImportError:
     view.warnings.warn("[Core Warning]: Module tensorboard is not installed.", ImportWarning)

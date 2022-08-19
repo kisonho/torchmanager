@@ -15,8 +15,13 @@ class DynamicWeight(FrequencyCallback, abc.ABC, Generic[W]):
     * extends: `.callback.Callback`
     * abstract class that needs implementation of `step` method
     '''
+    __key: str
     __weighted: W
     __writer: Optional[SummaryWriteble]
+
+    @property
+    def _key(self) -> str:
+        return self.__key
 
     @property
     def _weighted(self) -> W:
@@ -26,7 +31,7 @@ class DynamicWeight(FrequencyCallback, abc.ABC, Generic[W]):
     def _writer(self) -> Optional[SummaryWriteble]:
         return self.__writer
 
-    def __init__(self, weighted: W, freq: Frequency = Frequency.EPOCH, writer: Optional[Writer] = None) -> None:
+    def __init__(self, weighted: W, freq: Frequency = Frequency.EPOCH, writer: Optional[Writer] = None, name: Optional[str] = None) -> None:
         '''
         Constructor
 
@@ -36,6 +41,7 @@ class DynamicWeight(FrequencyCallback, abc.ABC, Generic[W]):
             - writer: An optional writer that performs `SummaryWritable` protocol
         '''
         super().__init__(freq=freq)
+        self.__key = f"{type(weighted).__name__}.weight" if name is None else name
         self.__weighted = weighted
         self.__writer = writer
         self.current_step = 0
@@ -44,16 +50,15 @@ class DynamicWeight(FrequencyCallback, abc.ABC, Generic[W]):
         self._weighted.weight = result
 
     def on_epoch_end(self, epoch: int, *args: Any, **kwargs: Any) -> None:
-        # update
-        super().on_epoch_end(epoch, *args, **kwargs)
-        
         # write results to Tensorboard
         if self._writer is not None and isinstance(self._weighted.weight, SupportsFloat):
             # get summary
             w = self._weighted.weight
-            key = f"{type(self._weighted)}.weight"
-            result = {key: w}
-            self._writer.add_scalars("train", result, epoch)
+            result = {'train': w}
+            self._writer.add_scalars(self._key, result, epoch)
+
+        # update
+        super().on_epoch_end(epoch, *args, **kwargs)
 
 class LambdaDynamicWeight(DynamicWeight[W], Generic[W]):
     '''
