@@ -18,7 +18,12 @@ class LrSchedueler(FrequencyCallback, Generic[Scheduler]):
         - freq: An `..train.learning_rate.LrScheduleFreq` of the frequency to update learning rate
     """
     __lr_scheduler: Scheduler
+    __name: str
     __writer: Optional[SummaryWriteble]
+
+    @property
+    def _name(self) -> str:
+        return self.__name
 
     @property
     def _scheduler(self) -> Scheduler:
@@ -28,33 +33,35 @@ class LrSchedueler(FrequencyCallback, Generic[Scheduler]):
     def _writer(self) -> Optional[SummaryWriteble]:
         return self.__writer
 
-    def __init__(self, scheduler: Scheduler, freq: Frequency = Frequency.EPOCH, tf_board_writer: Optional[Writer] = None) -> None:
+    def __init__(self, scheduler: Scheduler, freq: Frequency = Frequency.EPOCH, tf_board_writer: Optional[Writer] = None, name: str = 'lr') -> None:
         super().__init__(freq)
         self.__lr_scheduler = scheduler
+        self.__name = name
         self.__writer = tf_board_writer
 
     def _update(self, result: Any) -> None:
         pass
 
-    def on_epoch_end(self, epoch: int, *args: Any, **kwargs: Any) -> None:
-        # update lr scheduler
-        super().on_epoch_end(epoch, *args, **kwargs)
-        
+    def on_epoch_end(self, epoch: int, summary: Dict[str, float], val_summary: Optional[Dict[str, Any]] = None) -> None:
+        # get lr summary
+        lr_summary = {}
+        lr_list = self._scheduler.get_last_lr()
+        if len(lr_list) > 1:
+            for i, lr in enumerate(lr_list):
+                lr_summary[f'{self.__name}_{i}'] = lr
+        else: lr_summary[self._name] = lr_list[0]
+
         # write results to Tensorboard
         if self.__writer is not None:
-            # get summary
-            summary = {}
-            lr_list = self._scheduler.get_last_lr()
-            if len(lr_list) > 1:
-                for i, lr in enumerate(lr_list):
-                    summary[f'lr_{i}'] = lr
-            else: summary['lr'] = lr_list[0]
-
             # record summary
-            for key in summary.keys():
+            for key in lr_summary.keys():
                 result: Dict[str, float] = {}
-                result["train"] = summary[key]
-                self.__writer.add_scalars(key, result, epoch + 1)
+                result["train"] = lr_summary[key]
+                self.__writer.add_scalars(key, result, epoch)
+
+        # update lr scheduler
+        summary.update(lr_summary)
+        super().on_epoch_end(epoch, summary, val_summary)
 
     def on_train_start(self, initial_epoch: int = 0) -> None:
         learning_rate.initial_step_lr_scheduler(self._scheduler, initial_epoch)

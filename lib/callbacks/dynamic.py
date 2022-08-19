@@ -1,6 +1,5 @@
-from typing import Callable
 from torchmanager_core import abc
-from torchmanager_core.typing import Any, Generic, Optional, SupportsFloat, TypeVar
+from torchmanager_core.typing import Any, Callable, Generic, Optional, SupportsFloat, TypeVar
 
 from .callback import FrequencyCallback
 from .protocols import Frequency, SummaryWriteble, Weighted
@@ -68,8 +67,8 @@ class LambdaDynamicWeight(DynamicWeight[W], Generic[W]):
     '''
     __lambda_fn: Callable[[int], Any]
 
-    def __init__(self, fn: Callable[[int], Any], weighted: W, freq: Frequency = Frequency.EPOCH, writer: Optional[Writer] = None) -> None:
-        super().__init__(weighted, freq, writer)
+    def __init__(self, fn: Callable[[int], Any], weighted: W, freq: Frequency = Frequency.EPOCH, writer: Optional[Writer] = None, name: Optional[str] = None) -> None:
+        super().__init__(weighted, freq, writer, name)
         self.__lambda_fn = fn
 
     def step(self, *args: Any, **kwargs: Any) -> Any:
