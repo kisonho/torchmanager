@@ -63,8 +63,5 @@ class LrSchedueler(FrequencyCallback, Generic[Scheduler]):
         summary.update(lr_summary)
         super().on_epoch_end(epoch, summary, val_summary)
 
-    def on_train_start(self, initial_epoch: int = 0) -> None:
-        learning_rate.initial_step_lr_scheduler(self._scheduler, initial_epoch)
-
     def step(self, *args: Any, **kwargs: Any) -> Any:
         self._scheduler.step()

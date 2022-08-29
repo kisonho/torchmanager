@@ -1,6 +1,6 @@
 from torchmanager_core import _raise
 from torchmanager_core.typing import Dict, Optional
-from torchmanager_core.view import logging
+from torchmanager_core.view import logging, warnings
 
 from ..callbacks.protocols import Frequency as LrScheduleFreq
 from .protocols import LrSteping, VerboseControllable
@@ -9,10 +9,14 @@ def initial_step_lr_scheduler(lr_scheduler: Optional[LrSteping], initial_epoch: 
     """
     Initialize learning rate scheduler for the initial epochs before training starts
 
+    * [Pending Deprecate Warning]: This method will be deprecated from v1.1.0 and will be removed in v1.2.0.
+
     - Parameters:
         - lr_scheduler: The given lr scheduler in `torch.optim.lr_scheduler._LRScheduler`
         - initial_epoch: An `int` of the intial epoch index
     """
+    warnings.warn("This method will be deprecated from v1.1.0 and will be removed in v1.2.0.", PendingDeprecationWarning)
+
     # go to initial epoch
     if lr_scheduler is not None and initial_epoch > 0:
         # disable verbose

@@ -168,7 +168,6 @@ class Manager(_Manager, Generic[Module]):
         cpu, device, target_devices = devices.search(None if use_multi_gpus else device)
         devices.set_default(target_devices[0])
         if lr_scheduler is not None: view.warnings.warn("Parameter `lr_scheduler` will be deprecated after v1.1.0 and will be removed from v1.2.0, use `.callbacks.LrScheduler` callback instead.", PendingDeprecationWarning)
-        learning_rate.initial_step_lr_scheduler(lr_scheduler, self.current_epoch)
         for c in callbacks_list: c.on_train_start(initial_epoch)
         
         # multi gpus support
