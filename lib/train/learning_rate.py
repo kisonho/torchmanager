@@ -16,7 +16,7 @@ def initial_step_lr_scheduler(lr_scheduler: Optional[LrSteping], initial_epoch: 
     # go to initial epoch
     if lr_scheduler is not None and initial_epoch > 0:
         # disable verbose
-        if isinstance(lr_scheduler, _VerboseControllable):
+        if isinstance(lr_scheduler, VerboseControllable):
             verbose = lr_scheduler.verbose
             lr_scheduler.verbose = False
             logging.info(f"Intializing learning rate with {initial_epoch} epochs...")
@@ -27,7 +27,7 @@ def initial_step_lr_scheduler(lr_scheduler: Optional[LrSteping], initial_epoch: 
             lr_scheduler.step()
 
         # reset verbose
-        if isinstance(lr_scheduler, _VerboseControllable):
+        if isinstance(lr_scheduler, VerboseControllable):
             assert verbose is not None, _raise(TypeError("Fetch verbose failed from the given scheduler."))
             lr_scheduler.verbose = verbose
 
