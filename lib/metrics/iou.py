@@ -32,8 +32,9 @@ class MeanIoU(Metric):
     """
     _dim: int
     _smooth: float
+    _threshold: float
 
-    def __init__(self, dim: int = 1, smooth: float = 1e-4, target: Optional[str] = None) -> None:
+    def __init__(self, dim: int = 1, smooth: float = 1e-4, threshold: float = 0.5, target: Optional[str] = None) -> None:
         """
         Constructor
 
@@ -44,13 +45,14 @@ class MeanIoU(Metric):
         super().__init__(target=target)
         self._dim = dim
         self._smooth = smooth
+        self._threshold
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         input = input.argmax(self._dim)
         intersection = (input & target).float().sum()
         union = (input | target).float().sum()
         iou = (intersection + self._smooth) / (union + self._smooth)
-        thresholded = torch.clamp(20 * (iou - 0.5), 0, 10).ceil() / 10
+        thresholded = torch.clamp(10 / (1 - self._threshold) * (iou - self._threshold), 0, 10).ceil() / 10
         return thresholded
 
 class MIoU(InstanceIoU):

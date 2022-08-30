@@ -40,7 +40,7 @@ class Manager(_Manager, Generic[Module]):
         assert self.optimizer is not None, _raise(NotImplementedError("optimizer is not given."))
         return self.optimizer
 
-    def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]] = None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]] = ...) -> None:
+    def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]] = None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]] = {}) -> None:
         super().__init__(model, optimizer, loss_fn, metrics)
         self.__current_epoch = 0
 
