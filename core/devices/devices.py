@@ -65,21 +65,24 @@ def search(specified: Optional[Union[torch.device, list[torch.device]]] = None) 
         else: device = GPU
         return CPU, device, specified
 
-def move_to_device(target: Union[DeviceMovable,  dict[str, Union[DeviceMovable,  Any]], list[Union[DeviceMovable,  Any]]], device: torch.device) -> Union[DeviceMovable,  dict[str, Union[DeviceMovable,  Any]], list[Union[DeviceMovable,  Any]]]:
+def move_to_device(target: Union[DeviceMovable, torch.optim.Optimizer,  dict[str, Any], list[Any]], device: torch.device) -> Union[DeviceMovable, torch.optim.Optimizer, dict[str, Any], list[Any]]:
     """
     Recurrently move a target variable to device if elements perform to `DeviceMovable` protocol
     
     - Parameters:
-        - target: Either a target in `DeviceMovable`, a `dict` of targets in `DeviceMovable`, or a `list` of targets in `DeviceMovable`, targets in a `list` or `dict` that does not perform to `DeviceMovable` protocol will be returned without changing
+        - target: Either a target in `DeviceMovable`, a `torch.optim.Optimizer`, a `dict` of targets, or a `list` of targets, targets in a `list` or `dict` that does not perform to `DeviceMovable` protocol and is not a valid `torch.optim.Optimizer` will be returned without changing
         - device: A `torch.device` of target device
     - Returns: The same type of target but moved to target device
     """
     if isinstance(target, DeviceMovable):
         target = target.to(device)
+    elif isinstance(target, torch.optim.Optimizer):
+        for k, param in target.state.items():
+            target.state[k] = move_to_device(param, device=device)
     elif isinstance(target, dict):
         target = {k: move_to_device(t, device) if isinstance(t, DeviceMovable) else t for k, t in target.items()}
     elif isinstance(target, Iterable):
-        target = [move_to_device(t, device) if isinstance(t, DeviceMovable) else t for t in target]
+        target = [move_to_device(t, device) if isinstance(t, DeviceMovable) or isinstance(t, torch.optim.Optimizer) else t for t in target]
     return target
 
 def set_default(d: torch.device) -> None:

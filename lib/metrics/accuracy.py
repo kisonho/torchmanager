@@ -1,4 +1,4 @@
-from torchmanager_core import torch
+from torchmanager_core import torch, _raise
 from torchmanager_core.typing import Optional
 from torchmanager_core.view import warnings
 
@@ -23,17 +23,20 @@ class SparseCategoricalAccuracy(Accuracy):
     - Properties:
         - dim: An `int` of the probability dim index for the input
     """
-    _dim: int
+    __dim: int
+
+    @property
+    def _dim(self) -> int: return self.__dim
 
     @property
     def dim(self) -> int:
         warnings.warn("The property `dim` will be deprecated from v1.1.0, and no longer be available in v1.2.0.", PendingDeprecationWarning)
-        return self._dim
+        return self.__dim
 
     @dim.setter
     def dim(self, dim: int) -> None:
         warnings.warn("The property `dim` will be deprecated from v1.1.0, and no longer be available in v1.2.0.", PendingDeprecationWarning)
-        self._dim = dim
+        self.__dim = dim
 
     def __init__(self, dim: int = -1, target: Optional[str] = None) -> None:
         """
@@ -44,7 +47,8 @@ class SparseCategoricalAccuracy(Accuracy):
             - target: A `str` of target name in `input` and `target` during direct calling
         """
         super().__init__(target=target)
-        self._dim = dim
+        assert dim > 0, _raise(ValueError(f"The dimension must be a positive number, got {dim}."))
+        self.__dim = dim
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         input = input.argmax(dim=self._dim)

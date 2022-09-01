@@ -1,4 +1,4 @@
-from torchmanager_core import torch
+from torchmanager_core import torch, _raise
 from torchmanager_core.typing import Optional
 
 from .metric import Metric
@@ -27,6 +27,7 @@ class Histogram(Metric):
             - target: A `str` of target name in `input` and `target` during direct calling
         """
         super().__init__(target=target)
+        assert num_classes > 0, _raise(ValueError(f"The number of classes must be a positive number, got {num_classes}."))
         self.__num_classes = num_classes
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
@@ -38,8 +39,8 @@ class Histogram(Metric):
             - target: The label `torch.Tensor`, or `y_true`
         - Returns: A `torch.Tensor` of historgram
         """
-        mask = (target >= 0) & (target < self.__num_classes)
-        hist = torch.bincount(self.__num_classes * target[mask].to(torch.int64) + input[mask], minlength=self.__num_classes ** 2).reshape(self.__num_classes, self.__num_classes)
+        mask = (target >= 0) & (target < self.num_classes)
+        hist = torch.bincount(self.num_classes * target[mask].to(torch.int64) + input[mask], minlength=self.num_classes ** 2).reshape(self.num_classes, self.num_classes)
         return hist
 
 class ConfusionMetrics(Histogram):

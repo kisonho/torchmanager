@@ -1,6 +1,7 @@
 from torchmanager_core import functional as F, torch
 from torchmanager_core.typing import Any, Optional
 
+from .dice import Dice
 from .loss import Loss
 
 class CrossEntropy(Loss):
@@ -13,50 +14,26 @@ class CrossEntropy(Loss):
         loss_fn = torch.nn.CrossEntropyLoss(*args, **kwargs)
         super().__init__(loss_fn, target=target, weight=weight)
 
-class Dice(Loss):
-    """
-    The dice loss
-    
-    * extends: `.loss.Loss`
-    """
-    _smooth: int
-    _softmax_input: bool
-
-    def __init__(self, smooth: int = 1, softmax_input: bool = True, **kwargs: Any) -> None:
-        """
-        Constructor
-
-        - Parameters:
-            - smooth: An `int` of smooth value to avoid dividing zero
-            - softmax_input: A `bool` flag of if softmax the input
-        """
-        super().__init__(**kwargs)
-        self._smooth = smooth
-        self._softmax_input = softmax_input
-
-    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        # softmax activation
-        input = F.softmax(input).view(-1) if self._softmax_input else input.view(-1)
-        target = target.view(-1)
-
-        # calculate dice
-        intersection = input * target
-        return (2 * intersection.sum() + self._smooth) / (input.sum() + target.sum() + self._smooth)
-
 class DiceCE(CrossEntropy, Dice):
     """
     Combined `Dice` loss and `CrossEntropy` loss
     
     * extends: `CrossEntropy`, `Dice`
     """
-    _ce_lambda: float
-    _dice_lambda: float
+    __ce_lambda: float
+    __dice_lambda: float
+
+    @property
+    def _ce_lambda(self) -> float: return self.__ce_lambda
+
+    @property
+    def _dice_lambda(self) -> float: return self.__dice_lambda
 
     def __init__(self, *args, ce_lambda: float = 1, dice_lambda: float = 1, smooth: int = 1, target: Optional[str] = None, weight: float = 1, **kwargs) -> None:
         CrossEntropy.__init__(self, *args, target=target, weight=weight, **kwargs)
         Dice.__init__(self, smooth=smooth, target=target, weight=weight)
-        self._ce_lambda = ce_lambda
-        self._dice_lambda = dice_lambda
+        self.__ce_lambda = ce_lambda
+        self.__dice_lambda = dice_lambda
 
     def forward(self, input: Any, target: Any) -> torch.Tensor:
         dice = Dice.forward(self, input, target)
@@ -69,10 +46,22 @@ class FocalCrossEntropy(Loss):
     
     * extends: `.loss.Loss`
     """
-    _alpha: float
-    _gamma: float
-    _calculate_average: bool
-    _ignore_index: int
+    __alpha: float
+    __calculate_average: bool
+    __gamma: float
+    __ignore_index: int
+
+    @property
+    def _alpha(self) -> float: return self.__alpha
+
+    @property
+    def _calculate_average(self) -> bool: return self.__calculate_average
+
+    @property
+    def _gamma(self) -> float: return self.__gamma
+
+    @property
+    def _ignore_index(self) -> int: return self.__ignore_index
 
     def __init__(self, alpha: float = 1, gamma: float = 0, calculate_average: bool = True, ignore_index: int = 255, **kwargs: Any):
         """
@@ -85,10 +74,10 @@ class FocalCrossEntropy(Loss):
             - ignore_index: An `int` of Specified target value that is ignored
         """
         super().__init__(**kwargs)
-        self._alpha = alpha
-        self._gamma = gamma
-        self._ignore_index = ignore_index
-        self._calculate_average = calculate_average
+        self.__alpha = alpha
+        self.__gamma = gamma
+        self.__ignore_index = ignore_index
+        self.__calculate_average = calculate_average
 
     def forward(self, inputs: Any, targets: Any) -> torch.Tensor:
         # calculate loss

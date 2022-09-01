@@ -178,7 +178,7 @@ class Manager(_Manager, Generic[Module]):
         if use_multi_gpus and not isinstance(self.compiled_losses, torch.nn.parallel.DataParallel):
             paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.compiled_losses, devices=target_devices)
             if use_multi_gpus: self.loss_fn = Loss(paralleled_loss_fn)
-        devices.move_to_device([self.model, self.compiled_losses, self.metric_fns], device)
+        devices.move_to_device([self.model, self.optimizer, self.compiled_losses, self.metric_fns], device)
 
         # epoch loop
         for self.current_epoch in range(initial_epoch, epochs):

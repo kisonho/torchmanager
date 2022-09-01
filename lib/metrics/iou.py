@@ -1,6 +1,6 @@
-import warnings
-import torch
+from torchmanager_core import torch, _raise
 from torchmanager_core.typing import Optional
+from torchmanager_core.view import warnings
 
 from .conf_met import ConfusionMetrics
 from .metric import Metric
@@ -30,9 +30,18 @@ class MeanIoU(Metric):
     * extends: `torch.nn.Module`
     * [Pending Deprecation Warning]: The old `MIoU` metric in v1.0.3 calculates iIoU and has been renamed to `InstanceIoU` in v1.1.0, and will be removed in v1.2.0.
     """
-    _dim: int
-    _smooth: float
-    _threshold: float
+    __dim: int
+    __smooth: float
+    __threshold: float
+
+    @property
+    def _dim(self) -> int: return self.__dim
+
+    @property
+    def _smooth(self) -> float: return self.__smooth
+
+    @property
+    def _threshold(self) -> float: return self.__threshold
 
     def __init__(self, dim: int = 1, smooth: float = 1e-4, threshold: float = 0.5, target: Optional[str] = None) -> None:
         """
@@ -43,9 +52,11 @@ class MeanIoU(Metric):
             - smooth: A `float` of smooth value to avoid zero devision
         """
         super().__init__(target=target)
-        self._dim = dim
-        self._smooth = smooth
-        self._threshold
+        assert dim > 0, _raise(ValueError(f"The dimension must be a positive number, got {dim}."))
+        assert threshold >= 0 and threshold <= 1, _raise(ValueError(f"The threshold must be in range [0,1], got {threshold}."))
+        self.__dim = dim
+        self.__smooth = smooth
+        self.__threshold = threshold
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         input = input.argmax(self._dim)

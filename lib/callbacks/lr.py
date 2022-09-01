@@ -1,7 +1,6 @@
 from torchmanager_core import torch
 from torchmanager_core.typing import Any, Dict, Generic, Optional, TypeVar
 
-from ..train import learning_rate
 from .callback import FrequencyCallback
 from .protocols import Frequency, SummaryWriteble
 
@@ -33,7 +32,7 @@ class LrSchedueler(FrequencyCallback, Generic[Scheduler]):
     def _writer(self) -> Optional[SummaryWriteble]:
         return self.__writer
 
-    def __init__(self, scheduler: Scheduler, freq: Frequency = Frequency.EPOCH, tf_board_writer: Optional[Writer] = None, name: str = 'lr') -> None:
+    def __init__(self, scheduler: Scheduler, freq: Frequency = Frequency.EPOCH, name: str = 'lr', tf_board_writer: Optional[Writer] = None) -> None:
         super().__init__(freq)
         self.__lr_scheduler = scheduler
         self.__name = name

@@ -24,7 +24,7 @@ class Checkpoint(Generic[T]):
     optimizer: Optional[torch.optim.Optimizer]
     save_weights_only: bool
 
-    def __init__(self, model: T, last_epoch: int=0, optimizer: Optional[torch.optim.Optimizer]=None, loss_fn: Optional[torch.nn.Module]=None, metrics: Optional[Dict[str, torch.nn.Module]]=None, save_weights_only: bool=False) -> None:
+    def __init__(self, model: T, last_epoch: int = 0, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[torch.nn.Module] = None, metrics: Optional[Dict[str, torch.nn.Module]] = None, save_weights_only: bool = False) -> None:
         '''
         Constructor
 
