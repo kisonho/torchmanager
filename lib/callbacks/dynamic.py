@@ -5,7 +5,6 @@ from .callback import FrequencyCallback
 from .protocols import Frequency, SummaryWriteble, Weighted
 
 W = TypeVar('W', bound=Weighted)
-Writer = TypeVar("Writer", bound=SummaryWriteble)
 
 class DynamicWeight(FrequencyCallback, abc.ABC, Generic[W]):
     '''
@@ -30,7 +29,7 @@ class DynamicWeight(FrequencyCallback, abc.ABC, Generic[W]):
     def _writer(self) -> Optional[SummaryWriteble]:
         return self.__writer
 
-    def __init__(self, weighted: W, freq: Frequency = Frequency.EPOCH, writer: Optional[Writer] = None, name: Optional[str] = None) -> None:
+    def __init__(self, weighted: W, freq: Frequency = Frequency.EPOCH, writer: Optional[SummaryWriteble] = None, name: Optional[str] = None) -> None:
         '''
         Constructor
 
@@ -67,7 +66,7 @@ class LambdaDynamicWeight(DynamicWeight[W], Generic[W]):
     '''
     __lambda_fn: Callable[[int], Any]
 
-    def __init__(self, fn: Callable[[int], Any], weighted: W, freq: Frequency = Frequency.EPOCH, writer: Optional[Writer] = None, name: Optional[str] = None) -> None:
+    def __init__(self, fn: Callable[[int], Any], weighted: W, freq: Frequency = Frequency.EPOCH, writer: Optional[SummaryWriteble] = None, name: Optional[str] = None) -> None:
         super().__init__(weighted, freq, writer, name)
         self.__lambda_fn = fn
 

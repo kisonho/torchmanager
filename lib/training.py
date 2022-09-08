@@ -105,7 +105,7 @@ class Manager(_Manager, Generic[Module]):
                     progress_summary = {name: s for name, s in summary.items() if "loss" not in name}
                 elif verbose_type == view.VerboseType.ALL:
                     progress_summary = summary
-                else: raise TypeError(f"[Runtime Error]: Verbose type {verbose_type} is not supported.")
+                else: raise TypeError(f"Verbose type {verbose_type} is not supported.")
 
                 # update progress bar
                 progress_bar.set_postfix(progress_summary)
@@ -155,7 +155,7 @@ class Manager(_Manager, Generic[Module]):
 
         # initialize logger
         view.logging.basicConfig(level=view.logging.INFO, format="%(message)s")
-        logger = view.logging.getLogger("Training")
+        logger = view.logging.getLogger("torchmanager")
 
         # initialize initial epoch
         if initial_epoch is not None: 
@@ -198,7 +198,11 @@ class Manager(_Manager, Generic[Module]):
             # on epoch end
             for c in callbacks_list:
                 try: c.on_epoch_end(self.current_epoch, summary=summary, val_summary=val_summary)
-                except StopTraining: break
+                except StopTraining:
+                    self.model = raw_model.to(cpu)
+                    self.loss_fn = raw_loss_fn.to(cpu)
+                    devices.empty_cache()
+                    return self.model
                 except Exception: raise
 
             # step lr scheduler
