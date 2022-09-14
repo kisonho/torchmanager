@@ -55,7 +55,7 @@ class MultiLosses(Loss):
     * extends: `.Loss`
     
     - Properties:
-        - losses: A `list` of loss metrics in `Metric`
+        - losses: A `torch.nn.ModuleList` of loss metrics in `Metric`
     """
     __losses: torch.nn.ModuleList
 
@@ -63,8 +63,8 @@ class MultiLosses(Loss):
     def losses(self) -> torch.nn.ModuleList:
         return self.__losses
 
-    def __init__(self, losses: List[Loss], target: Optional[str] = None) -> None:
-        super().__init__(target=target)
+    def __init__(self, losses: List[Loss], target: Optional[str] = None, weight: float = 1) -> None:
+        super().__init__(target=target, weight=weight)
         self.__losses = torch.nn.ModuleList(losses)
 
     def forward(self, input: Any, target: Any) -> torch.Tensor:
