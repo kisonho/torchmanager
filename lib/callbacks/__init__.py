@@ -6,7 +6,10 @@ from .lr import LrSchedueler
 from .protocols import Frequency
 Checkpoint = LastCheckpoint
 
-try: from .tensorboard import TensorBoard
+try:
+    from .experiment import Experiment
+    from .tensorboard import TensorBoard
 except:
+    Experiment = NotImplemented
     TensorBoard = NotImplemented
     pass

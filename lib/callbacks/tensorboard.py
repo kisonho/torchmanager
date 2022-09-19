@@ -8,6 +8,9 @@ class TensorBoard(FrequencyCallback):
     """
     The callback to record summary to tensorboard for each epoch
 
+    * extends: `.callback.FrequencyCallback`
+    * requires: `tensorboard` package
+
     - Properties:
         - writer: A `tensorboard.SummaryWriter` to record scalars
     """
