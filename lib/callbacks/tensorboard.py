@@ -18,14 +18,16 @@ class TensorBoard(FrequencyCallback):
     def writer(self) -> tensorboard.writer.SummaryWriter:
         return self.__writer
 
-    def __init__(self, log_dir: str, freq: Frequency = Frequency.EPOCH) -> None:
+    def __init__(self, log_dir: str, freq: Frequency = Frequency.EPOCH, initial_step: int = 0) -> None:
         """
         Constructor
 
         - Parameters:
             - log_dir: A `str` of logging directory
+            - freq: A tensorboard record `.protocols.Frequency`
+            - initial_step: An `int` of the initial step that starts with
         """
-        super().__init__(freq)
+        super().__init__(freq, initial_step=initial_step)
         self.__writer = tensorboard.writer.SummaryWriter(log_dir)
 
     def add_graph(self, model: torch.nn.Module, input_shape: Optional[Tuple[int, ...]] = None) -> None:
