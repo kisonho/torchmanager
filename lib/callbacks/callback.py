@@ -82,9 +82,16 @@ class FrequencyCallback(Callback, abc.ABC):
         assert step >= 0, "The step index must be a non-negative number."
         self.__step = step
 
-    def __init__(self, freq: Frequency = Frequency.EPOCH) -> None:
+    def __init__(self, freq: Frequency = Frequency.EPOCH, initial_step: int = 0) -> None:
+        '''
+        Constructor
+
+        - Parameters:
+            - freq: A `.protocols.Frequency` of callback frequency
+            - initial_step: An `int` of the initial step that starts with
+        '''
         super().__init__()
-        self.__step = 0
+        self.__step = initial_step
         self.freq = freq
 
     @abc.abstractmethod
