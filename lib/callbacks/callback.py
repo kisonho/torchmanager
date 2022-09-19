@@ -92,7 +92,7 @@ class FrequencyCallback(Callback, abc.ABC):
 
     def on_batch_end(self, batch: int, summary: Dict[str, float] = {}) -> None:
         if self.freq == Frequency.BATCH:
-            result = self.step()
+            result = self.step(summary)
             self._update(result)
             self.current_step += 1
 
@@ -103,7 +103,7 @@ class FrequencyCallback(Callback, abc.ABC):
             self.current_step += 1
 
     @abc.abstractmethod
-    def step(self, summary: Dict[str, float] = {}, val_summary: Optional[Dict[str, float]] = None) -> Any:
+    def step(self, summary: Dict[str, float], val_summary: Optional[Dict[str, float]] = None) -> Any:
         '''
         Abstract method to step the callback
         
