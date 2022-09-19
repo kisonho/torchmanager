@@ -165,6 +165,7 @@ class Manager(_Manager[Module], Generic[Module]):
 
         # initialize training
         cpu, device, target_devices = devices.search(None if use_multi_gpus else device)
+        if device == cpu and len(target_devices) < 2: use_multi_gpus = False
         devices.set_default(target_devices[0])
         if lr_scheduler is not None: view.warnings.warn("Parameter `lr_scheduler` will be deprecated after v1.1.0 and will be removed from v1.2.0, use `.callbacks.LrScheduler` callback instead.", PendingDeprecationWarning)
         for c in callbacks_list: c.on_train_start(initial_epoch)
