@@ -6,7 +6,7 @@ from .losses import Loss
 from .metrics import Metric
 from .basic import DataManager, BaseManager
 
-class Manager(BaseManager, DataManager, Generic[Module]):
+class Manager(BaseManager[Module], DataManager, Generic[Module]):
     """
     A testing manager, only used for testing
 
@@ -16,7 +16,7 @@ class Manager(BaseManager, DataManager, Generic[Module]):
         - compiled_losses: The loss function in `Loss` that must be exist
         - compiled_metrics: The `dict` of metrics in `Metric` that does not contain losses
     """
-    model: Module
+    model: Union[Module, torch.nn.parallel.DataParallel]
     
     @property
     def compiled_losses(self) -> Loss:

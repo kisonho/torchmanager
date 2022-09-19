@@ -7,7 +7,7 @@ from .metrics import Metric
 from .train import Checkpoint, learning_rate
 from .testing import Manager as _Manager
 
-class Manager(_Manager, Generic[Module]):
+class Manager(_Manager[Module], Generic[Module]):
     """
     A training manager
 
@@ -19,7 +19,6 @@ class Manager(_Manager, Generic[Module]):
         - compiled_optimizer: The `torch.optim.Optimizer` that must be exist
     """
     __current_epoch: int
-    model: Module
 
     @property
     def current_epoch(self) -> int:
@@ -174,11 +173,13 @@ class Manager(_Manager, Generic[Module]):
         raw_model = self.model
         raw_loss_fn = self.compiled_losses
         if use_multi_gpus and not isinstance(self.model, torch.nn.parallel.DataParallel):
-            self.model, use_multi_gpus = devices.data_parallel(raw_model, devices=target_devices)
+            model, use_multi_gpus = devices.data_parallel(raw_model, devices=target_devices)
+        else: model = self.model
+        self.model = model
         if use_multi_gpus and not isinstance(self.compiled_losses, torch.nn.parallel.DataParallel):
             paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.compiled_losses, devices=target_devices)
             if use_multi_gpus: self.loss_fn = Loss(paralleled_loss_fn)
-        devices.move_to_device([self.model, self.optimizer, self.compiled_losses, self.metric_fns], device)
+        self.to(device)
 
         # epoch loop
         for self.current_epoch in range(initial_epoch, epochs):
