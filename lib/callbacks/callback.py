@@ -68,9 +68,8 @@ class FrequencyCallback(Callback, abc.ABC):
         - current_step: An `int` of the current step index
         - freq: A `WeightUpdateFreq` of the frequency type to update the weight
     '''
+    __freq: Frequency
     __step: int
-    freq: Frequency
-    '''The frequency of this callback'''
 
     @property
     def current_step(self) -> int:
@@ -82,6 +81,9 @@ class FrequencyCallback(Callback, abc.ABC):
         assert step >= 0, "The step index must be a non-negative number."
         self.__step = step
 
+    @property
+    def freq(self) -> Frequency: return self.__freq
+
     def __init__(self, freq: Frequency = Frequency.EPOCH, initial_step: int = 0) -> None:
         '''
         Constructor
@@ -91,8 +93,8 @@ class FrequencyCallback(Callback, abc.ABC):
             - initial_step: An `int` of the initial step that starts with
         '''
         super().__init__()
+        self.__freq = freq
         self.__step = initial_step
-        self.freq = freq
 
     @abc.abstractmethod
     def _update(self, result: Any) -> None: pass
