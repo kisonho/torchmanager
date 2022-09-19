@@ -20,12 +20,15 @@ class Experiment(TensorBoard, BestCheckpoint[T], Generic[T]):
         - checkpoint: A `..train.Checkpoint` of target in `T`
         - path: A `str` of current experiment path
     """
-    def __init__(self, experiment_path: str, model: T, monitor: str, initial_epoch: int = 0, monitor_type: MonitorType = MonitorType.MAX) -> None:
+    def __init__(self, experiment_path: str, model: T, monitor: str, monitor_type: MonitorType = MonitorType.MAX) -> None:
         experiment_path = os.path.normpath(experiment_path)
         log_dir = os.path.join(experiment_path, "data")
         ckpt_path = os.path.join(experiment_path, "checkpoints")
         TensorBoard.__init__(self, log_dir)
         BestCheckpoint.__init__(self, monitor, model, ckpt_path, monitor_type=monitor_type)
+
+    def on_train_start(self, initial_epoch: int = 0) -> None:
+        self.current_step = initial_epoch
 
     def step(self, summary: Dict[str, float], val_summary: Optional[Dict[str, float]] = None) -> Tuple[Set[str], dict[str, float], Optional[Dict[str, float]]]:
         # check if summary is given
@@ -35,8 +38,13 @@ class Experiment(TensorBoard, BestCheckpoint[T], Generic[T]):
             last_ckpt_path = os.path.join(self.ckpt_path, "last.model")
             best_ckpt_path = os.path.join(self.ckpt_path, "best.model")
 
-            # save checkpoints
-            self._checkpoint.save()
+            # save last checkpoints
+            self._checkpoint.save(self.current_step, last_ckpt_path)
+
+            # save best checkpoints
+            if self.best_score <= score:
+                self.best_score = score
+                self._checkpoint.save(self.current_step, best_ckpt_path)
 
         # step to tensorboard
         return TensorBoard.step(self, summary, val_summary)
