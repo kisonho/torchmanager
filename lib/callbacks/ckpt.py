@@ -2,9 +2,10 @@ from torchmanager_core import os, sys, torch, _raise
 from torchmanager_core.typing import Any, Dict, Enum, Generic, Optional, TypeVar
 
 from ..train import Checkpoint as Ckpt
+from ..train.protocols import StateDictLoadable
 from .callback import Callback
 
-T = TypeVar('T')
+T = TypeVar('T', bound=StateDictLoadable)
 
 class _Checkpoint(Callback, Generic[T]):
     """
