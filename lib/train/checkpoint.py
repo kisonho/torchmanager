@@ -1,6 +1,8 @@
 from torchmanager_core import devices, os, torch, _raise
 from torchmanager_core.typing import Any, Dict, Generic, Optional, OrderedDict, TypeVar
 
+from ..losses import Loss
+from ..metrics import Metric
 from .protocols import StateDictLoadable
 
 T = TypeVar('T', bound=StateDictLoadable)
@@ -18,13 +20,13 @@ class Checkpoint(Generic[T]):
         - save_weights_only: A `bool` flag of if only save state_dict of model
     '''
     last_epoch: int
-    loss_fn: Optional[torch.nn.Module]
-    metrics: Dict[str, torch.nn.Module]
+    loss_fn: Optional[Loss]
+    metrics: Dict[str,Metric]
     model: T
     optimizer: Optional[torch.optim.Optimizer]
     save_weights_only: bool
 
-    def __init__(self, model: T, last_epoch: int = 0, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[torch.nn.Module] = None, metrics: Optional[Dict[str, torch.nn.Module]] = None, save_weights_only: bool = False) -> None:
+    def __init__(self, model: T, last_epoch: int = 0, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Loss] = None, metrics: Optional[Dict[str, Metric]] = None, save_weights_only: bool = False) -> None:
         '''
         Constructor
 

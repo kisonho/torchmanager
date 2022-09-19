@@ -8,7 +8,6 @@ class Metric(torch.nn.Module):
     * extends: `torch.nn.Module`
     * Could be use as a decorator of a function
     * Metric tensor is released from memory as soon as the result returned
-    * [Deprecation Warning]: Method `call` is deprecated from v1.0.0 and will be removed from v1.1.0, override the `forward` method instead."
 
     - Properties:
         - result: The `torch.Tensor` of average metric results
@@ -51,9 +50,6 @@ class Metric(torch.nn.Module):
         self._results.append(m.detach())
         return m
 
-    def call(self, input: Any, target: Any) -> torch.Tensor:
-        return NotImplemented
-
     def forward(self, input: Any, target: Any) -> torch.Tensor:
         """
         Forward the current result method
@@ -63,12 +59,6 @@ class Metric(torch.nn.Module):
             - target: The label, or `y_true`, in `Any` kind
         - Returns: The metric in `torch.Tensor`
         """
-        # run deprecated method
-        m = self.call(input, target)
-        if m != NotImplemented:
-            view.warnings.warn("Method `call` was deprecated since version v1.0.0, the public method will be removed from 1.1.0. Override `forward` instead.", DeprecationWarning)
-            return m
-
         # main method
         if self._metric_fn is not None:
             return self._metric_fn(input, target)

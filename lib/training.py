@@ -12,7 +12,7 @@ class Manager(_Manager[Module], Generic[Module]):
     A training manager
 
     * extends: `.testing.Manager`
-    * [Deprecation Warning]: Method `train` becomes protected from v1.0.2, the public method will be removed from v1.2.0. Override `_train` method instead.
+    * [Deprecation Warning]: Method `train` has been set as protected from v1.0.2, the public method will be removed from v1.2.0. Override `_train` method instead.
 
     - Properties:
         - current_epoch: The `int` index of current training epoch
@@ -39,7 +39,7 @@ class Manager(_Manager[Module], Generic[Module]):
         assert self.optimizer is not None, _raise(NotImplementedError("optimizer is not given."))
         return self.optimizer
 
-    def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]] = None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]] = {}) -> None:
+    def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss]]] = None, metrics: Dict[str, Metric] = {}) -> None:
         super().__init__(model, optimizer, loss_fn, metrics)
         self.__current_epoch = 0
 
@@ -69,7 +69,7 @@ class Manager(_Manager[Module], Generic[Module]):
         # run deprecated method
         summary = self.train(dataset, device=device, use_multi_gpus=use_multi_gpus, show_verbose=show_verbose, callbacks_list=callbacks_list)
         if summary is not NotImplemented:
-            view.warnings.warn("Method `train` will be set to protected in v1.1.0 and will be removed in v1.2.0, override `_train` instead.", PendingDeprecationWarning)
+            view.warnings.warn("Method `train` has been set to protected from v1.0.2 and will be removed in v1.2.0, override `_train` instead.", DeprecationWarning)
             return summary
 
         # initialize progress bar
@@ -167,7 +167,7 @@ class Manager(_Manager[Module], Generic[Module]):
         cpu, device, target_devices = devices.search(None if use_multi_gpus else device)
         if device == cpu and len(target_devices) < 2: use_multi_gpus = False
         devices.set_default(target_devices[0])
-        if lr_scheduler is not None: view.warnings.warn("Parameter `lr_scheduler` will be deprecated after v1.1.0 and will be removed from v1.2.0, use `.callbacks.LrScheduler` callback instead.", PendingDeprecationWarning)
+        if lr_scheduler is not None: view.warnings.warn("Parameter `lr_scheduler` has been deprecated after v1.1.0 and will be removed from v1.2.0, use `.callbacks.LrScheduler` callback instead.", DeprecationWarning)
         for c in callbacks_list: c.on_train_start(initial_epoch)
         
         # multi gpus support

@@ -9,13 +9,13 @@ def initial_step_lr_scheduler(lr_scheduler: Optional[LrSteping], initial_epoch: 
     """
     Initialize learning rate scheduler for the initial epochs before training starts
 
-    * [Pending Deprecate Warning]: This method will be deprecated from v1.1.0 and will be removed in v1.2.0.
+    * [Deprecate Warning]: This method has been deprecated from v1.1.0 and will be removed in v1.2.0.
 
     - Parameters:
         - lr_scheduler: The given lr scheduler in `torch.optim.lr_scheduler._LRScheduler`
         - initial_epoch: An `int` of the intial epoch index
     """
-    warnings.warn("This method will be deprecated from v1.1.0 and will be removed in v1.2.0.", PendingDeprecationWarning)
+    warnings.warn("This method has been deprecated from v1.1.0 and will be removed in v1.2.0.", DeprecationWarning)
 
     # go to initial epoch
     if lr_scheduler is not None and initial_epoch > 0:

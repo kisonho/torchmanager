@@ -45,7 +45,7 @@ def find(specified: Optional[torch.device] = None) -> Tuple[torch.device, torch.
         - specified: An optional `torch.device` of specified
     - Returns: A `tuple` of CPU in `torch.device` and available device in `torch.device`
     """
-    warnings.warn("This method will be deprecated from v1.1.0 and will be removed in v1.2.0, use `torchmanager_core.devices.search` instead.", PendingDeprecationWarning)
+    warnings.warn("This has been deprecated from v1.1.0 and will be removed in v1.2.0, use `torchmanager_core.devices.search` instead.", PendingDeprecationWarning)
     if specified is None:
         return (CPU, GPU) if torch.cuda.is_available() else (CPU, CPU)
     else: return CPU, specified

@@ -28,7 +28,7 @@ class BaseManager(Generic[Module]):
     def compiled(self) -> bool:
         return True if self.loss_fn is not None and self.optimizer is not None else False
 
-    def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]] = None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]] = {}) -> None:
+    def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss]]] = None, metrics: Dict[str, Metric] = {}) -> None:
         """
         Constructor
         
@@ -45,7 +45,7 @@ class BaseManager(Generic[Module]):
         # compile
         self._compile(optimizer, loss_fn, metrics)
 
-    def _compile(self, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]]] = None, metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]] = {}) -> None:
+    def _compile(self, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss]]] = None, metrics: Dict[str, Metric] = {}) -> None:
         """
         Compiles the manager
         
@@ -62,22 +62,16 @@ class BaseManager(Generic[Module]):
             loss_fn_mapping: Dict[str, Loss] = {f"{name}_loss": fn for name, fn in loss_fn.items()}
             self.metric_fns.update(loss_fn_mapping)
             loss_fn = MultiLosses([l for l in loss_fn_mapping.values()])
-        elif loss_fn is not None and not isinstance(loss_fn, Loss):
-            loss_fn = Loss(loss_fn)
-            view.warnings.warn("Parsing `loss_fn` as a function was deprecated from v1.0.0 and will no longer be available from v1.1.0, use losses.Loss object instead.", DeprecationWarning)
         self.loss_fn = loss_fn
 
         # initialize metrics
         for name, fn in metrics.items():
-            if isinstance(fn, Metric): self.metric_fns[name] = fn
-            else:
-                view.warnings.warn("Parsing a metric in `metrics` as a function was deprecated from v1.0.0 and will no longer be available from v1.1.0, use `metrics.Metric` object instead.", DeprecationWarning)
-                self.metric_fns[name] = Metric(fn)
+            self.metric_fns[name] = fn
 
         # initialize optimizer
         self.optimizer = optimizer
 
-    def compile(self, optimizer: torch.optim.Optimizer, loss_fn: Union[Loss, Dict[str, Loss], Callable[[Any, Any], torch.Tensor]], metrics: Dict[str, Union[Metric, Callable[[Any, Any], torch.Tensor]]] = {}) -> None:
+    def compile(self, optimizer: torch.optim.Optimizer, loss_fn: Union[Loss, Dict[str, Loss]], metrics: Dict[str, Metric] = {}) -> None:
         """
         Compiles the manager
         
@@ -157,7 +151,7 @@ class BaseManager(Generic[Module]):
         
         - Returns: A `Checkpoint` with its model in `Module` type
         """
-        metrics: Dict[str, torch.nn.Module] = {k: m for k, m in self.metric_fns.items()}
+        metrics: Dict[str, Metric] = {k: m for k, m in self.metric_fns.items()}
         ckpt = Checkpoint(self.model, optimizer=self.optimizer, loss_fn=self.loss_fn, metrics=metrics)
         return ckpt
 
