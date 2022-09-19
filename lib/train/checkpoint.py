@@ -3,7 +3,7 @@ from torchmanager_core.typing import Any, Dict, Generic, Optional, OrderedDict, 
 
 from .protocols import StateDictLoadable
 
-T = TypeVar('T')
+T = TypeVar('T', bound=StateDictLoadable)
 
 class Checkpoint(Generic[T]):
     '''
@@ -83,8 +83,8 @@ class Checkpoint(Generic[T]):
         self.last_epoch = epoch
         ckpt = self.__dict__
         if self.save_weights_only is True:
-            assert isinstance(self.model, StateDictLoadable), _raise(TypeError("This saved model does not perform to `StateDictLoadable` protocol to save weights only."))
-            ckpt["model"] = self.model.state_dict()
+            model = self.model.module if isinstance(self.model, torch.nn.parallel.DataParallel) else self.model
+            ckpt["model"] = model.state_dict()
         elif isinstance(ckpt["model"], torch.nn.parallel.DataParallel): ckpt["model"] = ckpt["model"].module
         ckpt_path = os.path.normpath(ckpt_path)
         ckpt_dir = os.path.dirname(ckpt_path)
