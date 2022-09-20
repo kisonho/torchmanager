@@ -1,10 +1,9 @@
 from torchmanager_core import os
-from torchmanager_core.typing import Dict, Generic, List, Optional, Set, Tuple, TypeVar
-from torchmanager_core.view import logging, warnings
+from torchmanager_core.typing import Dict, Generic, Optional, Set, Tuple, TypeVar
+from torchmanager_core.view import logging
 
 from ..train.protocols import StateDictLoadable
 from .ckpt import _Checkpoint, MonitorType
-from .protocols import Frequency
 from .tensorboard import TensorBoard
 
 T = TypeVar('T', bound=StateDictLoadable)
@@ -50,7 +49,6 @@ class Experiment(TensorBoard, _Checkpoint[T], Generic[T]):
         log_file = os.path.basename(experiment_dir.replace(".exp", ".log"))
         log_path = os.path.join(experiment_dir, log_file)
         logging.basicConfig(level=logging.INFO, filename=log_path, format="%(message)s")
-        warnings.filterwarnings("ignore")
 
         # initialize console
         if show_verbose:

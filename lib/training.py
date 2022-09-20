@@ -1,5 +1,5 @@
 from torchmanager_core import devices, math, torch, view, _raise
-from torchmanager_core.typing import Any, Callable, Dict, Generic, List, Module, Optional, SizedIterable, Union
+from torchmanager_core.typing import Any, Dict, Generic, List, Module, Optional, SizedIterable, Union
 
 from .callbacks import Callback, StopTraining
 from .losses import Loss

@@ -1,5 +1,5 @@
-from torchmanager_core import torch, view, _raise
-from torchmanager_core.typing import Any, Callable, Dict, Generic, Module, Optional, OrderedDict, SizedIterable, Tuple, Union
+from torchmanager_core import torch, _raise
+from torchmanager_core.typing import Any, Dict, Generic, Module, Optional, OrderedDict, SizedIterable, Tuple, Union
 
 from .losses import Loss, MultiLosses, MultiOutputsLosses
 from .metrics import Metric
@@ -13,8 +13,8 @@ class BaseManager(Generic[Module]):
 
     - Properties:
         - compiled: A `bool` flag of if the manager has been compiled
-        - loss_fn: A `Callable` method that takes the truth and predictions in `torch.Tensor` and returns a loss `torch.Tensor`
-        - metrics: A `dict` of metrics with a name in `str` and a `Callable` method that takes the truth and predictions in `torch.Tensor` and returns a loss `torch.Tensor`
+        - loss_fn: An optional `Loss` for the objective function
+        - metrics: A `dict` of metrics with a name in `str` as keys and a `Metric` as values
         - model: A target `torch.nn.Module` to be trained
         - optimizer: A `torch.optim.Optimizer` to train the model
     """
