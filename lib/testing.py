@@ -72,8 +72,7 @@ class Manager(BaseManager[Module], DataManager, Generic[Module]):
         for data in dataset:
             # move x_test, y_test to device
             x_test, y_test = self.unpack_data(data)
-            if use_multi_gpus is not True and isinstance(x_test, torch.Tensor):
-                x_test = devices.move_to_device(x_test, device)
+            if use_multi_gpus is not True: x_test = devices.move_to_device(x_test, device)
             y_test = devices.move_to_device(y_test, device)
 
             # test for one step

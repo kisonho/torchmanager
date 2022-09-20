@@ -103,10 +103,15 @@ class BaseManager(Generic[Module]):
         # recover model to manager
         if isinstance(ckpt.model, torch.nn.Module):
             manager = cls(ckpt.model, ckpt.optimizer, loss_fn=ckpt.loss_fn, metrics=ckpt.metrics)
-            return manager
         elif isinstance(ckpt.model, BaseManager):
-            return ckpt.model
+            manager = ckpt.model
+            if isinstance(manager.model, torch.nn.parallel.DataParallel): manager.model = manager.model.module
+            if manager.loss_fn is not None: 
+                if isinstance(manager.loss_fn._metric_fn, torch.nn.parallel.DataParallel):
+                    assert isinstance(manager.loss_fn._metric_fn.module, Loss), _raise(TypeError("Loss function is not a valid `Loss`."))
+                    manager.loss_fn = manager.loss_fn._metric_fn.module
         else: raise TypeError(f"The saved checkpoint contains a model with type of {type(ckpt.model)} that cannot be recoverred to a `Manager`.")
+        return manager
 
     def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> None:
         # load state dict elements
