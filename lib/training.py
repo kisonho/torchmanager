@@ -14,6 +14,25 @@ class Manager(_Manager[Module], Generic[Module]):
     * extends: `.testing.Manager`
     * [Deprecation Warning]: Method `train` becomes protected from v1.0.2, the public method will be removed from v1.2.0. Override `_train` method instead.
 
+    Compile a model, optimizer, loss function, and metrics into the manager:
+    >>> import torch
+    >>> from torchmanager import losses, metrics
+    >>> class SomeModel(torch.nn.Module): ...
+    >>> model = SomeModel()
+    >>> optimizer = torch.optim.SGD(...)
+    >>> loss_fn = losses.Loss(...)
+    >>> metric_fns = {
+    ...    ...
+    ... }
+    >>> manager = Manager(model, optimizer, loss_fn, metric_fns=metric_fns)
+
+    Train using fit method:
+    >>> from torch.utils.data import Dataset, DataLoader
+    >>> dataset = Dataset(...)
+    >>> dataset = DataLoader(dataset, ...)
+    >>> epochs: int = ...
+    >>> manager.fit(dataset, epochs, ...)
+
     - Properties:
         - current_epoch: The `int` index of current training epoch
         - compiled_optimizer: The `torch.optim.Optimizer` that must be exist

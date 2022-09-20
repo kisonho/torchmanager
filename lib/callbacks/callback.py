@@ -5,6 +5,7 @@ from .protocols import Frequency
 
 class Callback:
     """An empty basic training callback"""
+    
     def on_batch_end(self, batch: int, summary: Dict[str, float]={}) -> None:
         """
         The callback when batch ends

@@ -63,6 +63,23 @@ class LambdaDynamicWeight(DynamicWeight[W], Generic[W]):
     A dynamic weight callback that set weight dynamically with lambda function
     
     * extends: `DynamicWeight`
+
+    Targeting to any object that performs to `.protocol.Weighted` protocol:
+    >>> from torchmanager import losses
+    >>> loss_fn = losses.Loss(...) # where `torchmanager.losses.Loss` performs to `.protocols.Weighted` protocol
+
+    Passing defined functions into the `DynamicWeight` callback:
+    >>> def weight_fn(step: int) -> int: ...
+    >>> dynamic_weight_callback = LambdaDynamicWeight(weight_fn, loss_fn)
+
+    Or using Python lambda functions:
+    >>> dyncami_weight_callback = LambdaDynamicWeight(lambda e: ..., loss_fn)
+
+    Add to callbacks list and parsing to `fit` function:
+    >>> from torchmanager import Manager
+    >>> manager = Manager(..., loss_fn=loss_fn, ...)
+    >>> callbacks_list = [..., dynamic_weight_callback]
+    >>> manager.fit(..., callbacks_list=callbacks_list)
     '''
     __lambda_fn: Callable[[int], Any]
 
