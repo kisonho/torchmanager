@@ -1,5 +1,5 @@
 from torchmanager_core import os
-from torchmanager_core.typing import Dict, Generic, Optional, Set, Tuple, TypeVar
+from torchmanager_core.typing import Dict, Generic, List, Optional, Set, Tuple, TypeVar, Union
 from torchmanager_core.view import logging
 
 from ..train.protocols import StateDictLoadable
@@ -21,14 +21,14 @@ class Experiment(TensorBoard, _Checkpoint[T], Generic[T]):
     @property
     def monitors(self) -> Dict[str, MonitorType]: return self.__monitors
 
-    def __init__(self, experiment_dir: str, model: T, monitors: Dict[str, MonitorType]={}, show_verbose: bool = True) -> None:
+    def __init__(self, experiment_dir: str, model: T, monitors: Union[Dict[str, MonitorType], List[str]]={}, show_verbose: bool = True) -> None:
         """
         Constructor
 
         - Parameters:
             - experiment_dir: A `str` of target folder for the experiment
             - model: A target model to be tracked during experiment in `T`
-            - monitors: A `dict` of metric name to be tracked for the best checkpoint in `str` and the `.ckpt.MonitorType` to track as values
+            - monitors: A `list` of metric name if all monitors are using `MonitorType.MAX` to track, or `dict` of metric name to be tracked for the best checkpoint in `str` and the `.ckpt.MonitorType` to track as values
             - show_verbose: A `bool` flag of if showing loggins in console
         """
         # call super constructor
@@ -39,7 +39,7 @@ class Experiment(TensorBoard, _Checkpoint[T], Generic[T]):
         ckpt_path = os.path.join(experiment_dir, "checkpoints")
         TensorBoard.__init__(self, log_dir)
         _Checkpoint.__init__(self, model, ckpt_path)
-        self.__monitors = monitors
+        self.__monitors = monitors if isinstance(monitors, dict) else {monitor: MonitorType.MAX for monitor in monitors}
 
         # initialize scores
         for m in self.monitors:
