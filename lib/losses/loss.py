@@ -86,7 +86,7 @@ class MultiOutputsLosses(Loss):
     A loss with multiple losses for multiple outputs
 
     * extends: `.Loss`
-    * [Pending Depreciation Warning]: `MultiOutputsLosses` will be deprecated in v1.1.0, use `MultiLosses` along with `target` parameter for each loss instead.
+    * [Depreciation Warning]: `MultiOutputsLosses` has been deprecated in v1.1.0 and will be removed in v1.2.0, use `MultiLosses` along with `target` parameter for each loss instead.
     
     - Properties:
         - losses: A `dict` of loss metrics in `Metric`
@@ -101,7 +101,7 @@ class MultiOutputsLosses(Loss):
         super().__init__()
         assert len(loss_fns) > 0, "The loss dictionary should not be empty."
         self.__losses = torch.nn.ModuleDict(loss_fns)
-        warnings.warn("`MultiOutputsLosses` will be deprecated in v1.1.0, use `MultiLosses` along with `target` parameter for each loss instead.", PendingDeprecationWarning)
+        warnings.warn("`MultiOutputsLosses` has been deprecated in v1.1.0 and will be removed in v1.2.0, use `MultiLosses` along with `target` parameter for each loss instead.", PendingDeprecationWarning)
 
     def forward(self, input: Dict[str, torch.Tensor], target: Dict[str, torch.Tensor]) -> torch.Tensor:
         # initilaize
