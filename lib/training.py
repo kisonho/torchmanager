@@ -14,6 +14,25 @@ class Manager(_Manager[Module], Generic[Module]):
     * extends: `.testing.Manager`
     * [Deprecation Warning]: Method `train` has been set as protected from v1.0.2, the public method will be removed from v1.2.0. Override `_train` method instead.
 
+    Compile a model, optimizer, loss function, and metrics into the manager:
+    >>> import torch
+    >>> from torchmanager import losses, metrics
+    >>> class SomeModel(torch.nn.Module): ...
+    >>> model = SomeModel()
+    >>> optimizer = torch.optim.SGD(...)
+    >>> loss_fn = losses.Loss(...)
+    >>> metric_fns = {
+    ...    ...
+    ... }
+    >>> manager = Manager(model, optimizer, loss_fn, metric_fns=metric_fns)
+
+    Train using fit method:
+    >>> from torch.utils.data import Dataset, DataLoader
+    >>> dataset = Dataset(...)
+    >>> dataset = DataLoader(dataset, ...)
+    >>> epochs: int = ...
+    >>> manager.fit(dataset, epochs, ...)
+
     - Properties:
         - current_epoch: The `int` index of current training epoch
         - compiled_optimizer: The `torch.optim.Optimizer` that must be exist
@@ -133,7 +152,6 @@ class Manager(_Manager[Module], Generic[Module]):
             - epochs: An optional `int` number of training epochs
             - iterations: An optional `int` number of training iterations
             - lr_scheduelr: An optioanl `torch.optim.lr_scheduler._LRScheduler` to update the lr per epoch
-            - is_dynamic_pruning: A `bool` flag of if using dynamic pruning
             - val_dataset: An optional validation `Any`
             - device: An optional `torch.device` to test on if not using multi-GPUs or an optional default `torch.device` for testing otherwise
             - use_multi_gpus: A `bool` flag of if using multi gpus
