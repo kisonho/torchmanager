@@ -64,11 +64,11 @@ class LambdaDynamicWeight(DynamicWeight[W], Generic[W]):
     
     * extends: `DynamicWeight`
     '''
-    __lambda_fn: Callable[[int], Any]
+    _lambda_fn: Callable[[int], Any]
 
     def __init__(self, fn: Callable[[int], Any], weighted: W, freq: Frequency = Frequency.EPOCH, writer: Optional[SummaryWriteble] = None, name: Optional[str] = None) -> None:
         super().__init__(weighted, freq, writer, name)
-        self.__lambda_fn = fn
+        self._lambda_fn = fn
 
     def step(self, *args: Any, **kwargs: Any) -> Any:
-        return self.__lambda_fn(self.current_step)
+        return self._lambda_fn(self.current_step)
