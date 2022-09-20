@@ -133,7 +133,6 @@ class Manager(_Manager[Module], Generic[Module]):
             - epochs: An optional `int` number of training epochs
             - iterations: An optional `int` number of training iterations
             - lr_scheduelr: An optioanl `torch.optim.lr_scheduler._LRScheduler` to update the lr per epoch
-            - is_dynamic_pruning: A `bool` flag of if using dynamic pruning
             - val_dataset: An optional validation `Any`
             - device: An optional `torch.device` to test on if not using multi-GPUs or an optional default `torch.device` for testing otherwise
             - use_multi_gpus: A `bool` flag of if using multi gpus
