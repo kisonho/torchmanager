@@ -1,5 +1,5 @@
 from torchmanager_core import devices, torch, view, _raise
-from torchmanager_core.typing import Any, Collection, Dict, Generic, Module, Optional, Union
+from torchmanager_core.typing import Any, Collection, Dict, Generic, List, Module, Optional, Union
 from torchmanager_core.view import warnings
 
 from .losses import Loss
@@ -34,7 +34,48 @@ class Manager(BaseManager[Module], DataManager, Generic[Module]):
         return {name: m for name, m in self.metric_fns.items() if "loss" not in name}
 
     @torch.no_grad()
-    def test(self, dataset: Collection[Any], device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
+    def predict(self, dataset: Collection, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> List[Any]:
+        '''
+        Predict the whole dataset
+
+        - Parameters:
+            - dataset: A `Collection` dataset to predict
+            - device: An optional `torch.device` to test on if not using multi-GPUs or an optional default `torch.device` for testing otherwise
+            - use_multi_gpus: A `bool` flag to use multi gpus during testing
+            - show_verbose: A `bool` flag to show the progress bar during testing
+        '''
+        # find available device
+        cpu, device, target_devices = devices.search(None if use_multi_gpus else device)
+        if device == cpu and len(target_devices) < 2: use_multi_gpus = False
+        devices.set_default(target_devices[0])
+
+        # move model
+        if use_multi_gpus and not isinstance(self.model, torch.nn.parallel.DataParallel):
+            raw_model = self.model
+            self.model, use_multi_gpus = devices.data_parallel(self.model, devices=target_devices)
+        else: raw_model = None
+
+        # initialize predictions
+        self.model.eval()
+        predictions: List[Any] = []
+        if len(dataset) == 0: return predictions
+        progress_bar = view.tqdm(total=len(dataset)) if show_verbose else None
+
+        # loop the dataset
+        for data in dataset:
+            x, _ = self.unpack_data(data)
+            if use_multi_gpus is not True: x = devices.move_to_device(x, device)
+            y = self.model(x)
+            predictions.append(y)
+            if progress_bar is not None: progress_bar.update()
+
+        # reset model and loss
+        if raw_model is not None: self.model = raw_model.to(cpu)
+        devices.empty_cache()
+        return predictions
+
+    @torch.no_grad()
+    def test(self, dataset: Collection, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
         """
         Test target model
 
