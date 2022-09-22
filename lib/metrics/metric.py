@@ -24,7 +24,10 @@ class Metric(torch.nn.Module):
     def _target(self) -> Optional[str]: return self.__target
 
     @property
-    def result(self) -> torch.Tensor: return torch.tensor(self._results).mean()
+    def result(self) -> torch.Tensor: return torch.concat(self._results).mean()
+
+    @property
+    def results(self) -> torch.Tensor: return torch.concat(self._results)
 
     def __init__(self, metric_fn: Optional[Callable[[Any, Any], torch.Tensor]] = None, target: Optional[str] = None) -> None:
         """
@@ -48,7 +51,7 @@ class Metric(torch.nn.Module):
 
         # call
         m: torch.Tensor = super().__call__(input, target)
-        self._results.append(m.detach())
+        self._results.append(m.unsqueeze(0).detach())
         return m
 
     def call(self, input: Any, target: Any) -> torch.Tensor:
