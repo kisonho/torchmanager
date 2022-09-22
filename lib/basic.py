@@ -1,5 +1,5 @@
 from torchmanager_core import torch, _raise
-from torchmanager_core.typing import Any, Dict, Generic, Module, Optional, OrderedDict, SizedIterable, Tuple, Union
+from torchmanager_core.typing import Any, Collection, Dict, Generic, Module, Optional, OrderedDict, Tuple, Union
 
 from .losses import Loss, MultiLosses, MultiOutputsLosses
 from .metrics import Metric
@@ -10,6 +10,26 @@ class BaseManager(Generic[Module]):
     The basic manager
 
     * Implements: `torchmanager_core.devices.DeviceMovable`, `.train.StateDictLoadable`
+
+    Compile a model, optimizer, loss function, and metrics into the manager:
+    >>> import torch
+    >>> from torchmanager import losses, metrics
+    >>> class SomeModel(torch.nn.Module): ...
+    >>> model = SomeModel()
+    >>> optimizer = torch.optim.SGD(...)
+    >>> loss_fn = losses.Loss(...)
+    >>> metric_fns = {
+    ...     'metric_1': ...,
+    ...     'metric_2': ...,
+    ... }
+    >>> manager = Manager(model, optimizer, loss_fn, metric_fns=metric_fns)
+
+    Accepts multi losses as dictionary:
+    >>> loss_fn = {
+    ...     'loss_1': ...,
+    ...     'loss_2': ...,
+    ... }
+    >>> manager = Manager(..., loss_fn=loss_fn)
 
     - Properties:
         - compiled: A `bool` flag of if the manager has been compiled
@@ -162,7 +182,7 @@ class BaseManager(Generic[Module]):
 
 class DataManager:
     """The manager to load data during training or testing"""
-    def unpack_data(self, data: SizedIterable) -> Tuple[Any, Any]:
+    def unpack_data(self, data: Collection) -> Tuple[Any, Any]:
         """
         Unpacks data to input and target
         
@@ -170,6 +190,6 @@ class DataManager:
             - data: `Any` kind of data object
         - Returns: A `tuple` of `Any` kind of input and `Any` kind of target
         """
-        if len(data) == 2:
+        if len(data) >= 2:
             return tuple(data)
         else: return NotImplemented

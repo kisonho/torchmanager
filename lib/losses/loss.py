@@ -10,8 +10,20 @@ class Loss(Metric):
 
     * extends: `..metrics.Metric`
     * implements: `..callbacks.protocols.Weighted`
-    * Could be use as a decorator of a function
     * Loss tensor is stayed in memory until reset is called
+
+    Define the loss function by overriding `forward` method:
+    >>> from torchmanager import Manager
+    >>> class SomeLoss(Loss):
+    ...     def forward(self, input: Any, target: Any) -> torch.Tensor:
+    ...         ...
+    >>> loss_fn = SomeLoss()
+    >>> manager = Manager(..., loss_fn=loss_fn)
+
+    Or passing existing pytorch losses:
+    >>> import torch
+    >>> cross_entropy = Loss(torch.nn.CrossEntropyLoss(...))
+    >>> manager = Manager(..., loss_fn=cross_entropy)
 
     - Properties:
         - weight: A `float` of coeffiency applied to current loss function
@@ -50,9 +62,16 @@ class Loss(Metric):
 
 class MultiLosses(Loss):
     """
-    A loss with multiple losses
+    A loss with multiple losses sum together
 
     * extends: `.Loss`
+
+    Passing lists of `Loss` to the `MultiLosses`:
+    >>> from torchmanager import Manager
+    >>> loss_1 = Loss(...)
+    >>> loss_2 = Loss(...)
+    >>> loss_fn = MultiLosses([loss_1, loss_2])
+    >>> manager = Manager(..., loss_fn=loss_fn)
     
     - Properties:
         - losses: A `torch.nn.ModuleList` of loss metrics in `Metric`
@@ -121,14 +140,12 @@ def loss(fn: Callable[[Any, Any], torch.Tensor]) -> Loss:
     """
     The loss wrapping function that wrap a function into a loss
 
-    * Use as a decorator
-    ```
-    import torch
-
-    @loss
-    def some_loss_fn(input: Any, target: Any) -> torch.Tensor:
-        return ...
-    ```
+    Use as a decorator:
+    >>> import torch
+    >>> @loss
+    >>> def some_loss_fn(input: Any, target: Any) -> torch.Tensor:
+    ...    return ...
+    >>> manager = (..., loss_fn=some_loss_fn)
     """
     return Loss(fn)
 
@@ -136,14 +153,12 @@ def loss_fn(target: Optional[str] = None, weight: float = 1) -> Callable[[Callab
     """
     The loss wrapping function that wrap a function with target and weight given into a loss
 
-    * Use as a decorator
-    ```
-    import torch
-
-    @loss_fn(target='out', weight=0.5)
-    def some_loss_fn(input: Any, target: Any) -> torch.Tensor:
-        return ...
-    ```
+    Use as a decorator:
+    >>> import torch
+    >>> @loss_fn(target='out', weight=0.5)
+    >>> def some_loss_fn(input: Any, target: Any) -> torch.Tensor:
+    ...    return ...
+    >>> manager = (..., loss_fn=some_loss_fn)
     """
     def wrapped_loss_fn(fn_to_wrap: Callable[[Any, Any], torch.Tensor]) -> Loss:
         return Loss(fn_to_wrap, target=target, weight=weight)

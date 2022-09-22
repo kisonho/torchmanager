@@ -1,5 +1,4 @@
-from random import shuffle
-from torch.utils.data import IterableDataset, DataLoader
+from torch.utils.data import IterableDataset, DataLoader as _Loader
 from torchmanager_core import abc, devices, os, torch
 from torchmanager_core.typing import Any, Iterator, Sequence, Tuple
 
@@ -8,6 +7,7 @@ class Dataset(IterableDataset, abc.ABC):
     A dataset that iterates with batch size
 
     * extends: `IterableDataset`
+    * implements: `typing.Collection`
     * Abstract class
     * Used as a combination of `torch.utils.data.IterableDataset` and `torch.utils.data.DataLoader`
     
@@ -16,7 +16,6 @@ class Dataset(IterableDataset, abc.ABC):
     ...    def __init__(self, ...,  batch_size: int, device: torch.device = devices.CPU) -> None: ...
     ...    def __getitem__(self, index: Any) -> Any: ...
     ...    def __len__(self, index: Any) -> Any: ...
-
     >>> dataset = SomeDataset(..., batch_size)
     >>> manager = Manager(...)
     >>> manager.fit(dataset, ...)
@@ -24,11 +23,21 @@ class Dataset(IterableDataset, abc.ABC):
     - Properties:
         - batch_size: An `int` of batch size for the current dataset
         - device: A `torch.device` for the data to be pinned during iteration
+        - drop_last: A `bool` flag of if drop the last data that not enought for the batch size
+        - shuffle: A `bool` flag of if shuffling the data
     '''
+    __batch_size: int
     __device: torch.device
-    batch_size: int
     drop_last: bool
     shuffle: bool
+
+    @property
+    def batch_size(self) -> int: return self.__batch_size
+
+    @batch_size.setter
+    def batch_size(self, b: int) -> None:
+        if b <= 0: raise ValueError('Batch size must be a positive number')
+        self.__batch_size = b
 
     @property
     def device(self) -> torch.device:
@@ -43,12 +52,19 @@ class Dataset(IterableDataset, abc.ABC):
         - Parameters:
             - batch_size: An `int` of batch size for the current dataset
             - device: A `torch.device` for the data to be pinned during iteration
+            - drop_last: A `bool` flag of if drop the last data that not enought for the batch size
+            - shuffle: A `bool` flag of if shuffling the data
         '''
         super().__init__()
         self.__device = device
         self.batch_size = batch_size
         self.drop_last = drop_last
         self.shuffle = shuffle
+
+    def __contains__(self, value: Any) -> bool:
+        for i in range(len(self)):
+            if self[i] == value: return True
+        return False
 
     @abc.abstractmethod
     def __getitem__(self, index: Any) -> Any:
@@ -61,7 +77,7 @@ class Dataset(IterableDataset, abc.ABC):
         device = self.device
 
         # yield data
-        data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=cpu_count, pin_memory=(device == devices.CPU))
+        data_loader = _Loader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=cpu_count, pin_memory=(device == devices.CPU))
         for data in data_loader: yield self.unpack_data(data)
 
     @abc.abstractmethod
@@ -79,3 +95,12 @@ class Dataset(IterableDataset, abc.ABC):
         if isinstance(data, Sequence):
             return data[0], data[1] if len(data) >= 2 else NotImplemented
         else: return NotImplemented
+
+class DataLoader(_Loader):
+    '''
+    A PyTorch `DataLoader` that performs to `typing.Collection` protocol
+    '''
+    def __contains__(self, value: Any) -> bool:
+        for element in self:
+            if value == element: return True
+        return False

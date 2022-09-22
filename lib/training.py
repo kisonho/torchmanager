@@ -1,5 +1,5 @@
 from torchmanager_core import devices, math, torch, view, _raise
-from torchmanager_core.typing import Any, Dict, Generic, List, Module, Optional, SizedIterable, Union
+from torchmanager_core.typing import Any, Collection, Dict, Generic, List, Module, Optional, Union
 
 from .callbacks import Callback, StopTraining
 from .losses import Loss
@@ -14,22 +14,9 @@ class Manager(_Manager[Module], Generic[Module]):
     * extends: `.testing.Manager`
     * [Deprecation Warning]: Method `train` has been set as protected from v1.0.2, the public method will be removed from v1.2.0. Override `_train` method instead.
 
-    Compile a model, optimizer, loss function, and metrics into the manager:
-    >>> import torch
-    >>> from torchmanager import losses, metrics
-    >>> class SomeModel(torch.nn.Module): ...
-    >>> model = SomeModel()
-    >>> optimizer = torch.optim.SGD(...)
-    >>> loss_fn = losses.Loss(...)
-    >>> metric_fns = {
-    ...    ...
-    ... }
-    >>> manager = Manager(model, optimizer, loss_fn, metric_fns=metric_fns)
-
     Train using fit method:
-    >>> from torch.utils.data import Dataset, DataLoader
+    >>> from torchmanager.data import Dataset
     >>> dataset = Dataset(...)
-    >>> dataset = DataLoader(dataset, ...)
     >>> epochs: int = ...
     >>> manager.fit(dataset, epochs, ...)
 
@@ -62,12 +49,12 @@ class Manager(_Manager[Module], Generic[Module]):
         super().__init__(model, optimizer, loss_fn, metrics)
         self.__current_epoch = 0
 
-    def _train(self, dataset: SizedIterable, iterations: Optional[int] = None, device: torch.device = devices.CPU, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, callbacks_list: List[Callback] = []) -> Dict[str, float]:
+    def _train(self, dataset: Collection[Any], iterations: Optional[int] = None, device: torch.device = devices.CPU, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, callbacks_list: List[Callback] = []) -> Dict[str, float]:
         """
         The single training step for an epoch
 
         - Parameters:
-            - dataset: A `SizedIterable` training dataset
+            - dataset: A `Collection` training dataset
             - iterations: An optional `int` of total training iterations, must be smaller than the size of dataset
             - device: A `torch.device` where the data is moved to, should be same as the model
             - use_multi_gpus: A `bool` flag of if using multi gpus
@@ -143,12 +130,12 @@ class Manager(_Manager[Module], Generic[Module]):
         devices.empty_cache()
         return summary
 
-    def fit(self, training_dataset: SizedIterable, epochs: Optional[int] = None, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None, val_dataset: Optional[Any] = None, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, callbacks_list: List[Callback] = [], **kwargs) -> torch.nn.Module:
+    def fit(self, training_dataset: Collection[Any], epochs: Optional[int] = None, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None, val_dataset: Optional[Any] = None, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, callbacks_list: List[Callback] = [], **kwargs) -> torch.nn.Module:
         """
         Training algorithm
 
         - Parameters:
-            - training_dataset: Any kind of training dataset, must performs to `SizedIterable`
+            - training_dataset: Any kind of training dataset, must performs to `Collection`
             - epochs: An optional `int` number of training epochs
             - iterations: An optional `int` number of training iterations
             - lr_scheduelr: An optioanl `torch.optim.lr_scheduler._LRScheduler` to update the lr per epoch

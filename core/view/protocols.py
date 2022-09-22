@@ -1,4 +1,4 @@
-from typing import Protocol, runtime_checkable
+from typing import Protocol
 from enum import Enum
 
 import abc

@@ -6,4 +6,4 @@ from .testing import Manager as TestingManager
 from .training import Manager as TrainingManager
 Manager = TrainingManager
 
-version = "1.1.0a2"
+version = "1.1.0a3"

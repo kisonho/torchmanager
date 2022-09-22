@@ -32,7 +32,7 @@ class Callback:
         - Parameters:
             - epoch: An `int` of epoch index
             - summary: A `dict` of training summary with name in `str` and value in `float`
-            - val_summary: A `dict` of validation summary with name in `str` and value in `float`
+            - val_summary: An optional `dict` of validation summary with name in `str` and value in `float`
         """
         pass
 
@@ -117,6 +117,9 @@ class FrequencyCallback(Callback, abc.ABC):
         '''
         Abstract method to step the callback
         
+        - Parameters:
+            - summary: A `dict` of training summary with name in `str` and value in `float`
+            - val_summary: An optional `dict` of validation summary with name in `str` and value in `float`
         - Returns: An `Any` type of result for the new step
         '''
         return NotImplemented

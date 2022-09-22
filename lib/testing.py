@@ -1,5 +1,5 @@
 from torchmanager_core import devices, torch, view, _raise
-from torchmanager_core.typing import Any, Dict, Generic, Module, Optional, SizedIterable, Union
+from torchmanager_core.typing import Any, Collection, Dict, Generic, Module, Optional, Union
 from torchmanager_core.view import warnings
 
 from .losses import Loss
@@ -11,6 +11,11 @@ class Manager(BaseManager[Module], DataManager, Generic[Module]):
     A testing manager, only used for testing
 
     * extends: `.basic.BaseManager`, `.basic.DataManager`
+
+    Testing the model using `test` function:
+    >>> from torchmanager.data import Dataset
+    >>> dataset = Dataset(...)
+    >>> manager.test(dataset, ...)
 
     - Properties:
         - compiled_losses: The loss function in `Loss` that must be exist
@@ -29,12 +34,12 @@ class Manager(BaseManager[Module], DataManager, Generic[Module]):
         return {name: m for name, m in self.metric_fns.items() if "loss" not in name}
 
     @torch.no_grad()
-    def test(self, dataset: SizedIterable, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
+    def test(self, dataset: Collection[Any], device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
         """
         Test target model
 
         - Parameters:
-            - dataset: A `SizedIterable` dataset
+            - dataset: A `Collection` dataset
             - device: An optional `torch.device` to test on if not using multi-GPUs or an optional default `torch.device` for testing otherwise
             - use_multi_gpus: A `bool` flag to use multi gpus during testing
             - show_verbose: A `bool` flag to show the progress bar during testing

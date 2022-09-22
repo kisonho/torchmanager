@@ -1,5 +1,5 @@
 from torchmanager_core import devices, os, torch, _raise
-from torchmanager_core.typing import Any, Dict, Generic, Optional, OrderedDict, TypeVar
+from torchmanager_core.typing import Any, Dict, Generic, List, Optional, OrderedDict, TypeVar
 
 from ..losses import Loss
 from ..metrics import Metric
@@ -75,13 +75,13 @@ class Checkpoint(Generic[T]):
         return cls(**ckpt)
 
     def save(self, epoch: int, ckpt_path: str) -> None:
-        """
+        '''
         Saves current checkpoint
 
         - Parameters:
             - epoch: The `int` index of current epoch to save
             - ckpt_path: The `str` of checkpoint path to save
-        """
+        '''
         self.last_epoch = epoch
         ckpt = self.__dict__
         if self.save_weights_only is True:
@@ -92,3 +92,25 @@ class Checkpoint(Generic[T]):
         ckpt_dir = os.path.dirname(ckpt_path)
         os.makedirs(ckpt_dir, exist_ok=True)
         torch.save(ckpt, ckpt_path)
+
+def list_checkpoints(experiment_dir: str) -> List[str]:
+    '''
+    List all checkpoints in the given experiment folder
+
+    - Parameters:
+        - experiment_dir: A `str` of experiment directory
+    - Returns: A `list` of checkpoints name in the experiment
+    '''
+    return [file.replace(".model", "") for file in os.listdir(experiment_dir) if file.endswith(".model")]
+
+def load(experiment_dir: str, ckpt_name: str) -> Checkpoint[Any]:
+    '''
+    Load a checkpoint by its name and the experiment folder
+
+    - Parameters:
+        - experiment_dir: A `str` of experiment directory
+        - ckpt_name: A `str` of the checkpoint name in the directory
+    - Returns: The loaded `Checkpoint`
+    '''
+    if not ckpt_name.endswith(".model"): ckpt_name += ".model"
+    return Checkpoint.from_saved(os.path.join(experiment_dir, ckpt_name))

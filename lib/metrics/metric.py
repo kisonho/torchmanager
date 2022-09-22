@@ -6,7 +6,6 @@ class Metric(torch.nn.Module):
     The basic metric class
 
     * extends: `torch.nn.Module`
-    * Could be use as a decorator of a function
     * Metric tensor is released from memory as soon as the result returned
 
     - Properties:
@@ -72,14 +71,12 @@ def metric(fn: Callable[[Any, Any], torch.Tensor]) -> Metric:
     """
     The metric wrapping function that wrap a function into a metric
 
-    * Use as a decorator
-    ```
-    import torch
-
-    @metric
-    def some_metric_fn(input: Any, target: Any) -> torch.Tensor:
-        return ...
-    ```
+    Use as a decorator:
+    >>> import torch
+    >>> @metric
+    >>> def some_metric_fn(input: Any, target: Any) -> torch.Tensor:
+    ...    return ...
+    >>> manager = (..., metric_fns={'out': some_metric_fn})
     """
     return Metric(fn)
 
@@ -87,14 +84,12 @@ def metric_fn(target: Optional[str] = None) -> Callable[[Callable[[Any, Any], to
     """
     The loss wrapping function that wrap a function with target and weight given into a loss
 
-    * Use as a decorator
-    ```
-    import torch
-
-    @metric_fn(target='out')
-    def some_metric_fn(input: Any, target: Any) -> torch.Tensor:
-        return ...
-    ```
+    Use as a decorator:
+    >>> import torch
+    >>> @metric_fn(target='out')
+    >>> def some_metric_fn(input: Any, target: Any) -> torch.Tensor:
+    ...    return ...
+    >>> manager = (..., metric_fns={'out': some_metric_fn})
     """
     def wrapped_fn(fn_to_wrap: Callable[[Any, Any], torch.Tensor]) -> Metric:
         return Metric(fn_to_wrap, target=target)
