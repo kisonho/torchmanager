@@ -5,8 +5,8 @@ this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
 setup(name='torchmanager',
-    version='1.1.0a3',
-    description='PyTorch training manager (v1.1.0 Alpha 3)',
+    version='1.1.0a4',
+    description='PyTorch training manager (v1.1.0 Alpha 4)',
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Kison Ho',
@@ -14,6 +14,7 @@ setup(name='torchmanager',
     packages=[
         'torchmanager',
         'torchmanager.callbacks',
+        'torchmanager.data',
         'torchmanager.losses',
         'torchmanager.metrics',
         'torchmanager.train',
@@ -24,6 +25,7 @@ setup(name='torchmanager',
     package_dir={
         'torchmanager': 'lib',
         'torchmanager.callbacks': 'lib/callbacks',
+        'torchmanager.data': 'lib/data',
         'torchmanager.losses': 'lib/losses',
         'torchmanager.metrics': 'lib/metrics',
         'torchmanager.train': 'lib/train',

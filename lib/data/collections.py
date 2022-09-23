@@ -1,6 +1,7 @@
-from torch.utils.data import IterableDataset, DataLoader as _Loader
+from torch.utils.data import Dataset as _Dataset, DataLoader as _Loader, IterableDataset
 from torchmanager_core import abc, devices, os, torch
-from torchmanager_core.typing import Any, Iterator, Sequence, Tuple
+from torchmanager_core.typing import Any, Callable, Iterator, Sequence, Tuple
+from torchmanager_core.view import warnings
 
 class Dataset(IterableDataset, abc.ABC):
     '''
@@ -104,3 +105,41 @@ class DataLoader(_Loader):
         for element in self:
             if value == element: return True
         return False
+
+def dataset(fn: Callable[..., _Dataset]):
+    '''
+    Wrap a loading PyTorch dataset function into a loading dataset function
+
+    Use as decorator with a function:
+    >>> from torch.utils.data import Dataset as TorchDataset
+    >>> from torchmanager_core import devices
+    >>> batch_size: int = ...
+    >>> @dataset
+    >>> def load_some_dataset(...) -> TorchDataset:
+    ...     ...
+    >>> dataset: DataLoader = load_some_dataset(..., batch_size=batch_size, device=devices.GPU, drop_last=True, shuffle=True)
+
+    - Parameters in the wrapped function:
+        - batch_size: An `int` of batch size for the current dataset
+        - device: A `torch.device` for the data to be pinned during iteration
+        - drop_last: A `bool` flag of if drop the last data that not enought for the batch size
+        - shuffle: A `bool` flag of if shuffling the data
+    - Returns: A wrapped function that accepts a loading function which returns `torch.utils.data.Dataset` and returns a loading function which returns `DataLoader`
+    '''
+    # wrap function
+    def wrapped_fn(*args: Any, batch_size: int = 1, device: torch.device = devices.CPU, drop_last: bool = False, shuffle: bool = False, **kwargs: Any) -> DataLoader:
+        # initialize devices
+        cpu_count = os.cpu_count()
+        if cpu_count is None: cpu_count = 0
+        _, device, targeted_devices = devices.search(device)
+        if device == devices.CPU: pin_memory = False
+        else:
+            devices.set_default(targeted_devices[0])
+            pin_memory = True
+
+        # load dataset
+        loaded_dataset = fn(*args, **kwargs)
+        if isinstance(loaded_dataset, Dataset): warnings.warn("The loaded dataset is a `torchmanager.data.Dataset` which has already been wrapped with batch loader during iteration.", RuntimeWarning)
+        data_loader = DataLoader(loaded_dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last, pin_memory=pin_memory, num_workers=cpu_count)
+        return data_loader
+    return wrapped_fn

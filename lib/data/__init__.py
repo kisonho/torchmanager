@@ -1,1 +1,1 @@
-from .dataset import Dataset, DataLoader
+from .collections import Dataset, DataLoader, dataset
