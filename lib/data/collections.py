@@ -113,11 +113,16 @@ def dataset(fn: Callable[..., _Dataset]):
     Use as decorator with a function:
     >>> from torch.utils.data import Dataset as TorchDataset
     >>> from torchmanager_core import devices
-    >>> batch_size: int = ...
     >>> @dataset
     >>> def load_some_dataset(...) -> TorchDataset:
     ...     ...
-    >>> dataset: DataLoader = load_some_dataset(..., batch_size=batch_size, device=devices.GPU, drop_last=True, shuffle=True)
+    >>> some_dataset: DataLoader = load_some_dataset(..., batch_size=4, device=devices.GPU, drop_last=True, shuffle=True)
+
+    Or with a class:
+    >>> @dataset
+    >>> class SomeDataset(TorchDataset):
+    ...     ...
+    >>> some_dataset: DataLoader = SomeDataset(..., batch_size=4, device=devices.GPU, drop_last=True, shuffle=True)
 
     - Parameters in the wrapped function:
         - batch_size: An `int` of batch size for the current dataset
