@@ -9,7 +9,7 @@ class BaseManager(Generic[Module]):
     """
     The basic manager
 
-    * Implements: `torchmanager_core.devices.DeviceMovable`, `.train.StateDictLoadable`
+    * Implements: `torchmanager_core.devices.DeviceMovable`, `.callbacks.protocols.ModelContainer`
 
     - Properties:
         - compiled: A `bool` flag of if the manager has been compiled

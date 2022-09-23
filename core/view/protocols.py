@@ -1,19 +1,10 @@
 from typing import Protocol, runtime_checkable
 from enum import Enum
 
-import abc
-
+@runtime_checkable
 class VerboseControllable(Protocol):
-    """The learning rate scheduler protocol"""
-    @property
-    @abc.abstractmethod
-    def verbose(self) -> bool:
-        raise NotImplementedError
-
-    @verbose.setter
-    @abc.abstractmethod
-    def verbose(self, verbose: bool) -> None:
-        raise NotImplementedError
+    """The protocol which contains the `verbose` property"""
+    verbose: bool
 
 class VerboseType(Enum):
     """Verbose type enum"""

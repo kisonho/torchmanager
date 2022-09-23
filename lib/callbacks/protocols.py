@@ -1,5 +1,16 @@
-from torchmanager_core import abc
-from torchmanager_core.typing import Any, Enum, Optional, Protocol
+from torchmanager_core import torch
+from torchmanager_core.typing import Any, Enum, Optional, Protocol, runtime_checkable
+
+from ..train.protocols import StateDictLoadable
+
+@runtime_checkable
+class ModelContainer(StateDictLoadable):
+    """
+    A container protocol that contains a property `model` as `torch.nn.module`
+    
+    * extends: `..train.protocols.StateDictLoadable`
+    """
+    model: torch.nn.Module
 
 class Frequency(Enum):
     """The frequency enum for callbacks"""
@@ -11,10 +22,5 @@ class SummaryWriteble(Protocol):
     def add_scalars(self, main_tag: str, tag_scalar_dict: Any, global_step: Optional[int] = None) -> None: pass
 
 class Weighted(Protocol):
-    @property
-    @abc.abstractmethod
-    def weight(self) -> Any: return NotImplemented
-
-    @weight.setter
-    @abc.abstractmethod
-    def weight(self, w: Any) -> None: pass
+    """A weigthted protocol that contains `weight` as its property"""
+    weight: Any
