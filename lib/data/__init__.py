@@ -1,1 +1,1 @@
-from .collections import Dataset, DataLoader, dataset
+from .dataset import Dataset, DataLoader, batched

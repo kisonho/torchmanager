@@ -106,20 +106,20 @@ class DataLoader(_Loader):
             if value == element: return True
         return False
 
-def dataset(fn: Callable[..., _Dataset]):
+def batched(fn: Callable[..., _Dataset]):
     '''
     Wrap a loading PyTorch dataset function into a loading dataset function
 
     Use as decorator with a function:
     >>> from torch.utils.data import Dataset as TorchDataset
     >>> from torchmanager_core import devices
-    >>> @dataset
+    >>> @batched
     >>> def load_some_dataset(...) -> TorchDataset:
     ...     ...
     >>> some_dataset: DataLoader = load_some_dataset(..., batch_size=4, device=devices.GPU, drop_last=True, shuffle=True)
 
     Or with a class:
-    >>> @dataset
+    >>> @batched
     >>> class SomeDataset(TorchDataset):
     ...     ...
     >>> some_dataset: DataLoader = SomeDataset(..., batch_size=4, device=devices.GPU, drop_last=True, shuffle=True)
