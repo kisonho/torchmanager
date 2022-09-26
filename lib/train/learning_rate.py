@@ -13,10 +13,6 @@ class LrScheduleFreq(Enum):
     EPOCH = 0
     BATCH = 1
 
-    def __init__(self) -> None:
-        super().__init__()
-        warnings.warn("This enum will be deprecated from v1.1.0 and will be removed in v1.2.0.", PendingDeprecationWarning)
-
 def initial_step_lr_scheduler(lr_scheduler: Optional[LrSteping], initial_epoch: int = 0) -> None:
     """
     Initialize learning rate scheduler for the initial epochs before training starts

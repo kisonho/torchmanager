@@ -4,11 +4,9 @@ from torchmanager_core.typing import Any, Enum, Optional, Protocol, runtime_chec
 from ..train.protocols import StateDictLoadable
 
 @runtime_checkable
-class ModelContainer(StateDictLoadable):
+class ModelContainer(Protocol):
     """
     A container protocol that contains a property `model` as `torch.nn.module`
-    
-    * extends: `..train.protocols.StateDictLoadable`
     """
     model: torch.nn.Module
 
