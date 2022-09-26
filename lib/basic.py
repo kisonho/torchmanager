@@ -43,6 +43,7 @@ class BaseManager(Generic[Module]):
     metric_fns: Dict[str, Metric]
     model: Module
     optimizer: Optional[torch.optim.Optimizer]
+    VERSION = "v1.1.0a4"
 
     @property
     def compiled(self) -> bool:
@@ -179,9 +180,7 @@ class BaseManager(Generic[Module]):
         metrics: Dict[str, Metric] = {k: m for k, m in self.metric_fns.items()}
         ckpt = Checkpoint(self.model, optimizer=self.optimizer, loss_fn=self.loss_fn, metrics=metrics)
         return ckpt
-
-class DataManager:
-    """The manager to load data during training or testing"""
+        
     def unpack_data(self, data: Collection) -> Tuple[Any, Any]:
         """
         Unpacks data to input and target

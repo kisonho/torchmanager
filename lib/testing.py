@@ -4,13 +4,13 @@ from torchmanager_core.view import warnings
 
 from .losses import Loss
 from .metrics import Metric
-from .basic import DataManager, BaseManager
+from .basic import BaseManager
 
-class Manager(BaseManager[Module], DataManager, Generic[Module]):
+class Manager(BaseManager[Module], Generic[Module]):
     """
     A testing manager, only used for testing
 
-    * extends: `.basic.BaseManager`, `.basic.DataManager`
+    * extends: `.basic.BaseManager`
 
     Testing the model using `test` function:
     >>> from torchmanager.data import Dataset
