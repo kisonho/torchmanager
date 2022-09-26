@@ -106,6 +106,9 @@ class FrequencyCallback(Callback, abc.ABC):
             self._update(result)
             self.current_step += 1
 
+    def on_train_start(self, initial_epoch: int = 0) -> None:
+        if self.freq == Frequency.EPOCH: self.current_step = initial_epoch
+
     def on_epoch_end(self, epoch: int, summary: Dict[str, float] = {}, val_summary: Optional[Dict[str, float]] = None) -> None:
         if self.freq == Frequency.EPOCH:
             result = self.step(summary, val_summary)
