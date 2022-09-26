@@ -13,15 +13,9 @@ class Metric(torch.nn.Module):
     - Properties:
         - result: The `torch.Tensor` of average metric results
     """
-    __metric_fn: Optional[Callable[[Any, Any], torch.Tensor]]
-    __target: Optional[str]
+    _metric_fn: Optional[Callable[[Any, Any], torch.Tensor]]
     _results: List[torch.Tensor]
-
-    @property
-    def _metric_fn(self) -> Optional[Callable[[Any, Any], torch.Tensor]]: return self.__metric_fn
-
-    @property
-    def _target(self) -> Optional[str]: return self.__target
+    _target: Optional[str]
 
     @property
     def result(self) -> torch.Tensor: return torch.concat(self._results).mean()
@@ -38,9 +32,9 @@ class Metric(torch.nn.Module):
             - target: A `str` of target name in `input` and `target` during direct calling
         """
         super().__init__()
-        self.__metric_fn = metric_fn
-        self.__target = target
+        self._metric_fn = metric_fn
         self._results = []
+        self._target = target
 
     def __call__(self, input: Any, target: Any) -> torch.Tensor:
         # unpack input and target
