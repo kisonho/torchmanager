@@ -23,20 +23,17 @@ class SparseCategoricalAccuracy(Accuracy):
     - Properties:
         - dim: An `int` of the probability dim index for the input
     """
-    __dim: int
-
-    @property
-    def _dim(self) -> int: return self.__dim
+    _dim: int
 
     @property
     def dim(self) -> int:
         warnings.warn("The property `dim` will be deprecated from v1.1.0, and no longer be available in v1.2.0.", PendingDeprecationWarning)
-        return self.__dim
+        return self._dim
 
     @dim.setter
     def dim(self, dim: int) -> None:
         warnings.warn("The property `dim` will be deprecated from v1.1.0, and no longer be available in v1.2.0.", PendingDeprecationWarning)
-        self.__dim = dim
+        self._dim = dim
 
     def __init__(self, dim: int = -1, target: Optional[str] = None) -> None:
         """
@@ -48,7 +45,7 @@ class SparseCategoricalAccuracy(Accuracy):
         """
         super().__init__(target=target)
         assert dim > 0, _raise(ValueError(f"The dimension must be a positive number, got {dim}."))
-        self.__dim = dim
+        self._dim = dim
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         input = input.argmax(dim=self._dim)

@@ -9,14 +9,8 @@ class Dice(Loss):
     
     * extends: `.loss.Loss`
     """
-    __smooth: int
-    __softmax_input: bool
-
-    @property
-    def _smooth(self) -> int: return self.__smooth
-
-    @property
-    def _softmax_input(self) -> bool: return self.__softmax_input
+    _smooth: int
+    _softmax_input: bool
 
     def __init__(self, smooth: int = 1, softmax_input: bool = True, **kwargs: Any) -> None:
         """
@@ -27,8 +21,8 @@ class Dice(Loss):
             - softmax_input: A `bool` flag of if softmax the input
         """
         super().__init__(**kwargs)
-        self.__smooth = smooth
-        self.__softmax_input = softmax_input
+        self._smooth = smooth
+        self._softmax_input = softmax_input
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # softmax activation
