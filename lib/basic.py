@@ -9,7 +9,7 @@ class BaseManager(Generic[Module]):
     """
     The basic manager
 
-    * Implements: `torchmanager_core.devices.DeviceMovable`, `.train.StateDictLoadable`
+    * Implements: `torchmanager_core.devices.DeviceMovable`, `.callbacks.protocols.ModelContainer`
 
     Compile a model, optimizer, loss function, and metrics into the manager:
     >>> import torch

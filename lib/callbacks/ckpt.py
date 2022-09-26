@@ -2,8 +2,8 @@ from torchmanager_core import os, sys, torch, _raise
 from torchmanager_core.typing import Any, Dict, Enum, Generic, Optional, TypeVar
 
 from ..train import Checkpoint as Ckpt
-from ..train.protocols import StateDictLoadable
 from .callback import Callback
+from .protocols import ModelContainer, StateDictLoadable
 
 T = TypeVar('T', bound=StateDictLoadable)
 
@@ -122,4 +122,14 @@ class BestCheckpoint(_Checkpoint[T], Generic[T]):
             super().on_epoch_end(epoch, summary, val_summary)
 
     def on_train_end(self, model: torch.nn.Module) -> None:
-        if self.load_best: _ = Ckpt.from_saved(self.ckpt_path, model=model)
+        # load best checkpoint
+        if self.load_best:
+            # load checkpoint
+            best_ckpt: Ckpt[StateDictLoadable] = Ckpt.from_saved(self.ckpt_path)
+
+            # load to model
+            if isinstance(best_ckpt.model, ModelContainer):
+                ckpt_model = best_ckpt.model.model
+            else: ckpt_model = best_ckpt.model
+            try: model.load_state_dict(ckpt_model.state_dict())
+            except: raise TypeError(f"Reload best checkpoint to model failed: supposed to have {type(model)} in checkpoint, got {type(ckpt_model)}.")
