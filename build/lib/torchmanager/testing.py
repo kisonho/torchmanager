@@ -1,4 +1,4 @@
-from torchmanager_core import devices, torch, view, _raise, deprecated
+from torchmanager_core import devices, torch, view, _raise
 from torchmanager_core.typing import Any, Collection, Dict, Generic, List, Module, Optional, Union
 from torchmanager_core.view import warnings
 
@@ -24,9 +24,9 @@ class Manager(BaseManager[Module], Generic[Module]):
     model: Union[Module, torch.nn.parallel.DataParallel]
     
     @property
-    @deprecated("1.1.0", "1.2.0")
     def compiled_losses(self) -> Loss:
         assert self.loss_fn is not None,  _raise(NotImplementedError("loss_fn is not given, compiles the manager with loss_fn first."))
+        warnings.warn("The compiled_losses property in a `TestingManager` has been deprecated from v1.1.0 and will be removed from v1.2.0.", PendingDeprecationWarning)
         return self.loss_fn
 
     @property
