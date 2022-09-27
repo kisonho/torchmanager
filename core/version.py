@@ -1,8 +1,8 @@
 from .view import warnings
 
-CURRENT_VERSION = "v1.1.0a5"
+CURRENT = "v1.1.0a5"
 
-def deprecated(version: str, removing_version: str):
+def deprecated(target_version: str, removing_version: str):
     '''
     Deprecated decorator function
 
@@ -11,7 +11,7 @@ def deprecated(version: str, removing_version: str):
     '''
     # define wrapping function
     def wrapping_fn(fn):
-        if CURRENT_VERSION >= version: warnings.warn(f"{fn.__name__} has been deprecated from {version} and will be removed from {removing_version}", DeprecationWarning)
-        else: warnings.warn(f"{fn} will be deprecated from {version} and removed from {removing_version}", PendingDeprecationWarning)
+        if CURRENT >= target_version: warnings.warn(f"{fn.__name__} has been deprecated from {target_version} and will be removed from {removing_version}", DeprecationWarning)
+        else: warnings.warn(f"{fn} will be deprecated from {target_version} and removed from {removing_version}", PendingDeprecationWarning)
         return fn
     return wrapping_fn

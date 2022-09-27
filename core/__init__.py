@@ -3,7 +3,7 @@ from torch.nn import functional
 from torch.utils import data
 
 from . import devices, view
-from .version import deprecated, CURRENT_VERSION as VERSION
+from .version import deprecated, CURRENT as VERSION
 try: from torch.utils import tensorboard
 except ImportError:
     view.warnings.warn("[Core Warning]: Module tensorboard is not installed.", ImportWarning)
