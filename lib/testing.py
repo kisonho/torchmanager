@@ -29,7 +29,7 @@ class Manager(BaseManager[Module], DataManager, Generic[Module]):
         return {name: m for name, m in self.metric_fns.items() if "loss" not in name}
 
     @torch.no_grad()
-    def predict(self, dataset: SizedIterable, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> List[Any]:
+    def predict(self, dataset: SizedIterable, device: Optional[Union[torch.device, List[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> List[Any]:
         '''
         Predict the whole dataset
 
@@ -70,7 +70,7 @@ class Manager(BaseManager[Module], DataManager, Generic[Module]):
         return predictions
 
     @torch.no_grad()
-    def test(self, dataset: SizedIterable, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
+    def test(self, dataset: SizedIterable, device: Optional[Union[torch.device, List[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
         """
         Test target model
 

@@ -143,7 +143,7 @@ class Manager(_Manager[Module], Generic[Module]):
         devices.empty_cache()
         return summary
 
-    def fit(self, training_dataset: SizedIterable, epochs: Optional[int] = None, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None, val_dataset: Optional[Any] = None, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, callbacks_list: List[Callback] = [], **kwargs) -> torch.nn.Module:
+    def fit(self, training_dataset: SizedIterable, epochs: Optional[int] = None, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None, val_dataset: Optional[Any] = None, device: Optional[Union[torch.device, List[torch.device]]] = None, use_multi_gpus: bool = False, callbacks_list: List[Callback] = [], **kwargs) -> torch.nn.Module:
         """
         Training algorithm
 
