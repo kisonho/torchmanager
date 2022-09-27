@@ -1,6 +1,5 @@
-from typing import Any, Iterable, List, Optional, Tuple, TypeVar, Union
-
 import torch, warnings
+from typing import Any, Dict, Iterable, List, Optional, Tuple, TypeVar, Union
 
 from .protocols import DeviceMovable
 
@@ -67,7 +66,7 @@ def search(specified: Optional[Union[torch.device, List[torch.device]]] = None) 
         else: device = GPU
         return CPU, device, specified
 
-def move_to_device(target: Union[DeviceMovable,  dict[str, Union[DeviceMovable,  Any]], List[Union[DeviceMovable,  Any]]], device: torch.device) -> Union[DeviceMovable,  dict[str, Union[DeviceMovable,  Any]], List[Union[DeviceMovable,  Any]]]:
+def move_to_device(target: Union[DeviceMovable,  Dict[str, Union[DeviceMovable,  Any]], List[Union[DeviceMovable,  Any]]], device: torch.device) -> Union[DeviceMovable,  Dict[str, Union[DeviceMovable,  Any]], List[Union[DeviceMovable,  Any]]]:
     """
     Recurrently move a target variable to device if elements perform to `DeviceMovable` protocol
     
