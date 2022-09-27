@@ -1,5 +1,5 @@
 from torchmanager_core import sys
-from torchmanager_core.typing import Dict, Optional
+from torchmanager_core.typing import Dict, List, Optional
 
 from .ckpt import Callback, MonitorType
 
@@ -25,7 +25,7 @@ class EarlyStop(Callback):
         - monitor_type: A `MonitorType` of either `MIN` of `MAX` mode for the best model
         - steps: An `int` of steps to monitor
     '''
-    __metrics: list[float]
+    __metrics: List[float]
     monitor: str
     monitor_type: MonitorType
     steps: int
