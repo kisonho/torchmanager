@@ -106,10 +106,11 @@ class BaseManager(Generic[Module]):
         elif isinstance(ckpt.model, BaseManager):
             manager = ckpt.model
             if isinstance(manager.model, torch.nn.parallel.DataParallel): manager.model = manager.model.module
-            if manager.loss_fn is not None: 
+            if manager.loss_fn is not None and hasattr(manager.loss_fn, "_metric_fn"): 
                 if isinstance(manager.loss_fn._metric_fn, torch.nn.parallel.DataParallel):
                     assert isinstance(manager.loss_fn._metric_fn.module, Loss), _raise(TypeError("Loss function is not a valid `Loss`."))
                     manager.loss_fn = manager.loss_fn._metric_fn.module
+            else: manager.loss_fn = None
         else: raise TypeError(f"The saved checkpoint contains a model with type of {type(ckpt.model)} that cannot be recoverred to a `Manager`.")
         return manager
 
