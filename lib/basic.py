@@ -1,7 +1,7 @@
 from torchmanager_core import torch, _raise, VERSION
 from torchmanager_core.typing import Any, Collection, Dict, Generic, Module, Optional, OrderedDict, Tuple, Union
 
-from .losses import Loss, MultiLosses, MultiOutputsLosses
+from .losses import Loss, MultiLosses, MultiOutputsLosses, ParallelLoss
 from .metrics import Metric
 from .train import Checkpoint
 
@@ -39,7 +39,7 @@ class BaseManager(Generic[Module]):
         - optimizer: A `torch.optim.Optimizer` to train the model
     """
     # properties
-    loss_fn: Optional[Loss]
+    loss_fn: Optional[Union[Loss, ParallelLoss]]
     metric_fns: Dict[str, Metric]
     model: Module
     optimizer: Optional[torch.optim.Optimizer]
@@ -178,7 +178,8 @@ class BaseManager(Generic[Module]):
         - Returns: A `Checkpoint` with its model in `Module` type
         """
         metrics: Dict[str, Metric] = {k: m for k, m in self.metric_fns.items()}
-        ckpt = Checkpoint(self.model, optimizer=self.optimizer, loss_fn=self.loss_fn, metrics=metrics)
+        loss_fn = self.loss_fn.module if isinstance(self.loss_fn, ParallelLoss) else self.loss_fn
+        ckpt = Checkpoint(self.model, optimizer=self.optimizer, loss_fn=loss_fn, metrics=metrics)
         return ckpt
         
     def unpack_data(self, data: Collection) -> Tuple[Any, Any]:

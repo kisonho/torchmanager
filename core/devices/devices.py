@@ -58,7 +58,7 @@ def search(specified: Optional[Union[torch.device, list[torch.device]]] = None) 
         - specified: An optional `torch.device` of specified
     - Returns: A `tuple` of CPU in `torch.device`, available device in `torch.device` and `list` of specified devices in `torch.device`
     """
-    if specified is None:
+    if specified is None or not torch.cuda.is_available():
         return (CPU, GPU, GPUS) if len(GPUS) > 0 else (CPU, CPU, [CPU])
     else:
         if not isinstance(specified, list):

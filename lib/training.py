@@ -2,7 +2,7 @@ from torchmanager_core import devices, math, torch, view, _raise
 from torchmanager_core.typing import Any, Collection, Dict, Generic, List, Module, Optional, Union
 
 from .callbacks import Callback, StopTraining
-from .losses import Loss
+from .losses import Loss, ParallelLoss
 from .metrics import Metric
 from .train import Checkpoint, learning_rate
 from .testing import Manager as _Manager
@@ -36,7 +36,7 @@ class Manager(_Manager[Module], Generic[Module]):
         else: self.__current_epoch = e
     
     @property
-    def compiled_losses(self) -> Loss:
+    def compiled_losses(self) -> Union[Loss, ParallelLoss]:
         assert self.loss_fn is not None, _raise(NotImplementedError("loss_fn is not given, compiles the manager with loss_fn first."))
         return self.loss_fn
 
@@ -183,7 +183,7 @@ class Manager(_Manager[Module], Generic[Module]):
         else: model = self.model
         self.model = model
         if use_multi_gpus and not isinstance(self.compiled_losses, torch.nn.parallel.DataParallel):
-            paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.compiled_losses, devices=target_devices)
+            paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.compiled_losses, devices=target_devices, parallel_type=ParallelLoss)
             if use_multi_gpus: self.loss_fn = Loss(paralleled_loss_fn)
         self.to(device)
 

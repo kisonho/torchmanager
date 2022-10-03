@@ -136,6 +136,26 @@ class MultiOutputsLosses(Loss):
         assert isinstance(loss, torch.Tensor), _raise(TypeError("The total loss is not a valid `torch.Tensor`."))
         return loss
 
+class ParallelLoss(torch.nn.parallel.DataParallel):
+    """
+    A data parallel loss function
+
+    * extends: `torch.nn.parallel.DataParallel`
+    * implements: `..callbacks.protocols.Weighted`
+    """
+    module: Loss
+    
+    @property
+    def result(self) -> torch.Tensor: return torch.concat(self.module._results).mean()
+
+    @property
+    def results(self) -> torch.Tensor: return torch.concat(self.module._results)
+
+    def __init__(self, module: Loss, device_ids: Optional[List[int]] = ..., output_device: Optional[torch.device] = ..., dim: int = ...) -> None:
+        super().__init__(module, device_ids, output_device, dim)
+
+    def reset(self) -> None: self.module.reset()
+
 def loss(fn: Callable[[Any, Any], torch.Tensor]) -> Loss:
     """
     The loss wrapping function that wrap a function into a loss
