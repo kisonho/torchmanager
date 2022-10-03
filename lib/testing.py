@@ -55,6 +55,7 @@ class Manager(BaseManager[Module], DataManager, Generic[Module]):
         predictions: List[Any] = []
         if len(dataset) == 0: return predictions
         progress_bar = view.tqdm(total=len(dataset)) if show_verbose else None
+        self.to(device)
 
         # loop the dataset
         for data in dataset:
