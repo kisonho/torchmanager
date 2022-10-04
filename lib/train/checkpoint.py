@@ -44,7 +44,7 @@ class Checkpoint(Generic[T]):
         self.save_weights_only = save_weights_only
 
     @classmethod
-    def from_saved(cls, ckpt_path: str, model: Optional[StateDictLoadable] = None):
+    def from_saved(cls, ckpt_path: str, map_location: Optional[torch.device] = None, model: Optional[StateDictLoadable] = None):
         '''
         Load checkpoint from a saved checkpoint file
 
@@ -53,7 +53,7 @@ class Checkpoint(Generic[T]):
             - model: Any object to be loaded
         '''
         # load checkpint dictionary
-        ckpt: Dict[str, Any] = torch.load(ckpt_path, map_location=devices.CPU)
+        ckpt: Dict[str, Any] = torch.load(ckpt_path, map_location=map_location)
 
         # load model
         if ckpt["save_weights_only"] is True:
