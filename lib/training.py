@@ -176,16 +176,19 @@ class Manager(_Manager[Module], Generic[Module]):
         if lr_scheduler is not None: view.warnings.warn("Parameter `lr_scheduler` has been deprecated after v1.1.0 and will be removed from v1.2.0, use `.callbacks.LrScheduler` callback instead.", DeprecationWarning)
         for c in callbacks_list: c.on_train_start(initial_epoch)
         
-        # multi gpus support
+        # multi gpus support for model
         raw_model = self.model
-        raw_loss_fn = self.compiled_losses
         if use_multi_gpus and not isinstance(self.model, torch.nn.parallel.DataParallel):
             model, use_multi_gpus = devices.data_parallel(raw_model, devices=target_devices)
         else: model = self.model
         self.model = model
+
+        # multi gpus support for loss
+        raw_loss_fn = self.compiled_losses
         if use_multi_gpus and not isinstance(self.compiled_losses, torch.nn.parallel.DataParallel):
             paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.compiled_losses, devices=target_devices, parallel_type=ParallelLoss)
-            if use_multi_gpus: self.loss_fn = Loss(paralleled_loss_fn)
+            assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), _raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
+            self.loss_fn = paralleled_loss_fn
         self.to(device)
 
         # epoch loop

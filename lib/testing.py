@@ -102,7 +102,8 @@ class Manager(BaseManager[Module], Generic[Module]):
         if use_multi_gpus and self.loss_fn is not None and not isinstance(self.loss_fn, torch.nn.parallel.DataParallel):
             raw_loss_fn = self.loss_fn
             paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.loss_fn, devices=target_devices, parallel_type=ParallelLoss)
-            if use_multi_gpus: self.loss_fn = Loss(paralleled_loss_fn)
+            assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), _raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
+            self.loss_fn = paralleled_loss_fn
         else: raw_loss_fn = None
 
         # set module status

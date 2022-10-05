@@ -1,6 +1,6 @@
 from .view import warnings
 
-CURRENT = "v1.1.0a5"
+CURRENT = "v1.1.0a6"
 
 def deprecated(target_version: str, removing_version: str):
     '''
