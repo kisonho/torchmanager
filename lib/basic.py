@@ -139,12 +139,12 @@ class BaseManager(Generic[Module]):
             assert k in self.metric_fns, _raise(KeyError(f"The manager does not have a metric named '{k}'."))
             self.metric_fns[k].load_state_dict(m)
 
-    def state_dict(self) -> OrderedDict[str, Any]:
+    def state_dict(self, prefix: str = '', keep_var: bool = False) -> OrderedDict[str, Any]:
         return OrderedDict({
-            "model": self.model.state_dict(),
+            "model": self.model.state_dict(prefix=prefix, keep_vars=keep_var),
             "optimizer": self.optimizer.state_dict() if self.optimizer is not None else None,
-            "loss_fn": self.loss_fn.state_dict() if self.loss_fn is not None else None,
-            "metrics": {k: m.state_dict() for k, m in self.metric_fns.items()}
+            "loss_fn": self.loss_fn.state_dict(keep_vars=keep_var) if self.loss_fn is not None else None,
+            "metrics": {k: m.state_dict(keep_vars=keep_var) for k, m in self.metric_fns.items()}
         })
 
     def to(self, device: torch.device) -> None:
