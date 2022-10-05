@@ -58,12 +58,22 @@ def search(specified: Optional[Union[torch.device, List[torch.device]]] = None) 
     - Returns: A `tuple` of CPU in `torch.device`, available device in `torch.device` and `list` of specified devices in `torch.device`
     """
     if specified is None:
+        # detect automatically
         return (CPU, GPU, GPUS) if len(GPUS) > 0 else (CPU, CPU, [CPU])
     else:
+        # specified device
         if not isinstance(specified, list):
             device = specified
             specified = [specified]
-        else: device = GPU
+        elif len(specified) > 0:
+            # set default device
+            device = GPU
+
+            # check for each device
+            for d in specified:
+                if d.type != GPU.type: raise SystemError("All devices in the specified list must have the same device type with GPU type")
+                if d.index is None: raise SystemError("All devices in the specified list must have a device index")
+        else: raise SystemError("Specified device list must not be empty")
         return CPU, device, specified
 
 def move_to_device(target: Union[DeviceMovable,  Dict[str, Union[DeviceMovable,  Any]], List[Union[DeviceMovable,  Any]]], device: torch.device) -> Union[DeviceMovable,  Dict[str, Union[DeviceMovable,  Any]], List[Union[DeviceMovable,  Any]]]:
