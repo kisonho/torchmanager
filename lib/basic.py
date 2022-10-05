@@ -104,16 +104,17 @@ class BaseManager(Generic[Module]):
         self._compile(optimizer, loss_fn, metrics)
 
     @classmethod
-    def from_checkpoint(cls, ckpt: Union[Checkpoint[Any], str]):
+    def from_checkpoint(cls, ckpt: Union[Checkpoint[Any], str], map_location: Optional[torch.device] = None):
         """
         Method to load a manager from a saved `Checkpoint`. The manager will not be compiled with a loss function and its metrics.
 
         - Parameters:
             - ckpt: Either a `Checkpoint` of `Any` object or a `str` of checkpoint path
+            - map_location: An optional `torch.device` to load the checkpoint
         - Returns: A loaded `Manager`
         """
         # load checkpoint
-        if not isinstance(ckpt, Checkpoint): ckpt = Checkpoint.from_saved(ckpt)
+        if not isinstance(ckpt, Checkpoint): ckpt = Checkpoint.from_saved(ckpt, map_location=map_location)
 
         # recover model to manager
         if isinstance(ckpt.model, torch.nn.Module):
@@ -121,10 +122,11 @@ class BaseManager(Generic[Module]):
         elif isinstance(ckpt.model, BaseManager):
             manager = ckpt.model
             if isinstance(manager.model, torch.nn.parallel.DataParallel): manager.model = manager.model.module
-            if manager.loss_fn is not None: 
+            if manager.loss_fn is not None and hasattr(manager.loss_fn, "_metric_fn"): 
                 if isinstance(manager.loss_fn._metric_fn, torch.nn.parallel.DataParallel):
                     assert isinstance(manager.loss_fn._metric_fn.module, Loss), _raise(TypeError("Loss function is not a valid `Loss`."))
                     manager.loss_fn = manager.loss_fn._metric_fn.module
+            else: manager.loss_fn = None
         else: raise TypeError(f"The saved checkpoint contains a model with type of {type(ckpt.model)} that cannot be recoverred to a `Manager`.")
         return manager
 

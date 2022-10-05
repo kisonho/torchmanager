@@ -1,6 +1,5 @@
-from typing import Any, Iterable, Optional, Tuple, TypeVar, Union
-
 import torch, warnings
+from typing import Any, Dict, Iterable, List, Optional, Tuple, TypeVar, Union
 
 from .protocols import DeviceMovable
 
@@ -15,7 +14,7 @@ GPUS = [torch.device(i) for i in range(torch.cuda.device_count())]
 
 Module = TypeVar('Module', bound=torch.nn.Module)
 
-def data_parallel(raw_model: Module, devices: list[torch.device] = GPUS, output_device: Optional[torch.device] = None) -> Tuple[Union[Module, torch.nn.parallel.DataParallel], bool]:
+def data_parallel(raw_model: Module, devices: List[torch.device] = GPUS, output_device: Optional[torch.device] = None) -> Tuple[Union[Module, torch.nn.parallel.DataParallel], bool]:
     """
     Make a `torch.nn.Module` data parallel
 
@@ -50,7 +49,7 @@ def find(specified: Optional[torch.device] = None) -> Tuple[torch.device, torch.
         return (CPU, GPU) if torch.cuda.is_available() else (CPU, CPU)
     else: return CPU, specified
 
-def search(specified: Optional[Union[torch.device, list[torch.device]]] = None) -> Tuple[torch.device, torch.device, list[torch.device]]:
+def search(specified: Optional[Union[torch.device, List[torch.device]]] = None) -> Tuple[torch.device, torch.device, List[torch.device]]:
     """
     Find available devices
 
@@ -67,7 +66,7 @@ def search(specified: Optional[Union[torch.device, list[torch.device]]] = None) 
         else: device = GPU
         return CPU, device, specified
 
-def move_to_device(target: Union[DeviceMovable,  dict[str, Union[DeviceMovable,  Any]], list[Union[DeviceMovable,  Any]]], device: torch.device) -> Union[DeviceMovable,  dict[str, Union[DeviceMovable,  Any]], list[Union[DeviceMovable,  Any]]]:
+def move_to_device(target: Union[DeviceMovable,  Dict[str, Union[DeviceMovable,  Any]], List[Union[DeviceMovable,  Any]]], device: torch.device) -> Union[DeviceMovable,  Dict[str, Union[DeviceMovable,  Any]], List[Union[DeviceMovable,  Any]]]:
     """
     Recurrently move a target variable to device if elements perform to `DeviceMovable` protocol
     

@@ -56,7 +56,7 @@ class TensorBoard(FrequencyCallback):
                 r["val"] = val_summary[key]
             self.writer.add_scalars(key, r, self.current_step + 1)
 
-    def step(self, summary: dict[str, float], val_summary: Optional[Dict[str, float]] = None) -> Tuple[Set[str], dict[str, float], Optional[Dict[str, float]]]:
+    def step(self, summary: Dict[str, float], val_summary: Optional[Dict[str, float]] = None) -> Tuple[Set[str], Dict[str, float], Optional[Dict[str, float]]]:
         # fetch keys
         keys = list(summary.keys())
         if val_summary is not None: keys += list(val_summary.keys())

@@ -34,7 +34,7 @@ class MeanIoU(Metric):
     _smooth: float
     _threshold: float
 
-    def __init__(self, dim: int = 1, smooth: float = 1e-4, threshold: float = 0.5, target: Optional[str] = None) -> None:
+    def __init__(self, dim: int = 1, smooth: float = 1e-4, threshold: float = 0, target: Optional[str] = None) -> None:
         """
         Constructor
 

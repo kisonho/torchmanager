@@ -10,6 +10,7 @@ class Metric(torch.nn.Module):
 
     - Properties:
         - result: The `torch.Tensor` of average metric results
+        - results: An optional `torch.Tensor` of all metric results
     """
     _metric_fn: Optional[Callable[[Any, Any], torch.Tensor]]
     _results: List[torch.Tensor]
@@ -19,7 +20,9 @@ class Metric(torch.nn.Module):
     def result(self) -> torch.Tensor: return torch.concat(self._results).mean()
 
     @property
-    def results(self) -> torch.Tensor: return torch.concat(self._results)
+    def results(self) -> Optional[torch.Tensor]:
+        if len(self._results) > 0: return torch.concat(self._results)
+        else: return None
 
     def __init__(self, metric_fn: Optional[Callable[[Any, Any], torch.Tensor]] = None, target: Optional[str] = None) -> None:
         """

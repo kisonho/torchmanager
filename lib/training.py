@@ -166,6 +166,7 @@ class Manager(_Manager[Module], Generic[Module]):
             assert initial_epoch >= 0, _raise(ValueError(f"The initial_epoch must be a non_negative integer, got {initial_epoch}."))
             assert initial_epoch < epochs, _raise(ValueError(f"The initial_epoch must be smaller than total epochs, got epochs={epochs} but initial_epoch={initial_epoch}."))
             self.current_epoch = initial_epoch
+        elif self.current_epoch > 0: initial_epoch = self.current_epoch + 1 # skip the latest current epoch when resuming training
         else: initial_epoch = self.current_epoch
 
         # initialize training
