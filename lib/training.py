@@ -177,14 +177,12 @@ class Manager(_Manager[Module], Generic[Module]):
         for c in callbacks_list: c.on_train_start(initial_epoch)
         
         # multi gpus support for model
-        raw_model = self.model
         if use_multi_gpus and not isinstance(self.model, torch.nn.parallel.DataParallel):
-            model, use_multi_gpus = devices.data_parallel(raw_model, devices=target_devices)
+            model, use_multi_gpus = devices.data_parallel(self.model, devices=target_devices)
         else: model = self.model
         self.model = model
 
         # multi gpus support for loss
-        raw_loss_fn = self.compiled_losses
         if use_multi_gpus and not isinstance(self.compiled_losses, torch.nn.parallel.DataParallel):
             paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.compiled_losses, devices=target_devices, parallel_type=ParallelLoss)
             assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), _raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
@@ -210,8 +208,10 @@ class Manager(_Manager[Module], Generic[Module]):
             for c in callbacks_list:
                 try: c.on_epoch_end(self.current_epoch, summary=summary, val_summary=val_summary)
                 except StopTraining:
-                    self.model = raw_model.to(cpu)
-                    self.loss_fn = raw_loss_fn.to(cpu)
+                    # on train end
+                    for c in callbacks_list: c.on_train_end(self.raw_model)
+                    self.model = self.raw_model.to(cpu)
+                    self.loss_fn = self.raw_loss_fn.to(cpu) if self.raw_loss_fn is not None else self.raw_loss_fn
                     devices.empty_cache()
                     return self.model
                 except Exception: raise
@@ -230,11 +230,9 @@ class Manager(_Manager[Module], Generic[Module]):
             logger.info(val_message)
 
         # on train end
-        for c in callbacks_list: c.on_train_end(raw_model)
-
-        # remove model from gpu
-        self.model = raw_model.to(cpu)
-        self.loss_fn = raw_loss_fn.to(cpu)
+        for c in callbacks_list: c.on_train_end(self.raw_model)
+        self.model = self.raw_model.to(cpu)
+        self.loss_fn = self.raw_loss_fn.to(cpu) if self.raw_loss_fn is not None else self.raw_loss_fn
         devices.empty_cache()
         return self.model
 

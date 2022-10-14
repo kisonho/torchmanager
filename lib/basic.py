@@ -37,6 +37,8 @@ class BaseManager(Generic[Module]):
         - metrics: A `dict` of metrics with a name in `str` as keys and a `Metric` as values
         - model: A target `torch.nn.Module` to be trained
         - optimizer: A `torch.optim.Optimizer` to train the model
+        - raw_loss_fn: An optional `Loss` of the non-paralleled loss function
+        - raw_model: A non-paralleled target `torch.nn.Module` model
     """
     # properties
     loss_fn: Optional[Union[Loss, ParallelLoss]]
@@ -48,6 +50,19 @@ class BaseManager(Generic[Module]):
     @property
     def compiled(self) -> bool:
         return True if self.loss_fn is not None and self.optimizer is not None else False
+
+    @property
+    def raw_loss_fn(self) -> Optional[Loss]:
+        if self.loss_fn is None: return self.loss_fn
+        elif isinstance(self.loss_fn, ParallelLoss): return self.loss_fn.module
+        elif isinstance(self.loss_fn._metric_fn, torch.nn.parallel.DataParallel):
+            self.loss_fn._metric_fn = self.loss_fn._metric_fn.module
+            return self.loss_fn
+        else: return self.loss_fn
+
+    @property
+    def raw_model(self) -> Module:
+        return self.model.module if isinstance(self.model, torch.nn.parallel.DataParallel) else self.model
 
     def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss]]] = None, metrics: Dict[str, Metric] = {}) -> None:
         """

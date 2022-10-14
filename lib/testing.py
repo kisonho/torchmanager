@@ -94,17 +94,13 @@ class Manager(BaseManager[Module], Generic[Module]):
 
         # move model
         if use_multi_gpus and not isinstance(self.model, torch.nn.parallel.DataParallel):
-            raw_model = self.model
             self.model, use_multi_gpus = devices.data_parallel(self.model, devices=target_devices)
-        else: raw_model = None
 
         # move loss function
         if use_multi_gpus and self.loss_fn is not None and not isinstance(self.loss_fn, torch.nn.parallel.DataParallel):
-            raw_loss_fn = self.loss_fn
             paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.loss_fn, devices=target_devices, parallel_type=ParallelLoss)
             assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), _raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
             self.loss_fn = paralleled_loss_fn
-        else: raw_loss_fn = None
 
         # set module status
         self.model.eval()
@@ -146,8 +142,8 @@ class Manager(BaseManager[Module], Generic[Module]):
         if self.loss_fn is not None: summary["loss"] = float(self.loss_fn.result.detach())
 
         # reset model and loss
-        if raw_model is not None: self.model = raw_model.to(cpu)
-        if raw_loss_fn is not None: self.loss_fn = raw_loss_fn.to(cpu)
+        self.model = self.raw_model.to(cpu)
+        self.loss_fn = self.raw_loss_fn.to(cpu) if self.raw_loss_fn is not None else self.raw_loss_fn
         devices.empty_cache()
         return summary
 

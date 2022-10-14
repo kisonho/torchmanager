@@ -1,4 +1,4 @@
-from torchmanager_core import torch, view, _raise
+from torchmanager_core import torch, _raise
 from torchmanager_core.typing import Any, Callable, List, Optional
 
 class Metric(torch.nn.Module):
