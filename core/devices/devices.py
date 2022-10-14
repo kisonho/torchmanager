@@ -1,5 +1,6 @@
+from matplotlib.pyplot import bone
 import torch, warnings
-from typing import Any, Dict, Iterable, List, Optional, Tuple, TypeVar, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, TypeVar, Union
 
 from .protocols import DeviceMovable
 
@@ -14,19 +15,22 @@ GPUS = [torch.device(i) for i in range(torch.cuda.device_count())]
 
 Module = TypeVar('Module', bound=torch.nn.Module)
 
-def data_parallel(raw_model: Module, devices: List[torch.device] = GPUS, output_device: Optional[torch.device] = None) -> Tuple[Union[Module, torch.nn.parallel.DataParallel], bool]:
+def data_parallel(raw_model: Module, devices: List[torch.device] = GPUS, output_device: Optional[torch.device] = None, parallel_type: Type[torch.nn.parallel.DataParallel] = torch.nn.parallel.DataParallel) -> Tuple[Union[Module, torch.nn.parallel.DataParallel], bool]:
     """
     Make a `torch.nn.Module` data parallel
 
     - Parameters:
         - raw_model: A target `torch.nn.Module`
+        - devices: A `list` of target `torch.device`
+        - output_device: An optional `torch.device` of the target output device for the paralleled model
+        - parallel_type: A `type` of `torch.nn.parallel.DataParallel`
     - Returns: A `tuple` of either data paralleled `torch.nn.parallel.DataParallel` model if CUDA is available or a raw model if not, and a `bool` flag of if the model data paralleled successfuly.
     """
-    if isinstance(raw_model, torch.nn.parallel.DataParallel):
+    if isinstance(raw_model, parallel_type):
         return raw_model, True
     elif torch.cuda.is_available():
         device_ids = [d.index for d in devices]
-        model = torch.nn.parallel.DataParallel(raw_model, device_ids=device_ids, output_device=output_device)
+        model = parallel_type(raw_model, device_ids=device_ids, output_device=output_device)
         return model, True
     else:
         warnings.warn(f"CUDA is not available, unable to use multi-GPUs.", ResourceWarning)
