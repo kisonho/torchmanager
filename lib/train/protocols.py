@@ -12,7 +12,7 @@ class LrSteping(Protocol):
 class StateDictLoadable(Protocol):
     """An object that can load state dict"""
     @abc.abstractmethod
-    def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> Any: raise NotImplementedError
+    def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = ...) -> Any: raise NotImplementedError
 
     @abc.abstractmethod
-    def state_dict() -> OrderedDict[str, Any]: return NotImplemented
+    def state_dict(self, prefix: str = ..., keep_vars: bool = ...) -> OrderedDict[str, Any]: return NotImplemented

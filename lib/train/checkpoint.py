@@ -1,4 +1,4 @@
-from torchmanager_core import devices, os, torch, _raise
+from torchmanager_core import os, torch, _raise
 from torchmanager_core.typing import Any, Dict, Generic, List, Optional, OrderedDict, TypeVar
 
 from ..losses import Loss
