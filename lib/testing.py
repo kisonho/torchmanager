@@ -1,12 +1,12 @@
 from torchmanager_core import devices, torch, view, _raise
-from torchmanager_core.typing import Any, Dict, Generic, List, Module, Optional, SizedIterable, Union
+from torchmanager_core.typing import Any, Dict, List, Module, Optional, SizedIterable, Union
 from torchmanager_core.view import warnings
 
 from .losses import Loss
 from .metrics import Metric
 from .basic import DataManager, BaseManager
 
-class Manager(BaseManager[Module], DataManager, Generic[Module]):
+class Manager(BaseManager[Module], DataManager):
     """
     A testing manager, only used for testing
 
