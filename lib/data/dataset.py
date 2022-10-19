@@ -1,9 +1,11 @@
 from torch.utils.data import Dataset as _Dataset, DataLoader as _Loader, IterableDataset
 from torchmanager_core import abc, devices, os, torch
-from torchmanager_core.typing import Any, Callable, Iterator, Sequence, Tuple
+from torchmanager_core.typing import Any, Callable, Iterator, Sequence, Tuple, TypeVar
 from torchmanager_core.view import warnings
 
-class Dataset(IterableDataset, abc.ABC):
+T = TypeVar('T')
+
+class Dataset(IterableDataset[T], abc.ABC):
     '''
     A dataset that iterates with batch size
 
