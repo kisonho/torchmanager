@@ -1,6 +1,17 @@
 from torchmanager_core import abc
-from torchmanager_core.typing import Any, List, OrderedDict, Protocol, Optional
+from torchmanager_core.typing import Any, Enum, List, OrderedDict, Protocol, Optional
 from torchmanager_core.view.protocols import VerboseControllable
+
+class Frequency(Enum):
+    """
+    The frequency enum for learning rate
+    
+    * [Pending Deprecate Warning]: This enum will be deprecated from v1.1.0 and will be removed in v1.2.0.
+    """
+    EPOCH = 0
+    BATCH = 1
+
+LrScheduleFreq = Frequency
 
 class LrSteping(Protocol):
     @abc.abstractmethod

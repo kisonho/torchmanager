@@ -2,16 +2,7 @@ from torchmanager_core import _raise
 from torchmanager_core.typing import Dict, Enum, Optional
 from torchmanager_core.view import logging, warnings
 
-from .protocols import LrSteping, VerboseControllable
-
-class LrScheduleFreq(Enum):
-    """
-    The frequency enum for learning rate
-    
-    * [Pending Deprecate Warning]: This enum will be deprecated from v1.1.0 and will be removed in v1.2.0.
-    """
-    EPOCH = 0
-    BATCH = 1
+from .protocols import LrScheduleFreq, LrSteping, VerboseControllable
 
 def initial_step_lr_scheduler(lr_scheduler: Optional[LrSteping], initial_epoch: int = 0) -> None:
     """
