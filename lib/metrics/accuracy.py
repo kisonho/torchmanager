@@ -4,14 +4,17 @@ from torchmanager_core.view import warnings
 
 from .metric import Metric
 
+
 class Accuracy(Metric):
     """
     The traditional accuracy metric to compare two `torch.Tensor`
-    
+
     * extends: `.metric.Metric`
     """
+
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         return input.eq(target).to(torch.float32).mean()
+
 
 class SparseCategoricalAccuracy(Accuracy):
     """
@@ -19,19 +22,20 @@ class SparseCategoricalAccuracy(Accuracy):
 
     * extends: `Accuracy`
     * [Deprecation Warning]: The property `dim` has been deprecated from v1.1.0, and no longer be available in v1.2.0
-    
+
     - Properties:
         - dim: An `int` of the probability dim index for the input
     """
+
     _dim: int
 
     @property
-    @deprecated("1.1.0", "1.2.0")
+    @deprecated("v1.1.0", "v1.2.0")
     def dim(self) -> int:
         return self._dim
 
     @dim.setter
-    @deprecated("1.1.0", "1.2.0")
+    @deprecated("v1.1.0", "v1.2.0")
     def dim(self, dim: int) -> None:
         self._dim = dim
 
@@ -51,22 +55,26 @@ class SparseCategoricalAccuracy(Accuracy):
         input = input.argmax(dim=self._dim)
         return super().forward(input, target)
 
+
 class CategoricalAccuracy(SparseCategoricalAccuracy):
     """
     The accuracy metric for categorical labels
-    
+
     * extends: `SparseCategoricalAccuracy`
     """
+
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         target = target.argmax(dim=self._dim)
         return super().forward(input, target)
 
+
 class MAE(Metric):
     """
     The Mean Absolute Error metric
-    
+
     * extends: `.metrics.Metric`
     """
+
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         error = input - target
         error = error.abs()

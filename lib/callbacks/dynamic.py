@@ -1,8 +1,8 @@
 from torchmanager_core import abc
+from torchmanager_core.protocols import Frequency, SummaryWriteble, Weighted
 from torchmanager_core.typing import Any, Callable, Generic, Optional, SupportsFloat, TypeVar
 
 from .callback import FrequencyCallback
-from .protocols import Frequency, SummaryWriteble, Weighted
 
 W = TypeVar('W', bound=Weighted)
 

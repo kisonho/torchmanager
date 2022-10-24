@@ -3,7 +3,7 @@ from .ckpt import BestCheckpoint, LastCheckpoint, MonitorType
 from .dynamic import DynamicWeight, LambdaDynamicWeight
 from .early_stop import EarlyStop, StopTraining
 from .lr import LrSchedueler
-from .protocols import Frequency
+from torchmanager_core.protocols import Frequency
 Checkpoint = LastCheckpoint
 
 try:

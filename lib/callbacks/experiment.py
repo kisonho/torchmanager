@@ -1,9 +1,9 @@
 from torchmanager_core import os
 from torchmanager_core.typing import Dict, Generic, List, Optional, Set, Tuple, TypeVar, Union
+from torchmanager_core.protocols import MonitorType, StateDictLoadable
 from torchmanager_core.view import logging
 
-from ..train.protocols import StateDictLoadable
-from .ckpt import _Checkpoint, MonitorType
+from .ckpt import _Checkpoint
 from .tensorboard import TensorBoard
 
 T = TypeVar('T', bound=StateDictLoadable)
@@ -21,22 +21,22 @@ class Experiment(TensorBoard, _Checkpoint[T], Generic[T]):
     @property
     def monitors(self) -> Dict[str, MonitorType]: return self.__monitors
 
-    def __init__(self, experiment_dir: str, model: T, monitors: Union[Dict[str, MonitorType], List[str]]={}, show_verbose: bool = True) -> None:
+    def __init__(self, experiment: str, model: T, monitors: Union[Dict[str, MonitorType], List[str]]={}, show_verbose: bool = True) -> None:
         """
         Constructor
 
         - Parameters:
-            - experiment_dir: A `str` of target folder for the experiment
+            - experiment: A `str` of target folder for the experiment
             - model: A target model to be tracked during experiment in `T`
             - monitors: A `list` of metric name if all monitors are using `MonitorType.MAX` to track, or `dict` of metric name to be tracked for the best checkpoint in `str` and the `.ckpt.MonitorType` to track as values
             - show_verbose: A `bool` flag of if showing loggins in console
         """
         # call super constructor
-        experiment_dir = os.path.normpath(experiment_dir)
-        if not experiment_dir.endswith(".exp"): experiment_dir += ".exp"
-        os.makedirs(experiment_dir, exist_ok=True)
-        log_dir = os.path.join(experiment_dir, "data")
-        ckpt_path = os.path.join(experiment_dir, "checkpoints")
+        experiment = os.path.normpath(experiment)
+        if not experiment.endswith(".exp"): experiment += ".exp"
+        os.makedirs(experiment, exist_ok=True)
+        log_dir = os.path.join(experiment, "data")
+        ckpt_path = os.path.join(experiment, "checkpoints")
         TensorBoard.__init__(self, log_dir)
         _Checkpoint.__init__(self, model, ckpt_path)
         self.__monitors = monitors if isinstance(monitors, dict) else {monitor: MonitorType.MAX for monitor in monitors}
@@ -46,8 +46,8 @@ class Experiment(TensorBoard, _Checkpoint[T], Generic[T]):
             self.best_scores[m] = None
 
         # initialize logging
-        log_file = os.path.basename(experiment_dir.replace(".exp", ".log"))
-        log_path = os.path.join(experiment_dir, log_file)
+        log_file = os.path.basename(experiment.replace(".exp", ".log"))
+        log_path = os.path.join(experiment, log_file)
         logging.basicConfig(level=logging.INFO, filename=log_path, format="%(message)s")
 
         # initialize console
@@ -61,7 +61,7 @@ class Experiment(TensorBoard, _Checkpoint[T], Generic[T]):
     def on_train_start(self, initial_epoch: int = 0) -> None:
         self.current_step = initial_epoch
 
-    def step(self, summary: Dict[str, float], val_summary: Optional[Dict[str, float]] = None) -> Tuple[Set[str], dict[str, float], Optional[Dict[str, float]]]:
+    def step(self, summary: Dict[str, float], val_summary: Optional[Dict[str, float]] = None) -> Tuple[Set[str], Dict[str, float], Optional[Dict[str, float]]]:
         # save last checkpoints
         last_ckpt_path = os.path.join(self.ckpt_path, "last.model")
         self._checkpoint.save(self.current_step, last_ckpt_path)

@@ -4,7 +4,7 @@ from torchmanager_core.typing import Any, Collection, Dict, List, Module, Option
 from .callbacks import Callback, StopTraining
 from .losses import Loss, ParallelLoss
 from .metrics import Metric
-from .train import Checkpoint, learning_rate
+from .train import Checkpoint, update_lr
 from .testing import Manager as _Manager
 
 class Manager(_Manager[Module]):
@@ -218,7 +218,7 @@ class Manager(_Manager[Module]):
 
             # step lr scheduler
             if lr_scheduler is not None:
-                lr_summary = learning_rate.update_lr(lr_scheduler)
+                lr_summary = update_lr(lr_scheduler)
                 summary.update(lr_summary)
 
             # print summary info

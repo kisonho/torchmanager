@@ -4,6 +4,7 @@ from torchmanager_core.view import warnings
 
 from ..metrics import Metric
 
+
 class Loss(Metric):
     """
     The main loss function
@@ -28,12 +29,13 @@ class Loss(Metric):
     - Properties:
         - weight: A `float` of coeffiency applied to current loss function
     """
+
     __weight: float
 
     @property
     def weight(self) -> float:
         return self.__weight
-    
+
     @weight.setter
     def weight(self, w: float) -> None:
         assert w > 0, f"Weight must be a positive number, got {w}."
@@ -58,7 +60,9 @@ class Loss(Metric):
     def forward(self, input: Any, target: Any) -> torch.Tensor:
         if isinstance(self._metric_fn, torch.nn.parallel.DataParallel):
             return super().forward(input, target).mean(dim=0)
-        else: return super().forward(input, target)
+        else:
+            return super().forward(input, target)
+
 
 class MultiLosses(Loss):
     """
@@ -72,10 +76,11 @@ class MultiLosses(Loss):
     >>> loss_2 = Loss(...)
     >>> loss_fn = MultiLosses([loss_1, loss_2])
     >>> manager = Manager(..., loss_fn=loss_fn)
-    
+
     - Properties:
         - losses: A `torch.nn.ModuleList` of loss metrics in `Metric`
     """
+
     __losses: torch.nn.ModuleList
 
     @property
@@ -100,17 +105,19 @@ class MultiLosses(Loss):
         assert isinstance(loss, torch.Tensor), _raise(TypeError("The total loss is not a valid `torch.Tensor`."))
         return loss
 
-@deprecated("v1.1.0", "1.2.0")
+
+@deprecated("v1.1.0", "v1.2.0")
 class MultiOutputsLosses(Loss):
     """
     A loss with multiple losses for multiple outputs
 
     * extends: `.Loss`
     * [Depreciation Warning]: `MultiOutputsLosses` has been deprecated in v1.1.0 and will be removed in v1.2.0, use `MultiLosses` along with `target` parameter for each loss instead.
-    
+
     - Properties:
         - losses: A `dict` of loss metrics in `Metric`
     """
+
     __losses: torch.nn.ModuleDict
 
     @property
@@ -136,6 +143,7 @@ class MultiOutputsLosses(Loss):
         assert isinstance(loss, torch.Tensor), _raise(TypeError("The total loss is not a valid `torch.Tensor`."))
         return loss
 
+
 class ParallelLoss(torch.nn.parallel.DataParallel):
     """
     A data parallel loss function
@@ -143,18 +151,23 @@ class ParallelLoss(torch.nn.parallel.DataParallel):
     * extends: `torch.nn.parallel.DataParallel`
     * implements: `..callbacks.protocols.Weighted`
     """
+
     module: Loss
-    
-    @property
-    def result(self) -> torch.Tensor: return torch.concat(self.module._results).mean()
 
     @property
-    def results(self) -> torch.Tensor: return torch.concat(self.module._results)
+    def result(self) -> torch.Tensor:
+        return torch.concat(self.module._results).mean()
+
+    @property
+    def results(self) -> torch.Tensor:
+        return torch.concat(self.module._results)
 
     def __init__(self, module: Loss, device_ids: Optional[List[int]] = ..., output_device: Optional[torch.device] = ..., dim: int = ...) -> None:
         super().__init__(module, device_ids, output_device, dim)
 
-    def reset(self) -> None: self.module.reset()
+    def reset(self) -> None:
+        self.module.reset()
+
 
 def loss(fn: Callable[[Any, Any], torch.Tensor]) -> Loss:
     """
@@ -169,6 +182,7 @@ def loss(fn: Callable[[Any, Any], torch.Tensor]) -> Loss:
     """
     return Loss(fn)
 
+
 def loss_fn(target: Optional[str] = None, weight: float = 1) -> Callable[[Callable[[Any, Any], torch.Tensor]], Loss]:
     """
     The loss wrapping function that wrap a function with target and weight given into a loss
@@ -180,6 +194,8 @@ def loss_fn(target: Optional[str] = None, weight: float = 1) -> Callable[[Callab
     ...    return ...
     >>> manager = (..., loss_fn=some_loss_fn)
     """
+
     def wrapped_loss_fn(fn_to_wrap: Callable[[Any, Any], torch.Tensor]) -> Loss:
         return Loss(fn_to_wrap, target=target, weight=weight)
+
     return wrapped_loss_fn

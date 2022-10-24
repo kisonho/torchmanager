@@ -1,9 +1,9 @@
-from torchmanager_core import os, sys, torch, _raise
-from torchmanager_core.typing import Any, Dict, Enum, Generic, Optional, TypeVar
+from torchmanager_core import os, torch, _raise
+from torchmanager_core.protocols import ModelContainer, MonitorType, StateDictLoadable
+from torchmanager_core.typing import Any, Dict, Generic, Optional, TypeVar
 
 from ..train import Checkpoint as Ckpt
 from .callback import Callback
-from .protocols import ModelContainer, StateDictLoadable
 
 T = TypeVar('T', bound=StateDictLoadable)
 
@@ -69,20 +69,6 @@ class LastCheckpoint(_Checkpoint[T]):
 
     def on_epoch_end(self, epoch: int, summary: Dict[str, float] = ..., val_summary: Optional[Dict[str, float]] = ...) -> None:
         if epoch % self.freq == 0: super().on_epoch_end(epoch, summary, val_summary)
-
-class MonitorType(Enum):
-    """The enum of monitor types"""
-    MIN = int(0)
-    MAX = int(1)
-
-    @property
-    def init_score(self) -> float:
-        if self == MonitorType.MAX:
-            return -1
-        elif self == MonitorType.MIN:
-            return sys.float_info.max
-        else:
-            raise TypeError(f'Monitor type {self} is not supported.')
 
 class BestCheckpoint(_Checkpoint[T]):
     """

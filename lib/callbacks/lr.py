@@ -1,8 +1,8 @@
 from torchmanager_core import torch
+from torchmanager_core.protocols import Frequency, SummaryWriteble
 from torchmanager_core.typing import Any, Dict, Generic, Optional, TypeVar
 
 from .callback import FrequencyCallback
-from .protocols import Frequency, SummaryWriteble
 
 Scheduler = TypeVar("Scheduler", bound=torch.optim.lr_scheduler._LRScheduler)
 Writer = TypeVar("Writer", bound=SummaryWriteble)

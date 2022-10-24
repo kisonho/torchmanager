@@ -1,8 +1,8 @@
 from torchmanager_core import tensorboard, torch
 from torchmanager_core.typing import Dict, Optional, Set, Tuple
+from torchmanager_core.protocols import Frequency
 
 from .callback import FrequencyCallback
-from .protocols import Frequency
 
 class TensorBoard(FrequencyCallback):
     """

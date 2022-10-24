@@ -1,7 +1,6 @@
 from torchmanager_core import abc, torch
+from torchmanager_core.protocols import Frequency
 from torchmanager_core.typing import Any, Dict, Optional
-
-from .protocols import Frequency
 
 class Callback:
     """An empty basic training callback"""

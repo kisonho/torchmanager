@@ -23,7 +23,7 @@ class Manager(BaseManager[Module]):
     model: Union[Module, torch.nn.parallel.DataParallel]
     
     @property
-    @deprecated("1.1.0", "1.2.0")
+    @deprecated("v1.1.0", "v1.2.0")
     def compiled_losses(self) -> Union[Loss, ParallelLoss]:
         assert self.loss_fn is not None,  _raise(NotImplementedError("loss_fn is not given, compiles the manager with loss_fn first."))
         return self.loss_fn
