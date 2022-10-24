@@ -1,5 +1,5 @@
 from torchmanager_core import devices, math, torch, view, _raise
-from torchmanager_core.typing import Any, Collection, Dict, Generic, List, Module, Optional, Union
+from torchmanager_core.typing import Any, Collection, Dict, List, Module, Optional, Union
 
 from .callbacks import Callback, StopTraining
 from .losses import Loss, ParallelLoss
@@ -7,7 +7,7 @@ from .metrics import Metric
 from .train import Checkpoint, learning_rate
 from .testing import Manager as _Manager
 
-class Manager(_Manager[Module], Generic[Module]):
+class Manager(_Manager[Module]):
     """
     A training manager
 

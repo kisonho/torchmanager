@@ -11,6 +11,8 @@ class _Checkpoint(Callback, Generic[T]):
     """
     The callback to save the last checkpoint during training
 
+    * extends: `.Callback
+
     - Properties:
         - ckpt_path: A `str` of checkpoint path
     """
@@ -41,9 +43,11 @@ class _Checkpoint(Callback, Generic[T]):
     def on_epoch_end(self, epoch: int, summary: Dict[str, float] = ..., val_summary: Optional[Dict[str, float]] = ...) -> None:
         self._checkpoint.save(epoch, self.ckpt_path)
 
-class LastCheckpoint(_Checkpoint[T], Generic[T]):
+class LastCheckpoint(_Checkpoint[T]):
     """
     Last checkpoint with frequency control support
+
+    * extends: `_Checkpoint`
     
     - Properties:
         - freq: An `int` of checkpoint epoch frequency
@@ -80,9 +84,11 @@ class MonitorType(Enum):
         else:
             raise TypeError(f'Monitor type {self} is not supported.')
 
-class BestCheckpoint(_Checkpoint[T], Generic[T]):
+class BestCheckpoint(_Checkpoint[T]):
     """
     The callback to save the latest checkpoint for each epoch
+
+    * extends: `_Checkpoint`
 
     - Properties:
         - best_score: A `float` of the best score to be monitored
