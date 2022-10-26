@@ -1,5 +1,5 @@
 from torchmanager_core import torch, _raise, VERSION
-from torchmanager_core.typing import Any, Collection, Dict, Generic, Module, Optional, OrderedDict, Tuple, Union
+from torchmanager_core.typing import Any, Collection, Dict, Generic, Module, Optional, OrderedDict, Self, Tuple, Union
 
 from .losses import Loss, MultiLosses, MultiOutputsLosses, ParallelLoss
 from .metrics import Metric
@@ -133,7 +133,7 @@ class BaseManager(Generic[Module]):
 
         # recover model to manager
         if isinstance(ckpt.model, torch.nn.Module):
-            manager = cls(ckpt.model, ckpt.optimizer, loss_fn=ckpt.loss_fn, metrics=ckpt.metrics)
+            manager = cls(ckpt.model, ckpt.optimizer, loss_fn=ckpt.loss_fn, metrics=ckpt.metrics) # type: ignore
         elif isinstance(ckpt.model, BaseManager):
             manager = ckpt.model
             if isinstance(manager.model, torch.nn.parallel.DataParallel): manager.model = manager.model.module
@@ -188,15 +188,13 @@ class BaseManager(Generic[Module]):
         if self.loss_fn is not None: self.loss_fn = self.loss_fn.to(device)
         for k, m in self.metric_fns.items(): self.metric_fns[k] = m.to(device)
 
-    def to_checkpoint(self) -> Checkpoint[Module]:
+    def to_checkpoint(self) -> Checkpoint[Self]:
         """
         Convert the current manager to a checkpoint
         
-        - Returns: A `Checkpoint` with its model in `Module` type
+        - Returns: A `Checkpoint` with its model as the current manager
         """
-        metrics: Dict[str, Metric] = {k: m for k, m in self.metric_fns.items()}
-        loss_fn = self.loss_fn.module if isinstance(self.loss_fn, ParallelLoss) else self.loss_fn
-        ckpt = Checkpoint(self.model, optimizer=self.optimizer, loss_fn=loss_fn, metrics=metrics)
+        ckpt = Checkpoint(self)
         return ckpt
         
     def unpack_data(self, data: Collection) -> Tuple[Any, Any]:

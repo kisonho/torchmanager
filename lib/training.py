@@ -1,5 +1,6 @@
 from torchmanager_core import devices, math, torch, view, _raise
-from torchmanager_core.typing import Any, Collection, Dict, List, Module, Optional, Union
+from torchmanager_core.protocols import Resulting
+from torchmanager_core.typing import Any, Collection, Dict, List, Module, Optional, Self, Union
 
 from .callbacks import Callback, StopTraining
 from .losses import Loss, ParallelLoss
@@ -36,13 +37,13 @@ class Manager(_Manager[Module]):
         else: self.__current_epoch = e
     
     @property
-    def compiled_losses(self) -> Union[Loss, ParallelLoss]:
-        assert self.loss_fn is not None, _raise(NotImplementedError("loss_fn is not given, compiles the manager with loss_fn first."))
+    def compiled_losses(self) -> Resulting:
+        assert self.loss_fn is not None, _raise(NotImplementedError("The manager is not compiled properly, `loss_fn` is missing."))
         return self.loss_fn
 
     @property
     def compiled_optimizer(self) -> torch.optim.Optimizer:
-        assert self.optimizer is not None, _raise(NotImplementedError("optimizer is not given."))
+        assert self.optimizer is not None, _raise(NotImplementedError("The manager is not compiled properly, `optimizer` is missing."))
         return self.optimizer
 
     def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss]]] = None, metrics: Dict[str, Metric] = {}) -> None:
@@ -184,6 +185,7 @@ class Manager(_Manager[Module]):
 
         # multi gpus support for loss
         if use_multi_gpus and not isinstance(self.compiled_losses, torch.nn.parallel.DataParallel):
+            assert isinstance(self.compiled_losses, Loss), _raise(TypeError("The compiled loss function is not a valid `Loss` object."))
             paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.compiled_losses, devices=target_devices, parallel_type=ParallelLoss)
             assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), _raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
             self.loss_fn = paralleled_loss_fn
@@ -274,7 +276,7 @@ class Manager(_Manager[Module]):
                 raise runtime_error from metric_error
         return summary
 
-    def to_checkpoint(self) -> Checkpoint[Module]:
+    def to_checkpoint(self) -> Checkpoint[Self]:
         ckpt = super().to_checkpoint()
         ckpt.last_epoch = self.current_epoch
         return ckpt

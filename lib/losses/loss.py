@@ -149,7 +149,7 @@ class ParallelLoss(torch.nn.parallel.DataParallel):
     A data parallel loss function
 
     * extends: `torch.nn.parallel.DataParallel`
-    * implements: `..callbacks.protocols.Weighted`
+    * implements: `torchmanager_core.protocols.Resulting`
     """
 
     module: Loss

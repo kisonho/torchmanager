@@ -6,6 +6,7 @@ class Metric(torch.nn.Module):
     The basic metric class
 
     * extends: `torch.nn.Module`
+    * implements: `torchmanager_core.protocols.Resulting`
     * Metric tensor is released from memory as soon as the result returned
 
     - Properties:

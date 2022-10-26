@@ -1,9 +1,9 @@
 from torchmanager_core import devices, torch, view, _raise, deprecated
+from torchmanager_core.protocols import Resulting
 from torchmanager_core.typing import Any, Collection, Dict, List, Module, Optional, Union
 
-from .losses import Loss, ParallelLoss
-from .metrics import Metric
 from .basic import BaseManager
+from .losses import Loss, ParallelLoss
 
 class Manager(BaseManager[Module]):
     """
@@ -18,18 +18,18 @@ class Manager(BaseManager[Module]):
 
     - Properties:
         - compiled_losses: The loss function in `Loss` that must be exist
-        - compiled_metrics: The `dict` of metrics in `Metric` that does not contain losses
+        - compiled_metrics: The `dict` of metrics in `Resulting` that does not contain losses
     """
     model: Union[Module, torch.nn.parallel.DataParallel]
     
     @property
     @deprecated("v1.1.0", "v1.2.0")
-    def compiled_losses(self) -> Union[Loss, ParallelLoss]:
-        assert self.loss_fn is not None,  _raise(NotImplementedError("loss_fn is not given, compiles the manager with loss_fn first."))
+    def compiled_losses(self) -> Resulting:
+        assert self.loss_fn is not None, _raise(NotImplementedError("The manager is not compiled properly, `loss_fn` is missing."))
         return self.loss_fn
 
     @property
-    def compiled_metrics(self) -> Dict[str, Metric]:
+    def compiled_metrics(self) -> Dict[str, Resulting]:
         return {name: m for name, m in self.metric_fns.items() if "loss" not in name}
 
     @torch.no_grad()
@@ -42,6 +42,7 @@ class Manager(BaseManager[Module]):
             - device: An optional `torch.device` to test on if not using multi-GPUs or an optional default `torch.device` for testing otherwise
             - use_multi_gpus: A `bool` flag to use multi gpus during testing
             - show_verbose: A `bool` flag to show the progress bar during testing
+        - Retruns: A `list` of `Any` prediction results
         '''
         # find available device
         cpu, device, target_devices = devices.search(None if use_multi_gpus else device)
