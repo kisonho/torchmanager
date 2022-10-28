@@ -2,6 +2,14 @@ from matplotlib.pyplot import bone
 import torch, warnings
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, TypeVar, Union
 
+try:
+    from torch.backends import mps
+    METAL = torch.device('mps')
+    '''The overall Metal (Mac only) devices'''
+except ImportError:
+    mps = NotImplemented
+    METAL = NotImplemented
+
 from .protocols import DeviceMovable
 
 CPU = torch.device('cpu')
@@ -9,7 +17,7 @@ CPU = torch.device('cpu')
 DEFAULT = torch.device(torch.cuda.current_device()) if torch.cuda.is_available() else CPU
 '''The default device'''
 GPU = torch.device('cuda')
-'''The overall CUDA devices'''
+'''The overall CUDA (NVIDIA only) devices'''
 GPUS = [torch.device(i) for i in range(torch.cuda.device_count())]
 '''The list of available CUDA devices'''
 
@@ -49,8 +57,14 @@ def find(specified: Optional[torch.device] = None) -> Tuple[torch.device, torch.
     - Returns: A `tuple` of CPU in `torch.device` and available device in `torch.device`
     """
     warnings.warn("This has been deprecated from v1.1.0 and will be removed in v1.2.0, use `torchmanager_core.devices.search` instead.", PendingDeprecationWarning)
-    if specified is None:
-        return (CPU, GPU) if torch.cuda.is_available() else (CPU, CPU)
+    if specified is None and torch.cuda.is_available():
+        return (CPU, GPU)
+    elif specified is None and mps is NotImplemented:
+        return (CPU, CPU)
+    elif specified is None and mps.is_available():
+        return (CPU, METAL)
+    elif specified is None:
+        return (CPU, CPU)
     else: return CPU, specified
 
 def search(specified: Optional[Union[torch.device, List[torch.device]]] = None) -> Tuple[torch.device, torch.device, List[torch.device]]:
@@ -61,23 +75,27 @@ def search(specified: Optional[Union[torch.device, List[torch.device]]] = None) 
         - specified: An optional `torch.device` of specified
     - Returns: A `tuple` of CPU in `torch.device`, available device in `torch.device` and `list` of specified devices in `torch.device`
     """
-    if specified is None or not torch.cuda.is_available():
-        return (CPU, GPU, GPUS) if len(GPUS) > 0 else (CPU, CPU, [CPU])
-    else:
-        # specified device
-        if not isinstance(specified, list):
-            device = specified
-            specified = [specified]
-        elif len(specified) > 0:
-            # set default device
-            device = GPU
+    if specified is None and torch.cuda.is_available():
+        return (CPU, GPU, GPUS)
+    elif specified is None and mps is NotImplemented:
+        return (CPU, CPU, [CPU])
+    elif specified is None and mps.is_available():
+        return (CPU, METAL, [METAL])
+    elif specified is None:
+        return (CPU, CPU, [CPU])
+    elif not isinstance(specified, list):
+        device = specified
+        specified = [specified]
+    elif len(specified) > 0:
+        # set default device
+        device = torch.device(specified[0].type)
 
-            # check for each device
-            for d in specified:
-                if d.type != GPU.type: raise SystemError("All devices in the specified list must have the same device type with GPU type")
-                if d.index is None: raise SystemError("All devices in the specified list must have a device index")
-        else: raise SystemError("Specified device list must not be empty")
-        return CPU, device, specified
+        # check for each device
+        for d in specified:
+            if d.type != GPU.type: raise SystemError("All devices in the specified list must have the same device type with GPU type")
+            if d.index is None: raise SystemError("All devices in the specified list must have a device index")
+    else: raise SystemError("Specified device list must not be empty")
+    return CPU, device, specified
 
 def move_to_device(target: Union[DeviceMovable,  Dict[str, Union[DeviceMovable,  Any]], List[Union[DeviceMovable,  Any]]], device: torch.device) -> Union[DeviceMovable,  Dict[str, Union[DeviceMovable,  Any]], List[Union[DeviceMovable,  Any]]]:
     """
