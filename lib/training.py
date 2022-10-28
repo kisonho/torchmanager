@@ -1,5 +1,5 @@
 from torchmanager_core import devices, math, torch, view, _raise
-from torchmanager_core.typing import Any, Callable, Dict, List, Module, Optional, SizedIterable, Union
+from torchmanager_core.typing import Any, Callable, Dict, List, Module, Optional, Self, SizedIterable, Union
 
 from .callbacks import Callback, StopTraining
 from .losses import Loss
@@ -286,7 +286,7 @@ class Manager(_Manager[Module]):
                 raise runtime_error from metric_error
         return summary
 
-    def to_checkpoint(self) -> Checkpoint[Module]:
+    def to_checkpoint(self) -> Checkpoint[Self]:
         ckpt = super().to_checkpoint()
         ckpt.last_epoch = self.current_epoch
         return ckpt

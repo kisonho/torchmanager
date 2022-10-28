@@ -1,5 +1,5 @@
 from torchmanager_core import torch, view, _raise
-from torchmanager_core.typing import Any, Callable, Dict, Generic, Module, Optional, OrderedDict, SizedIterable, Tuple, Union
+from torchmanager_core.typing import Any, Callable, Dict, Generic, Module, Optional, OrderedDict, Self, SizedIterable, Tuple, Union
 
 from .losses import Loss, MultiLosses, MultiOutputsLosses
 from .metrics import Metric
@@ -158,14 +158,13 @@ class BaseManager(Generic[Module]):
         if self.loss_fn is not None: self.loss_fn = self.loss_fn.to(device)
         for k, m in self.metric_fns.items(): self.metric_fns[k] = m.to(device)
 
-    def to_checkpoint(self) -> Checkpoint[Module]:
+    def to_checkpoint(self) -> Checkpoint[Self]:
         """
         Convert the current manager to a checkpoint
         
         - Returns: A `Checkpoint` with its model in `Module` type
         """
-        metrics: Dict[str, torch.nn.Module] = {k: m for k, m in self.metric_fns.items()}
-        ckpt = Checkpoint(self.model, optimizer=self.optimizer, loss_fn=self.loss_fn, metrics=metrics)
+        ckpt = Checkpoint(self)
         return ckpt
 
 class DataManager:

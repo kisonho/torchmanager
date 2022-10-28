@@ -68,7 +68,8 @@ class Checkpoint(Generic[T]):
 
             # load model structure with checkpoint weights
             if model is not None:
-                model.load_state_dict(ckpt["model"].state_dict())
+                saved_model: StateDictLoadable = ckpt["model"] # type: ignore
+                model.load_state_dict(saved_model.state_dict())
                 ckpt["model"] = model
         return cls(**ckpt)
 
