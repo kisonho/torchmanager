@@ -1,6 +1,6 @@
 import abc, torch, sys
 from enum import Enum
-from typing import Any, List, Optional, OrderedDict, Protocol, runtime_checkable
+from typing import Any, Dict, List, Optional, OrderedDict, Protocol, runtime_checkable
 from typing_extensions import Self
 
 from .devices.protocols import DeviceMovable
@@ -57,7 +57,7 @@ class StateDictLoadable(Protocol):
         return NotImplemented
 
     @abc.abstractmethod
-    def state_dict(self, prefix: str = "", keep_vars: bool = False) -> OrderedDict[str, Any]:
+    def state_dict(self, *, prefix: str = "", keep_vars: bool = False) -> Dict[str, Any]:
         return NotImplemented
 
 
