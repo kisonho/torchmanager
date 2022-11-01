@@ -33,11 +33,11 @@ manager = torchmanager.Manager(model, optimizer, loss_fn=loss_fn, metrics=metric
 
 - Train the model with fit method:
 ```
-from torch.utils.data import DataLoader
+from torchmanager.data import Dataset
 
 # get datasets
-training_dataset: DataLoader = ...
-val_dataset: DataLoader = ...
+training_dataset: Dataset = ...
+val_dataset: Dataset = ...
 
 # train with fit method
 manager.fit(training_dataset, epochs=10, val_dataset=val_dataset)
@@ -46,7 +46,7 @@ manager.fit(training_dataset, epochs=10, val_dataset=val_dataset)
 * Test the model with test method:
 ```
 # get dataset
-testing_dataset: DataLoader = ...
+testing_dataset: Dataset = ...
 
 # test with test method
 manager.test(testing_dataset)
