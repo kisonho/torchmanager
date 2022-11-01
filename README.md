@@ -1,5 +1,7 @@
 # torchmanager
-A highly-wrapped PyTorch training and testing manager
+### A highly-wrapped PyTorch training and testing manager
+
+*The **main** branch is used for beta unstable release. Please check **stable** branch for the latest main release version*
 
 ## Pre-request
 * Python 3.8+
