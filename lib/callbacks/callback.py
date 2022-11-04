@@ -4,8 +4,8 @@ from torchmanager_core.typing import Any, Dict, Optional
 
 class Callback:
     """An empty basic training callback"""
-    
-    def on_batch_end(self, batch: int, summary: Dict[str, float]={}) -> None:
+
+    def on_batch_end(self, batch: int, summary: Dict[str, float] = {}) -> None:
         """
         The callback when batch ends
 
@@ -24,7 +24,7 @@ class Callback:
         """
         pass
 
-    def on_epoch_end(self, epoch: int, summary: Dict[str, float]={}, val_summary: Optional[Dict[str, float]]=None) -> None:
+    def on_epoch_end(self, epoch: int, summary: Dict[str, float] = {}, val_summary: Optional[Dict[str, float]] = None) -> None:
         """
         The callback when batch ends
 
@@ -51,29 +51,31 @@ class Callback:
     def on_train_start(self, initial_epoch: int = 0) -> None:
         """
         The callback when training starts
-        
+
         - Parameters:
             - initial_epoch: An `int` of initial epoch index
         """
         pass
 
+
 class FrequencyCallback(Callback, abc.ABC):
-    '''
+    """
     A callback with frequency control
 
     * extends: `Callbacks`
-    * abstract class that needs implementation of `_update` and `step` method
+    * abstract class that needs implementation of `step` method
 
     - Parameters:
         - current_step: An `int` of the current step index
         - freq: A `WeightUpdateFreq` of the frequency type to update the weight
-    '''
+    """
+
     __freq: Frequency
     __step: int
 
     @property
     def current_step(self) -> int:
-        '''The current step index'''
+        """The current step index"""
         return self.__step
 
     @current_step.setter
@@ -82,22 +84,29 @@ class FrequencyCallback(Callback, abc.ABC):
         self.__step = step
 
     @property
-    def freq(self) -> Frequency: return self.__freq
+    def freq(self) -> Frequency:
+        return self.__freq
 
     def __init__(self, freq: Frequency = Frequency.EPOCH, initial_step: int = 0) -> None:
-        '''
+        """
         Constructor
 
         - Parameters:
             - freq: A `.protocols.Frequency` of callback frequency
             - initial_step: An `int` of the initial step that starts with
-        '''
+        """
         super().__init__()
         self.__freq = freq
         self.__step = initial_step
 
-    @abc.abstractmethod
-    def _update(self, result: Any) -> None: pass
+    def _update(self, result: Any) -> None:
+        """
+        Method to update with the result after step
+
+        - Parameters:
+            - result: `Any` kind of result value
+        """
+        pass
 
     def on_batch_end(self, batch: int, summary: Dict[str, float] = {}) -> None:
         if self.freq == Frequency.BATCH:
@@ -106,7 +115,8 @@ class FrequencyCallback(Callback, abc.ABC):
             self.current_step += 1
 
     def on_train_start(self, initial_epoch: int = 0) -> None:
-        if self.freq == Frequency.EPOCH: self.current_step = initial_epoch
+        if self.freq == Frequency.EPOCH:
+            self.current_step = initial_epoch
 
     def on_epoch_end(self, epoch: int, summary: Dict[str, float] = {}, val_summary: Optional[Dict[str, float]] = None) -> None:
         if self.freq == Frequency.EPOCH:
@@ -116,12 +126,12 @@ class FrequencyCallback(Callback, abc.ABC):
 
     @abc.abstractmethod
     def step(self, summary: Dict[str, float], val_summary: Optional[Dict[str, float]] = None) -> Any:
-        '''
+        """
         Abstract method to step the callback
         
         - Parameters:
             - summary: A `dict` of training summary with name in `str` and value in `float`
             - val_summary: An optional `dict` of validation summary with name in `str` and value in `float`
         - Returns: An `Any` type of result for the new step
-        '''
+        """
         return NotImplemented
