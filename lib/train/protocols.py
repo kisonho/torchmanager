@@ -1,5 +1,5 @@
 from torchmanager_core import abc
-from torchmanager_core.typing import Any, Enum, List, OrderedDict, Protocol, Optional
+from torchmanager_core.typing import Any, Dict, Enum, List, OrderedDict, Protocol, Optional
 from torchmanager_core.view.protocols import VerboseControllable
 
 class Frequency(Enum):
@@ -22,8 +22,11 @@ class LrSteping(Protocol):
 
 class StateDictLoadable(Protocol):
     """An object that can load state dict"""
-    @abc.abstractmethod
-    def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> Any: return NotImplemented
 
     @abc.abstractmethod
-    def state_dict(self, prefix: str = '', keep_vars: bool = False) -> OrderedDict[str, Any]: return NotImplemented
+    def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> Any:
+        return NotImplemented
+
+    @abc.abstractmethod
+    def state_dict(self, *, prefix: str = "", keep_vars: bool = False) -> Dict[str, Any]:
+        return NotImplemented
