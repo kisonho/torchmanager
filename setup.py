@@ -5,8 +5,8 @@ this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
 setup(name='torchmanager',
-    version='1.1.0a9',
-    description='PyTorch training manager (v1.1.0 Alpha 9)',
+    version='1.1.0b1',
+    description='PyTorch training manager (v1.1 Beta 1)',
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Kison Ho',
