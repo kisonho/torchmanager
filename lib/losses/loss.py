@@ -155,6 +155,14 @@ class ParallelLoss(torch.nn.parallel.DataParallel):
     module: Loss
 
     @property
+    def _target(self) -> Optional[str]:
+        return self.module._target
+
+    @_target.setter
+    def _target(self, t: Optional[str]) -> None:
+        self.module._target = t
+
+    @property
     def result(self) -> torch.Tensor:
         return torch.concat(self.module._results).mean()
 
