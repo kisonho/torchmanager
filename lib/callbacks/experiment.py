@@ -48,15 +48,19 @@ class Experiment(TensorBoard, _Checkpoint[T], Generic[T]):
         # initialize logging
         log_file = os.path.basename(experiment.replace(".exp", ".log"))
         log_path = os.path.join(experiment, log_file)
-        logging.basicConfig(level=logging.INFO, filename=log_path, format="%(message)s")
+        logger = logging.getLogger("torchmanager")
+        logger.setLevel(logging.INFO)
+        file_handler = logging.FileHandler(log_path)
+        formatter = logging.Formatter("%(message)s")
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
 
         # initialize console
         if show_verbose:
             console = logging.StreamHandler()
             console.setLevel(logging.INFO)
-            formatter = logging.Formatter('%(message)s')
             console.setFormatter(formatter)
-            logging.getLogger().addHandler(console)
+            logger.addHandler(console)
 
     def on_train_start(self, initial_epoch: int = 0) -> None:
         self.current_step = initial_epoch

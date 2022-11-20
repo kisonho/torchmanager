@@ -158,10 +158,6 @@ class Manager(_Manager[Module]):
             assert epochs is None, _raise(ValueError( f"The epochs must be given as `None` when iterations is given, got {epochs}."))
             epochs = math.ceil(iterations / len(training_dataset))
 
-        # initialize logger
-        view.logging.basicConfig(level=view.logging.INFO, format="%(message)s")
-        logger = view.logging.getLogger("torchmanager")
-
         # initialize initial epoch
         if initial_epoch is not None: 
             assert initial_epoch >= 0, _raise(ValueError(f"The initial_epoch must be a non_negative integer, got {initial_epoch}."))
@@ -194,7 +190,7 @@ class Manager(_Manager[Module]):
         # epoch loop
         for self.current_epoch in range(initial_epoch, epochs):
             # initialize epoch
-            logger.info(f"Training epoch {self.current_epoch + 1}/{epochs}")
+            view.logger.info(f"Training epoch {self.current_epoch + 1}/{epochs}")
             for c in callbacks_list: c.on_epoch_start(self.current_epoch)
             if iterations is not None: batch_iterations = iterations if len(training_dataset) < iterations else iterations
             else: batch_iterations = None
@@ -204,7 +200,7 @@ class Manager(_Manager[Module]):
             if iterations is not None and batch_iterations is not None: iterations -= batch_iterations
 
             # validate
-            val_summary = self.test(val_dataset, device=device, use_multi_gpus=use_multi_gpus) if val_dataset is not None else {}
+            val_summary = self.test(val_dataset, device=device, use_multi_gpus=use_multi_gpus, empty_cache=False) if val_dataset is not None else {}
 
             # on epoch end
             for c in callbacks_list:
@@ -229,7 +225,7 @@ class Manager(_Manager[Module]):
             for i, (name, value) in enumerate(summary.items()):
                 if i > 0: val_message += ", "
                 val_message += f"{name}={value:.4f}"
-            logger.info(val_message)
+            view.logger.info(val_message)
 
         # on train end
         for c in callbacks_list: c.on_train_end(self.raw_model)

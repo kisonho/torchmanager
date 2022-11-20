@@ -76,13 +76,14 @@ class Manager(BaseManager[Module]):
         return predictions
 
     @torch.no_grad()
-    def test(self, dataset: Collection, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
+    def test(self, dataset: Collection, device: Optional[Union[torch.device, list[torch.device]]] = None, empty_cache: bool = True, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
         """
         Test target model
 
         - Parameters:
             - dataset: A `Collection` dataset
             - device: An optional `torch.device` to test on if not using multi-GPUs or an optional default `torch.device` for testing otherwise
+            - empyt_cache: A `bool` flag to empty cache after testing
             - use_multi_gpus: A `bool` flag to use multi gpus during testing
             - show_verbose: A `bool` flag to show the progress bar during testing
         - Returns: A `dict` of validation summary
@@ -142,9 +143,10 @@ class Manager(BaseManager[Module]):
         if self.loss_fn is not None: summary["loss"] = float(self.loss_fn.result.detach())
 
         # reset model and loss
-        self.model = self.raw_model.to(cpu)
-        self.loss_fn = self.raw_loss_fn.to(cpu) if self.raw_loss_fn is not None else self.raw_loss_fn
-        devices.empty_cache()
+        if empty_cache:
+            self.model = self.raw_model.to(cpu)
+            self.loss_fn = self.raw_loss_fn.to(cpu) if self.raw_loss_fn is not None else self.raw_loss_fn
+            devices.empty_cache()
         return summary
 
     def test_step(self, x_test: Any, y_test: Any) -> Dict[str, float]:
