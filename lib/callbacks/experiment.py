@@ -1,25 +1,24 @@
 from torchmanager_core import os
-from torchmanager_core.typing import Dict, Generic, List, Optional, Set, Tuple, TypeVar, Union
+from torchmanager_core.typing import Any, Dict, Generic, List, TypeVar, Union
 from torchmanager_core.protocols import MonitorType, StateDictLoadable
 from torchmanager_core.view import logging
 
-from .ckpt import _Checkpoint
+from .callback import Callback
+from .ckpt import BestCheckpoint, LastCheckpoint
 from .tensorboard import TensorBoard
 
 T = TypeVar('T', bound=StateDictLoadable)
 
-class Experiment(TensorBoard, _Checkpoint[T], Generic[T]):
+class Experiment(Callback, Generic[T]):
     """
     The tensorboard callback that wraps last and best checkpoints in `checkpoints` folder by `last.model` and `best_*.model` with tensorboard logs in `data` folder together into a `*.exp` folder
 
     * extends: `.callback.Callback`, `.ckpt.BestCheckpoint`
     * requires: `tensorboard` package
     """
-    __monitors: Dict[str, MonitorType]
-    best_scores: Dict[str, Optional[float]]
-
-    @property
-    def monitors(self) -> Dict[str, MonitorType]: return self.__monitors
+    best_ckpts: List[BestCheckpoint[T]]
+    last_ckpt: LastCheckpoint[T]
+    tensorboard: TensorBoard
 
     def __init__(self, experiment: str, model: T, monitors: Union[Dict[str, MonitorType], List[str]]={}, show_verbose: bool = True) -> None:
         """
@@ -37,18 +36,23 @@ class Experiment(TensorBoard, _Checkpoint[T], Generic[T]):
         os.makedirs(experiment, exist_ok=True)
         log_dir = os.path.join(experiment, "data")
         ckpt_path = os.path.join(experiment, "checkpoints")
-        TensorBoard.__init__(self, log_dir)
-        _Checkpoint.__init__(self, model, ckpt_path)
-        self.__monitors = monitors if isinstance(monitors, dict) else {monitor: MonitorType.MAX for monitor in monitors}
+        
+        # initial checkpoints
+        self.best_ckpts = []
+        self.last_ckpt = LastCheckpoint(model, ckpt_path)
+        self.tensorboard = TensorBoard(log_dir)
 
-        # initialize scores
-        for m in self.monitors:
-            self.best_scores[m] = None
+        # initialize best checkpoints according to monitors
+        monitors = monitors if isinstance(monitors, dict) else {monitor: MonitorType.MAX for monitor in monitors}
+        for m, mode in monitors.items():
+            best_ckpt = BestCheckpoint(m, model, ckpt_path, monitor_type=mode)
+            self.best_ckpts.append(best_ckpt)
 
         # initialize logging
         log_file = os.path.basename(experiment.replace(".exp", ".log"))
         log_path = os.path.join(experiment, log_file)
         logger = logging.getLogger("torchmanager")
+        logger.handlers.clear()
         logger.setLevel(logging.INFO)
         file_handler = logging.FileHandler(log_path)
         formatter = logging.Formatter("%(message)s")
@@ -63,29 +67,31 @@ class Experiment(TensorBoard, _Checkpoint[T], Generic[T]):
             logger.addHandler(console)
 
     def on_train_start(self, initial_epoch: int = 0) -> None:
-        self.current_step = initial_epoch
+        for best_ckpt in self.best_ckpts:
+            best_ckpt.on_batch_start(initial_epoch)
+        self.last_ckpt.on_train_start(initial_epoch)
+        self.tensorboard.on_train_start(initial_epoch)
 
-    def step(self, summary: Dict[str, float], val_summary: Optional[Dict[str, float]] = None) -> Tuple[Set[str], Dict[str, float], Optional[Dict[str, float]]]:
-        # save last checkpoints
-        last_ckpt_path = os.path.join(self.ckpt_path, "last.model")
-        self._checkpoint.save(self.current_step, last_ckpt_path)
+    def on_batch_end(self, *args: Any, **kwargs: Any) -> None:
+        for best_ckpt in self.best_ckpts:
+            best_ckpt.on_batch_end(*args, **kwargs)
+        self.last_ckpt.on_batch_end(*args, **kwargs)
+        self.tensorboard.on_batch_end(*args, **kwargs)
 
-        # loop for monitors
-        for monitor, monitor_type in self.monitors.items():
-            # initialize checkpoint path and score
-            best_ckpt_path = os.path.join(self.ckpt_path, f"best_{monitor}.model")
-            score = val_summary[monitor] if val_summary is not None else summary[monitor]
+    def on_batch_start(self, *args: Any, **kwargs: Any) -> None:
+        for best_ckpt in self.best_ckpts:
+            best_ckpt.on_batch_start(*args, **kwargs)
+        self.last_ckpt.on_batch_start(*args, **kwargs)
+        self.tensorboard.on_batch_start(*args, **kwargs)
 
-            # save best checkpoint
-            if self.best_scores[monitor] is None:
-                self.best_score = score
-                self._checkpoint.save(self.current_step, best_ckpt_path)
-            elif self.best_score <= score and monitor_type == MonitorType.MAX:
-                self.best_score = score
-                self._checkpoint.save(self.current_step, best_ckpt_path)
-            elif self.best_score >= score and monitor_type == MonitorType.MIN:
-                self.best_score = score
-                self._checkpoint.save(self.current_step, best_ckpt_path)
+    def on_epoch_end(self, *args: Any, **kwargs: Any) -> None:
+        for best_ckpt in self.best_ckpts:
+            best_ckpt.on_epoch_end(*args, **kwargs)
+        self.last_ckpt.on_epoch_end(*args, **kwargs)
+        self.tensorboard.on_epoch_end(*args, **kwargs)
 
-        # step to tensorboard
-        return TensorBoard.step(self, summary, val_summary)
+    def on_epoch_start(self, *args: Any, **kwargs: Any) -> None:
+        for best_ckpt in self.best_ckpts:
+            best_ckpt.on_epoch_start(*args, **kwargs)
+        self.last_ckpt.on_epoch_start(*args, **kwargs)
+        self.tensorboard.on_epoch_start(*args, **kwargs)
