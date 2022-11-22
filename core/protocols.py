@@ -73,6 +73,14 @@ class Trainable(Protocol):
 
 class Resulting(StateDictLoadable, Trainable, Protocol):
     """An object that have result available with reset method"""
+    @property
+    @abc.abstractmethod
+    def _target(self) -> Optional[str]:
+        return NotImplemented
+
+    @_target.setter
+    def _target(self, t: Optional[str]) -> None:
+        pass
 
     @property
     @abc.abstractmethod

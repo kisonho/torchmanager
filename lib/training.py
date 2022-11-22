@@ -234,7 +234,7 @@ class Manager(_Manager[Module]):
         devices.empty_cache()
         return self.model
 
-    def train(self, *args, **kwargs) -> Dict[str, float]:
+    def train(self, *args: Any, **kwargs: Any) -> Dict[str, float]:
         """The single training step for an epoch"""
         return NotImplemented
 
