@@ -18,7 +18,11 @@ class Metric(torch.nn.Module):
     _target: Optional[str]
 
     @property
-    def result(self) -> torch.Tensor: return torch.concat(self._results).mean()
+    def result(self) -> torch.Tensor: 
+        if len(self._results) > 0:
+            return torch.concat(self._results).mean()
+        else:
+            return torch.tensor(torch.nan)
 
     @property
     def results(self) -> Optional[torch.Tensor]:
