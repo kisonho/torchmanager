@@ -1,4 +1,4 @@
-from torchmanager_core import torch, _raise, VERSION
+from torchmanager_core import torch, _raise, VERSION as CURRENT_VERSION
 from torchmanager_core.typing import Any, Collection, Dict, Generic, Module, Optional, OrderedDict, Self, Tuple, Union
 
 from .losses import Loss, MultiLosses, MultiOutputsLosses, ParallelLoss
@@ -45,7 +45,7 @@ class BaseManager(Generic[Module]):
     metric_fns: Dict[str, Metric]
     model: Module
     optimizer: Optional[torch.optim.Optimizer]
-    VERSION = VERSION
+    VERSION: str = CURRENT_VERSION
 
     @property
     def compiled(self) -> bool:
