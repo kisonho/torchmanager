@@ -79,15 +79,6 @@ class Resulting(StateDictLoadable, Trainable, Protocol):
         return NotImplemented
 
     @_target.setter
-    def _target(self, t: Optional[str]) -> None:
-        pass
-
-    @property
-    @abc.abstractmethod
-    def _target(self) -> Optional[str]:
-        return NotImplemented
-
-    @_target.setter
     @abc.abstractmethod
     def _target(self, t: Optional[str]) -> None:
         pass

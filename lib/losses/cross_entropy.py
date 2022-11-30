@@ -79,6 +79,24 @@ class KLDiv(Loss):
     
     * extends: `.loss.Loss`
     """
-    def __init__(self, *args: Any, target: Optional[str] = None, weight: float = 1, **kwargs: Any) -> None:
+    _metric_fn: torch.nn.KLDivLoss
+    _softmax: bool
+
+    @property
+    def log_target(self) -> bool:
+        return self._metric_fn.log_target
+
+    def __init__(self, *args: Any, softmax: bool = False, target: Optional[str] = None, weight: float = 1, **kwargs: Any) -> None:
         loss_fn = torch.nn.KLDivLoss(*args, **kwargs)
         super().__init__(loss_fn, target=target, weight=weight)
+        self._softmax = softmax
+
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        # softmax input and target
+        if self._softmax:
+            input = input.softmax(dim=0).log()
+            target = target if self.log_target else target.softmax(dim=0)
+
+        # calculate loss
+        loss = super().forward(input, target)
+        return loss
