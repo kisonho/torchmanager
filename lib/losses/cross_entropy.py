@@ -78,6 +78,11 @@ class KLDiv(Loss):
     KL-Div Loss
     
     * extends: `.loss.Loss`
+    * A log-softmax will always be applied to `input`
+    * A softmax will be applied to `target` only if `log_target` is `False`
+
+    - Properties:
+        - log_target: A `bool` flag of if `target` is in log space
     """
     _metric_fn: torch.nn.KLDivLoss
     _softmax: bool
