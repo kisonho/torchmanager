@@ -24,7 +24,7 @@ class Loss(Metric):
     
     @weight.setter
     def weight(self, w: float) -> None:
-        assert w > 0, f"Weight must be a positive number, got {w}."
+        assert w >= 0, f"Weight must be a non-negative number, got {w}."
         self.__weight = w
 
     def __init__(self, loss_fn: Optional[Callable[[Any, Any], torch.Tensor]] = None, target: Optional[str] = None, weight: float = 1) -> None:
