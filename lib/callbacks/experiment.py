@@ -39,13 +39,15 @@ class Experiment(Callback, Generic[T]):
         
         # initial checkpoints
         self.best_ckpts = []
-        self.last_ckpt = LastCheckpoint(model, ckpt_path)
+        last_ckpt_path = os.path.join(ckpt_path, "last.model")
+        self.last_ckpt = LastCheckpoint(model, last_ckpt_path)
         self.tensorboard = TensorBoard(log_dir)
 
         # initialize best checkpoints according to monitors
         monitors = monitors if isinstance(monitors, dict) else {monitor: MonitorType.MAX for monitor in monitors}
         for m, mode in monitors.items():
-            best_ckpt = BestCheckpoint(m, model, ckpt_path, monitor_type=mode)
+            best_ckpt_path = os.path.join(ckpt_path, f"best_{m}.model")
+            best_ckpt = BestCheckpoint(m, model, best_ckpt_path, monitor_type=mode)
             self.best_ckpts.append(best_ckpt)
 
         # initialize logging
