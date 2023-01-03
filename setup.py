@@ -6,7 +6,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(name='torchmanager',
     version='1.0.7b2',
-    description='PyTorch training manager (v1.0.7 Beta 1)',
+    description='PyTorch training manager (v1.0.7 Beta 2)',
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Kison Ho',
