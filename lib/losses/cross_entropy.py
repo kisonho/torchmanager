@@ -99,8 +99,8 @@ class KLDiv(Loss):
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # softmax input and target
         if self._softmax:
-            input = input.softmax(dim=0).log()
-            target = target if self.log_target else target.softmax(dim=0)
+            input = input.softmax(dim=1).log()
+            target = target if self.log_target else target.log()
 
         # calculate loss
         loss = super().forward(input, target)
