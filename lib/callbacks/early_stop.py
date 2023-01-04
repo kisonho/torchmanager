@@ -30,6 +30,10 @@ class EarlyStop(Callback):
     monitor_type: MonitorType
     steps: int
 
+    @property
+    def _metrics(self) -> List[float]:
+        return self.__metrics
+
     def __init__(self, monitor: str, monitor_type: MonitorType = MonitorType.MAX, steps: int = 10) -> None:
         super().__init__()
         self.__metrics = [sys.float_info.min if monitor_type == MonitorType.MAX else sys.float_info.max]
@@ -44,6 +48,6 @@ class EarlyStop(Callback):
 
         # compare with recorded metrics
         max_value = max(self.__metrics)
-        if monitoring_value < max_value and len(self.__metrics) >= self.steps: raise StopTraining(epoch)
-        elif len(self.__metrics) >= self.steps: self.__metrics.pop()
-        self.__metrics.insert(0, monitoring_value)
+        if monitoring_value < max_value and len(self._metrics) >= self.steps: raise StopTraining(epoch)
+        elif len(self._metrics) >= self.steps: self._metrics.pop()
+        self._metrics.insert(0, monitoring_value)
