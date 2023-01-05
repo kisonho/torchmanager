@@ -1,4 +1,4 @@
-from torchmanager_core import functional as F, torch
+from torchmanager_core import functional as F, torch, _raise
 from torchmanager_core.typing import Any, Optional
 
 from .dice import Dice
@@ -85,23 +85,39 @@ class KLDiv(Loss):
         - log_target: A `bool` flag of if `target` is in log space
     """
     _metric_fn: torch.nn.KLDivLoss
-    _softmax: bool
+    _t: Optional[float]
 
     @property
     def log_target(self) -> bool:
         return self._metric_fn.log_target
 
-    def __init__(self, *args: Any, softmax: bool = False, target: Optional[str] = None, weight: float = 1, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, softmax_temperature: Optional[float] = None, target: Optional[str] = None, weight: float = 1, **kwargs: Any) -> None:
+        """
+        Constructor
+
+        - Parameters:
+            - softmax_temperature: An optional softmax temperature in `float`, softmax will not be applied if `None` is given.
+            - target: An optional `str` of target name in `input` and `target` during direct calling
+            - weight: A `float` of the loss weight
+        """
         loss_fn = torch.nn.KLDivLoss(*args, **kwargs)
         super().__init__(loss_fn, target=target, weight=weight)
-        self._softmax = softmax
+        self._t = softmax_temperature
+        if self._t is not None:
+            assert self._t > 0, _raise(ValueError(f"Temperature must be a positive number, got {self._t}."))
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # softmax input and target
-        if self._softmax:
+        if self._t is not None:
+            input /= self._t
+            target /= self._t
             input = input.softmax(dim=1).log()
             target = target if self.log_target else target.softmax(dim=1)
 
-        # calculate loss
+        # calculate kd-div loss
         loss = super().forward(input, target)
+
+        # temperature control for knowledge distillation
+        if self._t is not None:
+            loss *= self._t ** 2
         return loss

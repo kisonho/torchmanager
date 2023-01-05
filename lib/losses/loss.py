@@ -48,6 +48,7 @@ class Loss(Metric):
         - Parameters:
             - loss_fn: An optional `Callable` function that accepts input or `y_pred` in `Any` kind and target or `y_true` in `Any` kind as inputs and gives a loss in `torch.Tensor`
             - target: An optional `str` of target name in `input` and `target` during direct calling
+            - weight: A `float` of the loss weight
         """
         super().__init__(loss_fn, target=target)
         self.weight = weight
@@ -88,6 +89,14 @@ class MultiLosses(Loss):
         return self.__losses
 
     def __init__(self, losses: List[Loss], target: Optional[str] = None, weight: float = 1) -> None:
+        """
+        Constructor
+
+        - Parameters:
+            - losses: A `list` of `Loss` function
+            - target: An optional `str` of target name in `input` and `target` during direct calling
+            - weight: A `float` of the loss weight
+        """
         super().__init__(target=target, weight=weight)
         self.__losses = torch.nn.ModuleList(losses)
 
@@ -150,6 +159,10 @@ class ParallelLoss(torch.nn.parallel.DataParallel):
 
     * extends: `torch.nn.parallel.DataParallel`
     * implements: `torchmanager_core.protocols.Resulting`
+
+    - Properties:
+        - result: A `torch.Tensor` of current result
+        - results: A `torch.Tensor` of concatenated results
     """
 
     module: Loss
@@ -174,6 +187,7 @@ class ParallelLoss(torch.nn.parallel.DataParallel):
         super().__init__(module, device_ids, output_device, dim)
 
     def reset(self) -> None:
+        """Reset the current results list"""
         self.module.reset()
 
 
