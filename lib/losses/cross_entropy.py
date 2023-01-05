@@ -100,7 +100,7 @@ class KLDiv(Loss):
         # softmax input and target
         if self._softmax:
             input = input.softmax(dim=1).log()
-            target = target if self.log_target else target.log()
+            target = target if self.log_target else target.softmax(dim=1)
 
         # calculate loss
         loss = super().forward(input, target)
