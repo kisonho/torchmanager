@@ -3,10 +3,11 @@ from torchmanager_core.typing import Any
 
 from .loss import Loss
 
+
 class Dice(Loss):
     """
     The dice loss
-    
+
     * extends: `.loss.Loss`
     """
     _smooth: int

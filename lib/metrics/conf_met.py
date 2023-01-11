@@ -3,12 +3,13 @@ from torchmanager_core.typing import Optional
 
 from .metric import Metric
 
+
 class Histogram(Metric):
     """
     The metric that calculates histogram
 
     * extends: `.metric.Metric`
-    
+
     - Properties:
         - num_classes: An `int` of the total number of classes
     """
@@ -33,7 +34,7 @@ class Histogram(Metric):
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """
         Calculate historgram
-        
+
         - Parameters:
             - input: The prediction `torch.Tensor`, or `y_pred`
             - target: The label `torch.Tensor`, or `y_true`
@@ -43,12 +44,14 @@ class Histogram(Metric):
         hist = torch.bincount(self.num_classes * target[mask].to(torch.int64) + input[mask], minlength=self.num_classes ** 2).reshape(self.num_classes, self.num_classes)
         return hist
 
+
 class ConfusionMetrics(Histogram):
     """
     The metric that calculates confusion metrics
-    
+
     * extends: `Histogram`
     """
+
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # initialize metrics
         conf_mat = torch.zeros((self.num_classes, self.num_classes), device=input.device)
@@ -58,6 +61,6 @@ class ConfusionMetrics(Histogram):
             y_pred: torch.Tensor
             y_true: torch.Tensor
             conf_mat += super().forward(y_pred.flatten(), y_true.flatten())
-        
+
         # calculate mean IoU
         return conf_mat

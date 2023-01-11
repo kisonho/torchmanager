@@ -4,20 +4,23 @@ from torchmanager_core.typing import Any, Optional
 from .dice import Dice
 from .loss import Loss
 
+
 class CrossEntropy(Loss):
     """
     The cross entropy loss
-    
+
     * extends: `.loss.Loss`
     """
+
     def __init__(self, *args: Any, target: Optional[str] = None, weight: float = 1, **kwargs: Any) -> None:
         loss_fn = torch.nn.CrossEntropyLoss(*args, **kwargs)
         super().__init__(loss_fn, target=target, weight=weight)
 
+
 class DiceCE(CrossEntropy, Dice):
     """
     Combined `Dice` loss and `CrossEntropy` loss
-    
+
     * extends: `CrossEntropy`, `Dice`
     """
     _ce_lambda: float
@@ -34,10 +37,11 @@ class DiceCE(CrossEntropy, Dice):
         ce = CrossEntropy.forward(self, input, target)
         return self._ce_lambda * ce + self._dice_lambda * dice
 
+
 class FocalCrossEntropy(Loss):
     """
     The focal cross entropy loss
-    
+
     * extends: `.loss.Loss`
     """
     _alpha: float
@@ -73,10 +77,11 @@ class FocalCrossEntropy(Loss):
         else:
             return focal_loss.sum()
 
+
 class KLDiv(Loss):
     """
     KL-Div Loss
-    
+
     * extends: `.loss.Loss`
     * A log-softmax will always be applied to `input`
     * A softmax will be applied to `target` only if `log_target` is `False`

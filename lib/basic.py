@@ -5,6 +5,7 @@ from .losses import Loss, MultiLosses, MultiOutputsLosses, ParallelLoss
 from .metrics import Metric
 from .train import Checkpoint
 
+
 class BaseManager(Generic[Module]):
     """
     The basic manager
@@ -53,12 +54,15 @@ class BaseManager(Generic[Module]):
 
     @property
     def raw_loss_fn(self) -> Optional[Loss]:
-        if self.loss_fn is None: return self.loss_fn
-        elif isinstance(self.loss_fn, ParallelLoss): return self.loss_fn.module
+        if self.loss_fn is None:
+            return self.loss_fn
+        elif isinstance(self.loss_fn, ParallelLoss):
+            return self.loss_fn.module
         elif isinstance(self.loss_fn._metric_fn, torch.nn.parallel.DataParallel):
             self.loss_fn._metric_fn = self.loss_fn._metric_fn.module
             return self.loss_fn
-        else: return self.loss_fn
+        else:
+            return self.loss_fn
 
     @property
     def raw_model(self) -> Module:
@@ -67,7 +71,7 @@ class BaseManager(Generic[Module]):
     def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss]]] = None, metrics: Dict[str, Metric] = {}) -> None:
         """
         Constructor
-        
+
         - Parameters:
             - loss_fn: An optional `Loss` object to calculate the loss for single loss or a `dict` of losses in `Loss` with their names in `str` to calculate multiple losses
             - metrics: An optional `dict` of metrics with a name in `str` and a `Metric` object to calculate the metric
@@ -84,7 +88,7 @@ class BaseManager(Generic[Module]):
     def _compile(self, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss]]] = None, metrics: Dict[str, Metric] = {}) -> None:
         """
         Compiles the manager
-        
+
         - Parameters:
             - loss_fn: An optional `Loss` object to calculate the loss for single loss or a `dict` of losses in `Loss` with their names in `str` to calculate multiple losses
             - metrics: An optional `dict` of metrics with a name in `str` and a `Metric` object to calculate the metric
@@ -92,7 +96,7 @@ class BaseManager(Generic[Module]):
         """
         # initialize loss
         if isinstance(loss_fn, MultiOutputsLosses) and len(loss_fn.losses) > 1:
-            loss_fn_mapping: Dict[str, Loss] = {f"{name}_loss": fn for name, fn in loss_fn.losses.items()} # type: ignore
+            loss_fn_mapping: Dict[str, Loss] = {f"{name}_loss": fn for name, fn in loss_fn.losses.items()}  # type: ignore
             self.metric_fns.update(loss_fn_mapping)
         elif isinstance(loss_fn, dict):
             loss_fn_mapping: Dict[str, Loss] = {f"{name}_loss": fn for name, fn in loss_fn.items()}
@@ -110,7 +114,7 @@ class BaseManager(Generic[Module]):
     def compile(self, optimizer: torch.optim.Optimizer, loss_fn: Union[Loss, Dict[str, Loss]], metrics: Dict[str, Metric] = {}) -> None:
         """
         Compiles the manager
-        
+
         - Parameters:
             - loss_fn: A `Loss` object to calculate the loss for single loss or a `dict` of losses in `Loss` with their names in `str` to calculate multiple losses
             - metrics: A `dict` of metrics with a name in `str` and a `Metric` object to calculate the metric
@@ -129,20 +133,24 @@ class BaseManager(Generic[Module]):
         - Returns: A loaded `Manager`
         """
         # load checkpoint
-        if not isinstance(ckpt, Checkpoint): ckpt = Checkpoint.from_saved(ckpt, map_location=map_location)
+        if not isinstance(ckpt, Checkpoint):
+            ckpt = Checkpoint.from_saved(ckpt, map_location=map_location)
 
         # recover model to manager
         if isinstance(ckpt.model, torch.nn.Module):
-            manager = cls(ckpt.model, ckpt.optimizer, loss_fn=ckpt.loss_fn, metrics=ckpt.metrics) # type: ignore
+            manager = cls(ckpt.model, ckpt.optimizer, loss_fn=ckpt.loss_fn, metrics=ckpt.metrics)  # type: ignore
         elif isinstance(ckpt.model, BaseManager):
             manager = ckpt.model
-            if isinstance(manager.model, torch.nn.parallel.DataParallel): manager.model = manager.model.module
-            if manager.loss_fn is not None and hasattr(manager.loss_fn, "_metric_fn"): 
+            if isinstance(manager.model, torch.nn.parallel.DataParallel):
+                manager.model = manager.model.module
+            if manager.loss_fn is not None and hasattr(manager.loss_fn, "_metric_fn"):
                 if isinstance(manager.loss_fn._metric_fn, torch.nn.parallel.DataParallel):
                     assert isinstance(manager.loss_fn._metric_fn.module, Loss), _raise(TypeError("Loss function is not a valid `Loss`."))
                     manager.loss_fn = manager.loss_fn._metric_fn.module
-            else: manager.loss_fn = None
-        else: raise TypeError(f"The saved checkpoint contains a model with type of {type(ckpt.model)} that cannot be recoverred to a `Manager`.")
+            else:
+                manager.loss_fn = None
+        else:
+            raise TypeError(f"The saved checkpoint contains a model with type of {type(ckpt.model)} that cannot be recoverred to a `Manager`.")
         return manager
 
     def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> None:
@@ -155,10 +163,10 @@ class BaseManager(Generic[Module]):
         optimizer: Optional[Dict[str, Any]] = state_dict["optimizer"]
         loss_fn: Optional[OrderedDict[str, Any]] = state_dict["loss_fn"]
         metrics: Dict[str, OrderedDict[str, Any]] = state_dict["metrics"]
-        
+
         # load state dict to current model, optimizer, loss_fn, and metrics
-        self.model.load_state_dict(model, strict=strict) # type: ignore
-        if optimizer is not None: 
+        self.model.load_state_dict(model, strict=strict)  # type: ignore
+        if optimizer is not None:
             assert self.optimizer is not None, _raise(ValueError("The manager has not been compiled with 'optimizer' given."))
             self.optimizer.load_state_dict(optimizer)
         if loss_fn is not None:
@@ -185,26 +193,29 @@ class BaseManager(Generic[Module]):
             - device: A target `torch.device`
         """
         self.model = self.model.to(device)
-        if self.loss_fn is not None: self.loss_fn = self.loss_fn.to(device)
-        for k, m in self.metric_fns.items(): self.metric_fns[k] = m.to(device)
+        if self.loss_fn is not None:
+            self.loss_fn = self.loss_fn.to(device)
+        for k, m in self.metric_fns.items():
+            self.metric_fns[k] = m.to(device)
 
     def to_checkpoint(self) -> Checkpoint[Self]:
         """
         Convert the current manager to a checkpoint
-        
+
         - Returns: A `Checkpoint` with its model as the current manager
         """
         ckpt = Checkpoint(self)
         return ckpt
-        
+
     def unpack_data(self, data: Collection) -> Tuple[Any, Any]:
         """
         Unpacks data to input and target
-        
+
         - Parameters:
             - data: `Any` kind of data object
         - Returns: A `tuple` of `Any` kind of input and `Any` kind of target
         """
         if len(data) >= 2:
             return tuple(data)
-        else: return NotImplemented
+        else:
+            return NotImplemented

@@ -5,6 +5,7 @@ from torchmanager_core.typing import Any, Collection, Dict, List, Module, Option
 from .basic import BaseManager
 from .losses import Loss, ParallelLoss
 
+
 class Manager(BaseManager[Module]):
     """
     A testing manager, only used for testing
@@ -21,7 +22,7 @@ class Manager(BaseManager[Module]):
         - compiled_metrics: The `dict` of metrics in `Resulting` that does not contain losses
     """
     model: Union[Module, torch.nn.parallel.DataParallel]
-    
+
     @property
     @deprecated("v1.1.0", "v1.2.0")
     def compiled_losses(self) -> Resulting:
@@ -46,32 +47,38 @@ class Manager(BaseManager[Module]):
         '''
         # find available device
         cpu, device, target_devices = devices.search(None if use_multi_gpus else device)
-        if device == cpu and len(target_devices) < 2: use_multi_gpus = False
+        if device == cpu and len(target_devices) < 2:
+            use_multi_gpus = False
         devices.set_default(target_devices[0])
 
         # move model
         if use_multi_gpus and not isinstance(self.model, torch.nn.parallel.DataParallel):
             raw_model = self.model
             self.model, use_multi_gpus = devices.data_parallel(self.model, devices=target_devices)
-        else: raw_model = None
+        else:
+            raw_model = None
 
         # initialize predictions
         self.model.eval()
         predictions: List[Any] = []
-        if len(dataset) == 0: return predictions
+        if len(dataset) == 0:
+            return predictions
         progress_bar = view.tqdm(total=len(dataset)) if show_verbose else None
         self.to(device)
 
         # loop the dataset
         for data in dataset:
             x, _ = self.unpack_data(data)
-            if use_multi_gpus is not True: x = devices.move_to_device(x, device)
+            if use_multi_gpus is not True:
+                x = devices.move_to_device(x, device)
             y = self.model(x)
             predictions.append(y)
-            if progress_bar is not None: progress_bar.update()
+            if progress_bar is not None:
+                progress_bar.update()
 
         # reset model and loss
-        if raw_model is not None: self.model = raw_model.to(cpu)
+        if raw_model is not None:
+            self.model = raw_model.to(cpu)
         devices.empty_cache()
         return predictions
 
@@ -90,7 +97,8 @@ class Manager(BaseManager[Module]):
         """
         # find available device
         cpu, device, target_devices = devices.search(None if use_multi_gpus else device)
-        if device == cpu and len(target_devices) < 2: use_multi_gpus = False
+        if device == cpu and len(target_devices) < 2:
+            use_multi_gpus = False
         devices.set_default(target_devices[0])
 
         # move model
@@ -105,19 +113,23 @@ class Manager(BaseManager[Module]):
 
         # set module status
         self.model.eval()
-        if self.loss_fn is not None: self.loss_fn.eval().reset()
-        for _, m in self.metric_fns.items(): m.eval().reset()
+        if self.loss_fn is not None:
+            self.loss_fn.eval().reset()
+        for _, m in self.metric_fns.items():
+            m.eval().reset()
         self.to(device)
 
         # initialize progress bar
-        if len(dataset) == 0: return {}
+        if len(dataset) == 0:
+            return {}
         progress_bar = view.tqdm(total=len(dataset)) if show_verbose else None
 
         # batch loop
         for data in dataset:
             # move x_test, y_test to device
             x_test, y_test = self.unpack_data(data)
-            if use_multi_gpus is not True: x_test = devices.move_to_device(x_test, device)
+            if use_multi_gpus is not True:
+                x_test = devices.move_to_device(x_test, device)
             y_test = devices.move_to_device(y_test, device)
 
             # test for one step
@@ -131,16 +143,19 @@ class Manager(BaseManager[Module]):
         # end epoch training
         if progress_bar is not None:
             progress_bar.close()
-        
+
         # summarize
         summary: Dict[str, float] = {}
         for name, fn in self.metric_fns.items():
-            if name.startswith("val_"): name = name.replace("val_", "")
-            try: summary[name] = float(fn.result.detach())
+            if name.startswith("val_"):
+                name = name.replace("val_", "")
+            try:
+                summary[name] = float(fn.result.detach())
             except Exception as metric_error:
                 runtime_error = RuntimeError(f"Cannot fetrch metric '{name}'.")
                 raise runtime_error from metric_error
-        if self.loss_fn is not None: summary["loss"] = float(self.loss_fn.result.detach())
+        if self.loss_fn is not None:
+            summary["loss"] = float(self.loss_fn.result.detach())
 
         # reset model and loss
         if empty_cache:
@@ -166,8 +181,10 @@ class Manager(BaseManager[Module]):
 
         # forward metrics
         for name, fn in self.compiled_metrics.items():
-            if name.startswith("val_"): name = name.replace("val_", "")
-            elif "loss" in name: continue
+            if name.startswith("val_"):
+                name = name.replace("val_", "")
+            elif "loss" in name:
+                continue
             try:
                 fn(y, y_test)
                 summary[name] = float(fn.result.detach())

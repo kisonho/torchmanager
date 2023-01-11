@@ -1,6 +1,7 @@
 from torchmanager_core import torch, _raise
 from torchmanager_core.typing import Any, Callable, List, Optional
 
+
 class Metric(torch.nn.Module):
     """
     The basic metric class
@@ -18,7 +19,7 @@ class Metric(torch.nn.Module):
     _target: Optional[str]
 
     @property
-    def result(self) -> torch.Tensor: 
+    def result(self) -> torch.Tensor:
         if len(self._results) > 0:
             return torch.concat(self._results).mean()
         else:
@@ -26,8 +27,10 @@ class Metric(torch.nn.Module):
 
     @property
     def results(self) -> Optional[torch.Tensor]:
-        if len(self._results) > 0: return torch.concat(self._results)
-        else: return None
+        if len(self._results) > 0:
+            return torch.concat(self._results)
+        else:
+            return None
 
     def __init__(self, metric_fn: Optional[Callable[[Any, Any], torch.Tensor]] = None, target: Optional[str] = None) -> None:
         """
@@ -57,7 +60,7 @@ class Metric(torch.nn.Module):
     def forward(self, input: Any, target: Any) -> torch.Tensor:
         """
         Forward the current result method
-        
+
         - Parameters:
             - input: The prediction, or `y_pred`, in `Any` kind
             - target: The label, or `y_true`, in `Any` kind
@@ -66,11 +69,13 @@ class Metric(torch.nn.Module):
         # main method
         if self._metric_fn is not None:
             return self._metric_fn(input, target)
-        else: raise NotImplementedError("metric_fn is not given.")
-    
+        else:
+            raise NotImplementedError("metric_fn is not given.")
+
     def reset(self) -> None:
         """Reset the current results list"""
         self._results.clear()
+
 
 def metric(fn: Callable[[Any, Any], torch.Tensor]) -> Metric:
     """
@@ -84,6 +89,7 @@ def metric(fn: Callable[[Any, Any], torch.Tensor]) -> Metric:
     >>> manager = (..., metric_fns={'out': some_metric_fn})
     """
     return Metric(fn)
+
 
 def metric_fn(target: Optional[str] = None) -> Callable[[Callable[[Any, Any], torch.Tensor]], Metric]:
     """
