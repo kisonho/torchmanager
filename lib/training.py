@@ -4,6 +4,7 @@ from torchmanager_core.protocols import Resulting
 from torchmanager_core.typing import Any, Dict, List, Module, Optional, Self, Union
 
 from .callbacks import Callback, StopTraining
+from .data import Dataset
 from .losses import Loss, ParallelLoss
 from .metrics import Metric
 from .train import Checkpoint, update_lr
@@ -54,12 +55,12 @@ class Manager(_Manager[Module]):
         super().__init__(model, optimizer, loss_fn, metrics)
         self.__current_epoch = 0
 
-    def _train(self, dataset: DataLoader[Any], iterations: Optional[int] = None, device: torch.device = devices.CPU, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, callbacks_list: List[Callback] = []) -> Dict[str, float]:
+    def _train(self, dataset: Union[DataLoader[Any], Dataset[Any]], iterations: Optional[int] = None, device: torch.device = devices.CPU, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, callbacks_list: List[Callback] = []) -> Dict[str, float]:
         """
         The single training step for an epoch
 
         - Parameters:
-            - dataset: A `torch.utils.data.DataLoader` training dataset
+            - dataset: A `torch.utils.data.DataLoader` or `.data.Dataset` training dataset
             - iterations: An optional `int` of total training iterations, must be smaller than the size of dataset
             - device: A `torch.device` where the data is moved to, should be same as the model
             - use_multi_gpus: A `bool` flag of if using multi gpus
@@ -138,12 +139,12 @@ class Manager(_Manager[Module]):
         devices.empty_cache()
         return summary
 
-    def fit(self, training_dataset: DataLoader[Any], epochs: Optional[int] = None, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None, val_dataset: Optional[DataLoader[Any]] = None, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, callbacks_list: List[Callback] = [], **kwargs) -> torch.nn.Module:
+    def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any]], epochs: Optional[int] = None, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any]]] = None, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, callbacks_list: List[Callback] = [], **kwargs) -> torch.nn.Module:
         """
         Training algorithm
 
         - Parameters:
-            - training_dataset: Any kind of training dataset in `torch.utils.data.DataLoader`
+            - training_dataset: Any kind of training dataset in `torch.utils.data.DataLoader` or `.data.Dataset`
             - epochs: An optional `int` number of training epochs
             - iterations: An optional `int` number of training iterations
             - lr_scheduelr: An optioanl `torch.optim.lr_scheduler._LRScheduler` to update the lr per epoch

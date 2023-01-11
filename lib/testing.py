@@ -4,6 +4,7 @@ from torchmanager_core.protocols import Resulting
 from torchmanager_core.typing import Any, Dict, List, Module, Optional, Union
 
 from .basic import BaseManager
+from .data import Dataset
 from .losses import Loss, ParallelLoss
 
 
@@ -35,7 +36,7 @@ class Manager(BaseManager[Module]):
         return {name: m for name, m in self.metric_fns.items() if "loss" not in name}
 
     @torch.no_grad()
-    def predict(self, dataset: DataLoader[Any], device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> List[Any]:
+    def predict(self, dataset: Union[DataLoader[Any], Dataset[Any]], device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> List[Any]:
         '''
         Predict the whole dataset
 
@@ -84,12 +85,12 @@ class Manager(BaseManager[Module]):
         return predictions
 
     @torch.no_grad()
-    def test(self, dataset: DataLoader[Any], device: Optional[Union[torch.device, list[torch.device]]] = None, empty_cache: bool = True, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
+    def test(self, dataset: Union[DataLoader[Any], Dataset[Any]], device: Optional[Union[torch.device, list[torch.device]]] = None, empty_cache: bool = True, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
         """
         Test target model
 
         - Parameters:
-            - dataset: A `torch.utils.data.DataLoader` dataset
+            - dataset: A `torch.utils.data.DataLoader` or `.data.Dataset` dataset
             - device: An optional `torch.device` to test on if not using multi-GPUs or an optional default `torch.device` for testing otherwise
             - empyt_cache: A `bool` flag to empty cache after testing
             - use_multi_gpus: A `bool` flag to use multi gpus during testing

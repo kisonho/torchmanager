@@ -1,6 +1,6 @@
-from torch.utils.data import Dataset as _Dataset, DataLoader as _Loader, IterableDataset, Sampler
-from torchmanager_core import abc, devices, os, torch
-from torchmanager_core.typing import Any, Callable, Iterable, Iterator, List, Optional, Sequence, Tuple, TypeVar, Union
+from torch.utils.data import Dataset as _Dataset, DataLoader, IterableDataset
+from torchmanager_core import abc, devices, math, os, torch
+from torchmanager_core.typing import Any, Callable, Iterator, Sequence, Tuple, TypeVar
 from torchmanager_core.view import warnings
 
 T = TypeVar("T")
@@ -17,9 +17,11 @@ class Dataset(IterableDataset[T], abc.ABC):
 
     >>> from torchmanager import Manager
     >>> class SomeDataset(Dataset):
+    ...    @property
+    ...    def unbatched_size(self) -> int: ...
+    ...
     ...    def __init__(self, ...,  batch_size: int, device: torch.device = devices.CPU) -> None: ...
     ...    def __getitem__(self, index: Any) -> Any: ...
-    ...    def __len__(self, index: Any) -> Any: ...
     >>> dataset = SomeDataset(..., batch_size)
     >>> manager = Manager(...)
     >>> manager.fit(dataset, ...)
@@ -51,6 +53,11 @@ class Dataset(IterableDataset[T], abc.ABC):
         _, device, target_devices = devices.search(self.__device)
         devices.set_default(target_devices[0])
         return device
+
+    @property
+    @abc.abstractmethod
+    def unbatched_len(self) -> int:
+        return NotImplemented
 
     def __init__(self, batch_size: int, device: torch.device = devices.CPU, drop_last: bool = False, shuffle: bool = False) -> None:
         """
@@ -86,13 +93,15 @@ class Dataset(IterableDataset[T], abc.ABC):
         device = self.device
 
         # yield data
-        data_loader = _Loader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=cpu_count, pin_memory=(device == devices.CPU))
+        data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=cpu_count, pin_memory=(device == devices.CPU))
         for data in data_loader:
             yield self.unpack_data(data)
 
-    @abc.abstractmethod
     def __len__(self) -> int:
-        return NotImplemented
+        if self.drop_last:
+            return int(self.unbatched_len / self.batch_size)
+        else:
+            return math.ceil(self.unbatched_len / self.batch_size)
 
     @staticmethod
     def unpack_data(data: Any) -> Tuple[Any, Any]:
@@ -107,23 +116,6 @@ class Dataset(IterableDataset[T], abc.ABC):
             return data[0], data[1] if len(data) >= 2 else NotImplemented
         else:
             return NotImplemented
-
-
-class DataLoader(_Loader[T]):
-    """
-    A PyTorch `DataLoader` that performs to `typing.Collection` protocol
-    """
-
-    def __init__(self, dataset: _Dataset[T], batch_size: Optional[int] = 1, shuffle: bool = False, sampler: Union[Sampler, Iterable, None] = None, batch_sampler: Union[Sampler[Sequence], Iterable[Sequence], None] = None, num_workers: int = 0, collate_fn: Optional[Callable[[List[T]], Any]] = None, pin_memory: bool = False, drop_last: bool = False, timeout: float = 0, worker_init_fn: Optional[Callable[[int], None]] = None, multiprocessing_context=None, generator=None, *, prefetch_factor: int = 2, persistent_workers: bool = False):
-        super().__init__(dataset, batch_size, shuffle, sampler, batch_sampler, num_workers, collate_fn, pin_memory, drop_last, timeout, worker_init_fn, multiprocessing_context, generator, prefetch_factor=prefetch_factor, persistent_workers=persistent_workers)
-        if isinstance(dataset, Dataset):
-            warnings.warn("The loaded dataset is a `torchmanager.data.Dataset` which has already been wrapped with batch loader during iteration.", RuntimeWarning)
-
-    def __contains__(self, value: Any) -> bool:
-        for element in self:
-            if value == element:
-                return True
-        return False
 
 
 def batched(fn: Callable[..., _Dataset]):
@@ -170,5 +162,4 @@ def batched(fn: Callable[..., _Dataset]):
             warnings.warn("The loaded dataset is a `torchmanager.data.Dataset` which has already been wrapped with batch loader during iteration.", RuntimeWarning)
         data_loader = DataLoader(loaded_dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last, pin_memory=pin_memory, num_workers=cpu_count)
         return data_loader
-
     return wrapped_fn
