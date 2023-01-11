@@ -1,6 +1,6 @@
 from .view import warnings
 
-CURRENT: str = "v1.1b1"
+CURRENT: str = "v1.1b2"
 
 class VersionError(SystemError):
     def __init__(self, method_name: str, maximum_supported_version: str) -> None:

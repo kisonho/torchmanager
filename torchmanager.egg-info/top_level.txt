@@ -1,2 +1,0 @@
-torchmanager
-torchmanager_core

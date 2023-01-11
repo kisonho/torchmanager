@@ -1,6 +1,7 @@
+from torch.utils.data import DataLoader
 from torchmanager_core import devices, torch, view, _raise, deprecated
 from torchmanager_core.protocols import Resulting
-from torchmanager_core.typing import Any, Collection, Dict, List, Module, Optional, Union
+from torchmanager_core.typing import Any, Dict, List, Module, Optional, Union
 
 from .basic import BaseManager
 from .losses import Loss, ParallelLoss
@@ -34,12 +35,12 @@ class Manager(BaseManager[Module]):
         return {name: m for name, m in self.metric_fns.items() if "loss" not in name}
 
     @torch.no_grad()
-    def predict(self, dataset: Collection, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> List[Any]:
+    def predict(self, dataset: DataLoader[Any], device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> List[Any]:
         '''
         Predict the whole dataset
 
         - Parameters:
-            - dataset: A `Collection` dataset to predict
+            - dataset: A `torch.utils.data.DataLoader` dataset to predict
             - device: An optional `torch.device` to test on if not using multi-GPUs or an optional default `torch.device` for testing otherwise
             - use_multi_gpus: A `bool` flag to use multi gpus during testing
             - show_verbose: A `bool` flag to show the progress bar during testing
@@ -83,12 +84,12 @@ class Manager(BaseManager[Module]):
         return predictions
 
     @torch.no_grad()
-    def test(self, dataset: Collection, device: Optional[Union[torch.device, list[torch.device]]] = None, empty_cache: bool = True, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
+    def test(self, dataset: DataLoader[Any], device: Optional[Union[torch.device, list[torch.device]]] = None, empty_cache: bool = True, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
         """
         Test target model
 
         - Parameters:
-            - dataset: A `Collection` dataset
+            - dataset: A `torch.utils.data.DataLoader` dataset
             - device: An optional `torch.device` to test on if not using multi-GPUs or an optional default `torch.device` for testing otherwise
             - empyt_cache: A `bool` flag to empty cache after testing
             - use_multi_gpus: A `bool` flag to use multi gpus during testing
