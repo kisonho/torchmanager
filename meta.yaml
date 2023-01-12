@@ -1,0 +1,19 @@
+package:
+  name: "torchmanager"
+  version: "1.0.7"
+
+source:
+  git_url: https://github.com/kisonho/torchmanager
+
+requirements:
+  run:
+    - python >=3.8
+    - pytorch
+    - tqdm
+
+about:
+  home: https://github.com/kisonho/torchmanager
+  license: BSD 2-Clause License
+  license_familY: BSD
+  license_file: LICENSE
+  summary: "A highly-wrapped PyTorch training and testing manager"
