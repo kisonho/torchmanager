@@ -48,7 +48,6 @@ class SparseCategoricalAccuracy(Accuracy):
             - target: A `str` of target name in `input` and `target` during direct calling
         """
         super().__init__(target=target)
-        assert dim > 0, _raise(ValueError(f"The dimension must be a positive number, got {dim}."))
         self._dim = dim
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
