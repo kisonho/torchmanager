@@ -10,7 +10,8 @@
 * tensorboard (Optional)
 
 ## Installation
-`pip install torchmanager`
+* PyPi: `pip install torchmanager`
+* Conda: `conda install -c kisonho torchmanager`
 
 ## The Manager
 - Initialize the manager with target model,  optimizer, loss function, and metrics:

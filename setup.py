@@ -34,7 +34,7 @@ setup(name='torchmanager',
         'torchmanager_core.view': 'core/view',
     },
     install_requires=[
-        'torch>=1.8.2',
+        'torch',
         'tqdm',
     ],
     python_requires=">=3.8",
