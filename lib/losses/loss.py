@@ -1,6 +1,5 @@
 from torchmanager_core import torch, _raise, deprecated
 from torchmanager_core.typing import Any, Callable, Dict, List, Optional
-from torchmanager_core.view import warnings
 
 from ..metrics import Metric
 
@@ -59,10 +58,7 @@ class Loss(Metric):
         return m
 
     def forward(self, input: Any, target: Any) -> torch.Tensor:
-        if isinstance(self._metric_fn, torch.nn.parallel.DataParallel):
-            return super().forward(input, target).mean(dim=0)
-        else:
-            return super().forward(input, target)
+        return super().forward(input, target)
 
 
 class MultiLosses(Loss):
@@ -153,7 +149,7 @@ class MultiOutputsLosses(Loss):
         return loss
 
 
-class ParallelLoss(torch.nn.parallel.DataParallel):
+class ParallelLoss(Loss):
     """
     A data parallel loss function
 
@@ -164,31 +160,26 @@ class ParallelLoss(torch.nn.parallel.DataParallel):
         - result: A `torch.Tensor` of current result
         - results: A `torch.Tensor` of concatenated results
     """
-
+    __paralleled_loss: torch.nn.DataParallel
     module: Loss
 
     @property
-    def _target(self) -> Optional[str]:
-        return self.module._target
+    def _paralleled_loss(self) -> torch.nn.DataParallel:
+        return self.__paralleled_loss
 
-    @_target.setter
-    def _target(self, t: Optional[str]) -> None:
-        self.module._target = t
+    def __init__(self, module: Loss, device_ids: Optional[List[int]] = None, output_device: Optional[torch.device] = None, dim: int = 0) -> None:
+        super().__init__()
+        self.__paralleled_loss = torch.nn.DataParallel(module, device_ids, output_device, dim=dim)
+        self.module = module
 
-    @property
-    def result(self) -> torch.Tensor:
-        return torch.concat(self.module._results).mean()
-
-    @property
-    def results(self) -> torch.Tensor:
-        return torch.concat(self.module._results)
-
-    def __init__(self, module: Loss, device_ids: Optional[List[int]] = ..., output_device: Optional[torch.device] = ..., dim: int = ...) -> None:
-        super().__init__(module, device_ids, output_device, dim)
+    def forward(self, *inputs: Any, **kwargs: Any) -> torch.Tensor:
+        loss: torch.Tensor = self._paralleled_loss(*inputs, **kwargs)
+        return loss.mean()
 
     def reset(self) -> None:
         """Reset the current results list"""
         self.module.reset()
+        super().reset()
 
 
 def loss(fn: Callable[[Any, Any], torch.Tensor]) -> Loss:
