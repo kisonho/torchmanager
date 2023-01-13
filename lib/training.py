@@ -146,7 +146,6 @@ class Manager(_Manager[Module]):
         # summarize
         summary = {name: float(fn.result.detach()) for name, fn in self.metric_fns.items() if not name.startswith("val_")}
         summary["loss"] = float(self.compiled_losses.result.detach())
-        devices.empty_cache()
         return summary
 
     def fit(self, training_dataset: SizedIterable, epochs: Optional[int] = None, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None, val_dataset: Optional[Any] = None, device: Optional[Union[torch.device, List[torch.device]]] = None, use_multi_gpus: bool = False, callbacks_list: List[Callback] = [], **kwargs) -> torch.nn.Module:
