@@ -11,16 +11,16 @@ source:
 
 build:
   number: 0
-  script: "{{ PYTHON }} -m pip install . -vv"
+  script: "pip install ."
 
 requirements:
   host:
     - pip
-    - python
+    - python >=3.8
     - pytorch
     - tqdm
   run:
-    - python
+    - python >=3.8
     - pytorch
     - tqdm
 
