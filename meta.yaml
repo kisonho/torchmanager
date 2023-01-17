@@ -1,5 +1,5 @@
 package:
-  name: "torchmanager"
+  name: "torchmanager-nightly"
   version: "1.1b2"
 
 source:
