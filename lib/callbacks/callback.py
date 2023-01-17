@@ -65,7 +65,7 @@ class FrequencyCallback(Callback, abc.ABC):
     * extends: `Callbacks`
     * abstract class that needs implementation of `step` method
 
-    - Parameters:
+    - Properties:
         - current_step: An `int` of the current step index
         - freq: A `WeightUpdateFreq` of the frequency type to update the weight
     """
