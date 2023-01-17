@@ -36,7 +36,7 @@ setup(name='torchmanager-nightly',
         'torchmanager_core.view': 'core/view',
     },
     install_requires=[
-        'torch',
+        'pytorch',
         'tqdm',
     ],
     python_requires=">=3.8",
