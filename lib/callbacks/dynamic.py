@@ -10,7 +10,7 @@ class DynamicWeight(FrequencyCallback, abc.ABC, Generic[W]):
     '''
     An abstract dynamic weight callback that set weight dynamically
 
-    * extends: `.callback.Callback`
+    * extends: `.callback.FrequencyCallback`
     * abstract class that needs implementation of `step` method
     '''
     __key: str
