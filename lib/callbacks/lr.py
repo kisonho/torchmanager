@@ -47,16 +47,16 @@ class LrSchedueler(FrequencyCallback, Generic[Scheduler]):
         lr_list = self._scheduler.get_last_lr()
         if len(lr_list) > 1:
             for i, lr in enumerate(lr_list):
-                lr_summary[f'{self.__name}_{i}'] = lr
+                lr_summary[f'{self._name}_{i}'] = lr
         else: lr_summary[self._name] = lr_list[0]
 
         # write results to Tensorboard
-        if self.__writer is not None:
+        if self._writer is not None:
             # record summary
             for key in lr_summary.keys():
                 result: Dict[str, float] = {}
                 result["train"] = lr_summary[key]
-                self.__writer.add_scalars(key, result, epoch)
+                self._writer.add_scalars(key, result, epoch)
 
         # update lr scheduler
         summary.update(lr_summary)
