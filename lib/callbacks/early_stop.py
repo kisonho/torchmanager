@@ -1,20 +1,7 @@
-from torchmanager_core import sys
+from torchmanager_core import errors, sys
 from torchmanager_core.typing import Dict, List, Optional
 
 from .ckpt import Callback, MonitorType
-
-class StopTraining(RuntimeError):
-    '''
-    A runtime error to stop training
-    
-    - Properties:
-        - epoch: An `int` of the epoch index when training stopped
-    '''
-    epoch: int
-
-    def __init__(self, epoch: int, *args: object) -> None:
-        super().__init__(*args)
-        self.epoch = epoch
 
 class EarlyStop(Callback):
     '''
@@ -48,6 +35,6 @@ class EarlyStop(Callback):
 
         # compare with recorded metrics
         max_value = max(self.__metrics)
-        if monitoring_value < max_value and len(self._metrics) >= self.steps: raise StopTraining(epoch)
+        if monitoring_value < max_value and len(self._metrics) >= self.steps: raise errors.StopTraining(epoch)
         elif len(self._metrics) >= self.steps: self._metrics.pop()
         self._metrics.insert(0, monitoring_value)

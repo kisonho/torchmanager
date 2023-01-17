@@ -1,9 +1,9 @@
 from torch.utils.data import DataLoader
-from torchmanager_core import devices, math, torch, view, _raise
+from torchmanager_core import devices, errors, math, torch, view
 from torchmanager_core.protocols import Resulting
 from torchmanager_core.typing import Any, Dict, List, Module, Optional, Self, Union
 
-from .callbacks import Callback, StopTraining
+from .callbacks import Callback
 from .data import Dataset
 from .losses import Loss, ParallelLoss
 from .metrics import Metric
@@ -43,12 +43,12 @@ class Manager(_Manager[Module]):
 
     @property
     def compiled_losses(self) -> Resulting:
-        assert self.loss_fn is not None, _raise(NotImplementedError("The manager is not compiled properly, `loss_fn` is missing."))
+        assert self.loss_fn is not None, errors._raise(NotImplementedError("The manager is not compiled properly, `loss_fn` is missing."))
         return self.loss_fn
 
     @property
     def compiled_optimizer(self) -> torch.optim.Optimizer:
-        assert self.optimizer is not None, _raise(NotImplementedError("The manager is not compiled properly, `optimizer` is missing."))
+        assert self.optimizer is not None, errors._raise(NotImplementedError("The manager is not compiled properly, `optimizer` is missing."))
         return self.optimizer
 
     def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss]]] = None, metrics: Dict[str, Metric] = {}) -> None:
@@ -155,20 +155,20 @@ class Manager(_Manager[Module]):
         - Returns: A trained `torch.nn.Module`
         """
         # arguments checking
-        assert self.compiled is True, _raise(ValueError("Manager has not yet been compiled. Either loss_fn or optimizer, or both, are not given."))
+        assert self.compiled is True, errors._raise(ValueError("Manager has not yet been compiled. Either loss_fn or optimizer, or both, are not given."))
         if epochs is not None:
-            assert epochs > 0, _raise(ValueError(f"The epochs must be a positive integer, got {epochs}."))
-            assert iterations is None, _raise(ValueError(f"The iterations must be given as `None` when epochs is given, got {iterations}."))
+            assert epochs > 0, errors._raise(ValueError(f"The epochs must be a positive integer, got {epochs}."))
+            assert iterations is None, errors._raise(ValueError(f"The iterations must be given as `None` when epochs is given, got {iterations}."))
         else:
-            assert iterations is not None, _raise(ValueError(f"The iterations must be given if epochs is not given."))
-            assert iterations > 0, _raise(ValueError(f"The iterations must be a positive integer, got {iterations}."))
-            assert epochs is None, _raise(ValueError(f"The epochs must be given as `None` when iterations is given, got {epochs}."))
+            assert iterations is not None, errors._raise(ValueError(f"The iterations must be given if epochs is not given."))
+            assert iterations > 0, errors._raise(ValueError(f"The iterations must be a positive integer, got {iterations}."))
+            assert epochs is None, errors._raise(ValueError(f"The epochs must be given as `None` when iterations is given, got {epochs}."))
             epochs = math.ceil(iterations / len(training_dataset))
 
         # initialize initial epoch
         if initial_epoch is not None:
-            assert initial_epoch >= 0, _raise(ValueError(f"The initial_epoch must be a non_negative integer, got {initial_epoch}."))
-            assert initial_epoch < epochs, _raise(ValueError(f"The initial_epoch must be smaller than total epochs, got epochs={epochs} but initial_epoch={initial_epoch}."))
+            assert initial_epoch >= 0, errors._raise(ValueError(f"The initial_epoch must be a non_negative integer, got {initial_epoch}."))
+            assert initial_epoch < epochs, errors._raise(ValueError(f"The initial_epoch must be smaller than total epochs, got epochs={epochs} but initial_epoch={initial_epoch}."))
             self.current_epoch = initial_epoch
         elif self.current_epoch > 0:
             initial_epoch = self.current_epoch + 1  # skip the latest current epoch when resuming training
@@ -194,9 +194,9 @@ class Manager(_Manager[Module]):
 
         # multi gpus support for loss
         if use_multi_gpus and not isinstance(self.compiled_losses, torch.nn.parallel.DataParallel):
-            assert isinstance(self.compiled_losses, Loss), _raise(TypeError("The compiled loss function is not a valid `Loss` object."))
+            assert isinstance(self.compiled_losses, Loss), errors._raise(TypeError("The compiled loss function is not a valid `Loss` object."))
             paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.compiled_losses, devices=target_devices, parallel_type=ParallelLoss)
-            assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), _raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
+            assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), errors._raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
             self.loss_fn = paralleled_loss_fn
         self.to(device)
 
@@ -223,7 +223,7 @@ class Manager(_Manager[Module]):
             for c in callbacks_list:
                 try:
                     c.on_epoch_end(self.current_epoch, summary=summary, val_summary=val_summary)
-                except StopTraining:
+                except errors.StopTraining:
                     # on train end
                     for c in callbacks_list:
                         c.on_train_end(self.raw_model)

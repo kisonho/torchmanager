@@ -83,6 +83,7 @@ class Dataset(IterableDataset[T], abc.ABC):
 
     @abc.abstractmethod
     def __getitem__(self, index: Any) -> Any:
+        """Returns an unbatched item"""
         return NotImplemented
 
     def __iter__(self) -> Iterator[Tuple[Any, Any]]:
