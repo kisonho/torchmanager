@@ -1,6 +1,7 @@
 from .view import warnings
 
 CURRENT: str = "v1.1b3"
+DESCRIPTION: str = "PyTorch Training Manager v1.1 (Beta 3)"
 
 class VersionError(SystemError):
     def __init__(self, method_name: str, maximum_supported_version: str) -> None:
@@ -11,7 +12,8 @@ def deprecated(target_version: str, removing_version: str):
     Deprecated decorator function
 
     - Parameters:
-        - version: A `str` of deprecation
+        - target_version: A `str` of version for the deprecation
+        - remove_version: A `str` of version for removing
     '''
     # define wrapping function
     def wrapping_fn(fn):

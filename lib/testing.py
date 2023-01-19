@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader
 from torchmanager_core import devices, torch, view, _raise, deprecated
 from torchmanager_core.protocols import Resulting
-from torchmanager_core.typing import Any, Dict, List, Module, Optional, Union
+from torchmanager_core.typing import Any, Collection, Dict, List, Module, Optional, Union
 
 from .basic import BaseManager
 from .data import Dataset
@@ -36,7 +36,7 @@ class Manager(BaseManager[Module]):
         return {name: m for name, m in self.metric_fns.items() if "loss" not in name}
 
     @torch.no_grad()
-    def predict(self, dataset: Union[DataLoader[Any], Dataset[Any]], device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> List[Any]:
+    def predict(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection], device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> List[Any]:
         '''
         Predict the whole dataset
 
@@ -85,7 +85,7 @@ class Manager(BaseManager[Module]):
         return predictions
 
     @torch.no_grad()
-    def test(self, dataset: Union[DataLoader[Any], Dataset[Any]], device: Optional[Union[torch.device, list[torch.device]]] = None, empty_cache: bool = True, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
+    def test(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection], device: Optional[Union[torch.device, list[torch.device]]] = None, empty_cache: bool = True, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
         """
         Test target model
 

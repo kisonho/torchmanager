@@ -1,6 +1,5 @@
-from torchmanager_core import torch, _raise, deprecated
+from torchmanager_core import torch, deprecated
 from torchmanager_core.typing import Optional
-from torchmanager_core.view import warnings
 
 from .metric import Metric
 
