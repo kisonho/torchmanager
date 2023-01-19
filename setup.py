@@ -1,4 +1,3 @@
-from core import VERSION, DESCRIPTION
 from distutils.core import setup
 
 from pathlib import Path
@@ -6,8 +5,8 @@ this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
 setup(name='torchmanager-nightly',
-    version=VERSION,
-    description=DESCRIPTION,
+    version="v1.1b4",
+    description="PyTorch Training Manager v1.1 (Beta 4)",
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Kison Ho',
@@ -37,7 +36,7 @@ setup(name='torchmanager-nightly',
         'torchmanager_core.view': 'core/view',
     },
     install_requires=[
-        'pytorch',
+        'torch',
         'tqdm',
     ],
     python_requires=">=3.8",

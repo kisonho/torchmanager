@@ -1,24 +1,29 @@
 import torch, warnings
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, TypeVar, Union
 
-try:
-    from torch.backends import mps
-    METAL = torch.device('mps')
-    '''The overall Metal (Mac only) devices'''
-except ImportError:
-    mps = NotImplemented
-    METAL = NotImplemented
-
 from .protocols import DeviceMovable
 
 CPU = torch.device('cpu')
 '''The main CPU'''
-DEFAULT = torch.device(torch.cuda.current_device()) if torch.cuda.is_available() else CPU
-'''The default device'''
-GPU = torch.device('cuda')
-'''The overall CUDA (NVIDIA only) devices'''
-GPUS = [torch.device(i) for i in range(torch.cuda.device_count())]
-'''The list of available CUDA devices'''
+
+try:
+    from torch.backends import mps
+    METAL = torch.device('mps') if mps.is_available() else NotImplemented
+    '''The overall Metal (Mac only) devices'''
+except:
+    METAL = NotImplemented
+
+try:
+    DEFAULT = torch.device(torch.cuda.current_device()) if torch.cuda.is_available() else CPU
+    '''The default device'''
+    GPU = torch.device('cuda') if torch.cuda.is_available() else NotImplemented
+    '''The overall CUDA (NVIDIA only) devices'''
+    GPUS = [torch.device(i) for i in range(torch.cuda.device_count())] if torch.cuda.is_available() else []
+    '''The list of available CUDA devices'''
+except:
+    DEFAULT = CPU
+    GPU = NotImplemented
+    GPUS = []
 
 Module = TypeVar('Module', bound=torch.nn.Module)
 
@@ -35,7 +40,7 @@ def data_parallel(raw_model: Module, devices: List[torch.device] = GPUS, output_
     """
     if isinstance(raw_model, parallel_type):
         return raw_model, True
-    elif torch.cuda.is_available():
+    elif GPU is not NotImplemented:
         device_ids = [d.index for d in devices]
         model = parallel_type(raw_model, device_ids=device_ids, output_device=output_device)
         return model, True
@@ -45,7 +50,7 @@ def data_parallel(raw_model: Module, devices: List[torch.device] = GPUS, output_
 
 def empty_cache() -> None:
     """Empty CUDA cache"""
-    if torch.cuda.is_available(): torch.cuda.empty_cache()
+    if GPU is not NotImplemented: torch.cuda.empty_cache()
 
 def find(specified: Optional[torch.device] = None) -> Tuple[torch.device, torch.device]:
     """
@@ -56,11 +61,9 @@ def find(specified: Optional[torch.device] = None) -> Tuple[torch.device, torch.
     - Returns: A `tuple` of CPU in `torch.device` and available device in `torch.device`
     """
     warnings.warn("This has been deprecated from v1.1.0 and will be removed in v1.2.0, use `torchmanager_core.devices.search` instead.", PendingDeprecationWarning)
-    if specified is None and torch.cuda.is_available():
+    if specified is None and GPU is not NotImplemented:
         return (CPU, GPU)
-    elif specified is None and mps is NotImplemented:
-        return (CPU, CPU)
-    elif specified is None and mps.is_available():
+    elif specified is None and METAL is not NotImplemented:
         return (CPU, METAL)
     elif specified is None:
         return (CPU, CPU)
@@ -74,11 +77,9 @@ def search(specified: Optional[Union[torch.device, List[torch.device]]] = None) 
         - specified: An optional `torch.device` of specified
     - Returns: A `tuple` of CPU in `torch.device`, available device in `torch.device` and `list` of specified devices in `torch.device`
     """
-    if specified is None and torch.cuda.is_available():
+    if specified is None and GPU is not NotImplemented:
         return (CPU, GPU, GPUS)
-    elif specified is None and mps is NotImplemented:
-        return (CPU, CPU, [CPU])
-    elif specified is None and mps.is_available():
+    elif specified is None and METAL is not NotImplemented:
         return (CPU, METAL, [METAL])
     elif specified is None:
         return (CPU, CPU, [CPU])

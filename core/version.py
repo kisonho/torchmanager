@@ -1,7 +1,7 @@
 from .view import warnings
 
-CURRENT: str = "v1.1b3"
-DESCRIPTION: str = "PyTorch Training Manager v1.1 (Beta 3)"
+CURRENT: str = "v1.1b4"
+DESCRIPTION: str = "PyTorch Training Manager v1.1 (Beta 4)"
 
 class VersionError(SystemError):
     def __init__(self, method_name: str, maximum_supported_version: str) -> None:
