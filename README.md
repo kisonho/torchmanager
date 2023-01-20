@@ -1,20 +1,20 @@
 # torchmanager
 ### A highly-wrapped PyTorch training and testing manager
 
-*The **main** branch is used for beta unstable release. Please check **stable** branch for the latest main release version*
+*This branch is used for beta unstable release. Please check **main** branch for the latest main release version*
 
 ## Pre-request
 * Python 3.8+
-* PyTorch 1.8.2+
+* PyTorch
 * tqdm
 * tensorboard (Optional)
 
 ## Installation
-* PyPi: `pip install torchmanager`
-* Conda: `conda install -c kisonho torchmanager`
+* PyPi: `pip install torchmanager-nightly`
+* Conda: `conda install -c kisonho torchmanager-nightly`
 
 ## The Manager
-- Initialize the manager with target model,  optimizer, loss function, and metrics:
+- Initialize the manager with target model, optimizer, loss function, and metrics:
 ```
 import torch, torchmanager
 
