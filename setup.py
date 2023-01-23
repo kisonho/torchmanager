@@ -5,8 +5,8 @@ this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
 setup(name='torchmanager-nightly',
-    version="v1.1b5",
-    description="PyTorch Training Manager v1.1 (Beta 5)",
+    version="v1.2a1",
+    description="PyTorch Training Manager v1.2 (Alpha 1)",
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Kison Ho',
@@ -21,6 +21,7 @@ setup(name='torchmanager-nightly',
         'torchmanager_core',
         'torchmanager_core.devices',
         'torchmanager_core.errors',
+        'torchmanager_core.random',
         'torchmanager_core.view',
     ],
     package_dir={
@@ -33,6 +34,7 @@ setup(name='torchmanager-nightly',
         'torchmanager_core': 'core',
         'torchmanager_core.devices': 'core/devices',
         'torchmanager_core.errors': 'core/errors',
+        'torchmanager_core.random': 'core/random',
         'torchmanager_core.view': 'core/view',
     },
     install_requires=[
