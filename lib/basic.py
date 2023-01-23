@@ -1,7 +1,7 @@
 from torchmanager_core import torch, _raise, VERSION as CURRENT_VERSION
 from torchmanager_core.typing import Any, Collection, Dict, Generic, Module, Optional, OrderedDict, Self, Tuple, Union
 
-from .losses import Loss, MultiLosses, MultiOutputsLosses, ParallelLoss
+from .losses import Loss, MultiLosses, ParallelLoss
 from .metrics import Metric
 from .train import Checkpoint
 
@@ -96,10 +96,7 @@ class BaseManager(Generic[Module]):
             - optimizer: An optional `torch.optim.Optimizer` to train the model
         """
         # initialize loss
-        if isinstance(loss_fn, MultiOutputsLosses) and len(loss_fn.losses) > 1:
-            loss_fn_mapping: Dict[str, Loss] = {f"{name}_loss": fn for name, fn in loss_fn.losses.items()}  # type: ignore
-            self.metric_fns.update(loss_fn_mapping)
-        elif isinstance(loss_fn, dict):
+        if isinstance(loss_fn, dict):
             loss_fn_mapping: Dict[str, Loss] = {f"{name}_loss": fn for name, fn in loss_fn.items()}
             self.metric_fns.update(loss_fn_mapping)
             loss_fn = MultiLosses([l for l in loss_fn_mapping.values()])

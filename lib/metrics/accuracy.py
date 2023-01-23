@@ -28,16 +28,6 @@ class SparseCategoricalAccuracy(Accuracy):
 
     _dim: int
 
-    @property
-    @deprecated("v1.1.0", "v1.2.0")
-    def dim(self) -> int:
-        return self._dim
-
-    @dim.setter
-    @deprecated("v1.1.0", "v1.2.0")
-    def dim(self, dim: int) -> None:
-        self._dim = dim
-
     def __init__(self, dim: int = -1, target: Optional[str] = None) -> None:
         """
         Constructor

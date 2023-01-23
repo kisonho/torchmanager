@@ -1,6 +1,5 @@
-from torchmanager_core import torch, _raise, deprecated
+from torchmanager_core import torch, _raise
 from torchmanager_core.typing import Optional
-from torchmanager_core.view import warnings
 
 from .conf_met import ConfusionMetrics
 from .metric import Metric
@@ -59,10 +58,3 @@ class MeanIoU(Metric):
         iou = (intersection + self._smooth) / (union + self._smooth)
         thresholded = torch.clamp(10 / (1 - self._threshold) * (iou - self._threshold), 0, 10).ceil() / 10
         return thresholded
-
-
-@deprecated("v1.1.0", "v1.2.0")
-class MIoU(InstanceIoU):
-    def __init__(self, num_classes: int, target: Optional[str] = None) -> None:
-        super().__init__(num_classes, target)
-        warnings.warn("The class `MIoU` has been renamed to `InstanceIoU` in v1.1.0, and will be removed in v1.2.0.", DeprecationWarning)

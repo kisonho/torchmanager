@@ -26,12 +26,6 @@ class Manager(BaseManager[Module]):
     model: Union[Module, torch.nn.parallel.DataParallel]
 
     @property
-    @deprecated("v1.1.0", "v1.2.0")
-    def compiled_losses(self) -> Resulting:
-        assert self.loss_fn is not None, _raise(NotImplementedError("The manager is not compiled properly, `loss_fn` is missing."))
-        return self.loss_fn
-
-    @property
     def compiled_metrics(self) -> Dict[str, Resulting]:
         return {name: m for name, m in self.metric_fns.items() if "loss" not in name}
 

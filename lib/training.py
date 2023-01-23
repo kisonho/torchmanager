@@ -80,12 +80,6 @@ class Manager(_Manager[Module]):
         for m in self.metric_fns.values():
             m.reset()
 
-        # run deprecated method
-        summary = self.train(dataset, device=device, use_multi_gpus=use_multi_gpus, show_verbose=show_verbose, callbacks_list=callbacks_list)
-        if summary is not NotImplemented:
-            view.warnings.warn("Method `train` has been set to protected from v1.0.2 and will be removed in v1.2.0, override `_train` instead.", DeprecationWarning)
-            return summary
-
         # initialize progress bar
         iterations = len(dataset) if iterations is None else iterations
         progress_bar = view.tqdm(total=iterations) if show_verbose else None
@@ -255,10 +249,6 @@ class Manager(_Manager[Module]):
         self.loss_fn = self.raw_loss_fn.to(cpu) if self.raw_loss_fn is not None else self.raw_loss_fn
         devices.empty_cache()
         return self.model
-
-    def train(self, *args: Any, **kwargs: Any) -> Dict[str, float]:
-        """The single training step for an epoch"""
-        return NotImplemented
 
     def train_step(self, x_train: Any, y_train: Any) -> Dict[str, float]:
         """

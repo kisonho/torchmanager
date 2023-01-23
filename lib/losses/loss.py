@@ -1,4 +1,4 @@
-from torchmanager_core import torch, _raise, deprecated
+from torchmanager_core import torch, _raise
 from torchmanager_core.typing import Any, Callable, Dict, List, Optional
 
 from ..metrics import Metric
@@ -104,44 +104,6 @@ class MultiLosses(Loss):
         for fn in self.losses:
             assert isinstance(fn, Loss), _raise(TypeError(f"Function {fn} is not a Loss object."))
             l = fn(input, target)
-            loss += l
-
-        # return loss
-        assert isinstance(loss, torch.Tensor), _raise(TypeError("The total loss is not a valid `torch.Tensor`."))
-        return loss
-
-
-@deprecated("v1.1.0", "v1.2.0")
-class MultiOutputsLosses(Loss):
-    """
-    A loss with multiple losses for multiple outputs
-
-    * extends: `.Loss`
-    * [Depreciation Warning]: `MultiOutputsLosses` has been deprecated in v1.1.0 and will be removed in v1.2.0, use `MultiLosses` along with `target` parameter for each loss instead.
-
-    - Properties:
-        - losses: A `dict` of loss metrics in `Metric`
-    """
-
-    __losses: torch.nn.ModuleDict
-
-    @property
-    def losses(self) -> torch.nn.ModuleDict:
-        return self.__losses
-
-    def __init__(self, loss_fns: Dict[str, Loss]) -> None:
-        super().__init__()
-        assert len(loss_fns) > 0, "The loss dictionary should not be empty."
-        self.__losses = torch.nn.ModuleDict(loss_fns)
-
-    def forward(self, input: Dict[str, torch.Tensor], target: Dict[str, torch.Tensor]) -> torch.Tensor:
-        # initilaize
-        loss = 0
-
-        # loop for losses
-        for k, fn in self.losses.items():
-            assert isinstance(fn, Loss), _raise(TypeError(f"Function {fn} is not a Loss object."))
-            l = fn(input[k], target[k])
             loss += l
 
         # return loss

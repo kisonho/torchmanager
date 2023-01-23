@@ -52,23 +52,6 @@ def empty_cache() -> None:
     """Empty CUDA cache"""
     if GPU is not NotImplemented: torch.cuda.empty_cache()
 
-def find(specified: Optional[torch.device] = None) -> Tuple[torch.device, torch.device]:
-    """
-    Find available devices
-
-    - Pameters:
-        - specified: An optional `torch.device` of specified
-    - Returns: A `tuple` of CPU in `torch.device` and available device in `torch.device`
-    """
-    warnings.warn("This has been deprecated from v1.1.0 and will be removed in v1.2.0, use `torchmanager_core.devices.search` instead.", PendingDeprecationWarning)
-    if specified is None and GPU is not NotImplemented:
-        return (CPU, GPU)
-    elif specified is None and METAL is not NotImplemented:
-        return (CPU, METAL)
-    elif specified is None:
-        return (CPU, CPU)
-    else: return CPU, specified
-
 def search(specified: Optional[Union[torch.device, List[torch.device]]] = None) -> Tuple[torch.device, torch.device, List[torch.device]]:
     """
     Find available devices
