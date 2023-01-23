@@ -193,7 +193,7 @@ class Manager(_Manager[Module]):
         self.model = model
 
         # multi gpus support for loss
-        if use_multi_gpus and not isinstance(self.compiled_losses, torch.nn.parallel.DataParallel):
+        if use_multi_gpus and not isinstance(self.compiled_losses, ParallelLoss):
             assert isinstance(self.compiled_losses, Loss), errors._raise(TypeError("The compiled loss function is not a valid `Loss` object."))
             paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.compiled_losses, devices=target_devices, parallel_type=ParallelLoss)
             assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), errors._raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
