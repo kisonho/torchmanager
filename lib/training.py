@@ -5,7 +5,7 @@ from torchmanager_core.typing import Any, Collection, Dict, List, Module, Option
 
 from .callbacks import Callback
 from .data import Dataset
-from .losses import Loss, ParallelLoss
+from .losses import Loss
 from .metrics import Metric
 from .train import Checkpoint, update_lr
 from .testing import Manager as _Manager
@@ -191,13 +191,6 @@ class Manager(_Manager[Module]):
         else:
             model = self.model
         self.model = model
-
-        # multi gpus support for loss
-        if use_multi_gpus and not isinstance(self.compiled_losses, torch.nn.parallel.DataParallel):
-            assert isinstance(self.compiled_losses, Loss), errors._raise(TypeError("The compiled loss function is not a valid `Loss` object."))
-            paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.compiled_losses, devices=target_devices, parallel_type=ParallelLoss)
-            assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), errors._raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
-            self.loss_fn = paralleled_loss_fn
         self.to(device)
 
         # epoch loop
@@ -228,7 +221,6 @@ class Manager(_Manager[Module]):
                     for c in callbacks_list:
                         c.on_train_end(self.raw_model)
                     self.model = self.raw_model.to(cpu)
-                    self.loss_fn = self.raw_loss_fn.to(cpu) if self.raw_loss_fn is not None else self.raw_loss_fn
                     devices.empty_cache()
                     return self.model
                 except Exception:
@@ -252,7 +244,6 @@ class Manager(_Manager[Module]):
         for c in callbacks_list:
             c.on_train_end(self.raw_model)
         self.model = self.raw_model.to(cpu)
-        self.loss_fn = self.raw_loss_fn.to(cpu) if self.raw_loss_fn is not None else self.raw_loss_fn
         devices.empty_cache()
         return self.model
 
