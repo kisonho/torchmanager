@@ -86,7 +86,7 @@ class Dataset(IterableDataset[T], abc.ABC):
         """Returns an unbatched item"""
         return NotImplemented
 
-    def __iter__(self) -> Iterator[Tuple[Any, Any]]:
+    def __iter__(self) -> Iterator[T]:
         # initialize devices
         cpu_count = os.cpu_count()
         if cpu_count is None:
@@ -105,7 +105,7 @@ class Dataset(IterableDataset[T], abc.ABC):
             return math.ceil(self.unbatched_len / self.batch_size)
 
     @staticmethod
-    def unpack_data(data: Any) -> Tuple[Any, Any]:
+    def unpack_data(data: Any) -> T:
         """
         Unpacks a single data into inputs and targets
 
@@ -114,7 +114,7 @@ class Dataset(IterableDataset[T], abc.ABC):
         - Returns: A `tuple` of `Any` kind of inputs and `Any` kind of targets
         """
         if isinstance(data, Sequence):
-            return data[0], data[1] if len(data) >= 2 else NotImplemented
+            return data[0], data[1] if len(data) >= 2 else NotImplemented # type: ignore
         else:
             return NotImplemented
 
