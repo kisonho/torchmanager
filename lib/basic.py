@@ -1,7 +1,7 @@
 from torchmanager_core import torch, _raise, VERSION as CURRENT_VERSION
 from torchmanager_core.typing import Any, Collection, Dict, Generic, Module, Optional, OrderedDict, Self, Tuple, Union
 
-from .losses import Loss, MultiLosses, MultiOutputsLosses
+from .losses import Loss, MultiLosses, MultiOutputsLosses, ParallelLoss
 from .metrics import Metric
 from .train import Checkpoint
 
@@ -42,7 +42,7 @@ class BaseManager(Generic[Module]):
         - raw_model: A non-paralleled target `torch.nn.Module` model
     """
     # properties
-    loss_fn: Optional[Loss]
+    loss_fn: Optional[Union[Loss, ParallelLoss]]
     metric_fns: Dict[str, Metric]
     model: Module
     optimizer: Optional[torch.optim.Optimizer]
@@ -51,6 +51,18 @@ class BaseManager(Generic[Module]):
     @property
     def compiled(self) -> bool:
         return True if self.loss_fn is not None and self.optimizer is not None else False
+
+    @property
+    def raw_loss_fn(self) -> Optional[Loss]:
+        if self.loss_fn is None:
+            return self.loss_fn
+        elif isinstance(self.loss_fn, ParallelLoss):
+            return self.loss_fn.module
+        elif isinstance(self.loss_fn._metric_fn, torch.nn.parallel.DataParallel):
+            self.loss_fn._metric_fn = self.loss_fn._metric_fn.module
+            return self.loss_fn
+        else:
+            return self.loss_fn
 
     @property
     def raw_model(self) -> Module:
