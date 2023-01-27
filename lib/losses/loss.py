@@ -110,6 +110,12 @@ class MultiLosses(Loss):
         assert isinstance(loss, torch.Tensor), _raise(TypeError("The total loss is not a valid `torch.Tensor`."))
         return loss
 
+    def reset(self) -> None:
+        for fn in self.losses:
+            assert isinstance(fn, Loss), _raise(TypeError(f"Function {fn} is not a Loss object."))
+            fn.reset()
+        return super().reset()
+
 
 @deprecated("v1.1.0", "v1.2.0")
 class MultiOutputsLosses(Loss):
