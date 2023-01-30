@@ -185,76 +185,75 @@ class Manager(_Manager[Module]):
         for c in callbacks_list:
             c.on_train_start(initial_epoch)
 
-        # multi gpus support for model
-        if use_multi_gpus and not isinstance(self.model, torch.nn.parallel.DataParallel):
-            model, use_multi_gpus = devices.data_parallel(self.model, devices=target_devices)
-        else:
-            model = self.model
-        self.model = model
-
-        # multi gpus support for loss
-        if use_multi_gpus and not isinstance(self.compiled_losses, torch.nn.parallel.DataParallel):
-            assert isinstance(self.compiled_losses, Loss), errors._raise(TypeError("The compiled loss function is not a valid `Loss` object."))
-            paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.compiled_losses, devices=target_devices, parallel_type=ParallelLoss)
-            assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), errors._raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
-            self.loss_fn = paralleled_loss_fn
-        self.to(device)
-
-        # epoch loop
-        for self.current_epoch in range(initial_epoch, epochs):
-            # initialize epoch
-            view.logger.info(f"Training epoch {self.current_epoch + 1}/{epochs}")
-            for c in callbacks_list:
-                c.on_epoch_start(self.current_epoch)
-            if iterations is not None:
-                batch_iterations = iterations if len(training_dataset) < iterations else iterations
+        try:
+            # multi gpus support for model
+            if use_multi_gpus and not isinstance(self.model, torch.nn.parallel.DataParallel):
+                model, use_multi_gpus = devices.data_parallel(self.model, devices=target_devices)
             else:
-                batch_iterations = None
+                model = self.model
+            self.model = model
 
-            # train for one epoch
-            summary = self._train(training_dataset, iterations=batch_iterations, device=device, use_multi_gpus=use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
-            if iterations is not None and batch_iterations is not None:
-                iterations -= batch_iterations
+            # multi gpus support for loss
+            if use_multi_gpus and not isinstance(self.compiled_losses, torch.nn.parallel.DataParallel):
+                assert isinstance(self.compiled_losses, Loss), errors._raise(TypeError("The compiled loss function is not a valid `Loss` object."))
+                paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.compiled_losses, devices=target_devices, parallel_type=ParallelLoss)
+                assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), errors._raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
+                self.loss_fn = paralleled_loss_fn
+            self.to(device)
 
-            # validate
-            val_summary = self.test(val_dataset, device=device, use_multi_gpus=use_multi_gpus, empty_cache=False) if val_dataset is not None else {}
+            # epoch loop
+            for self.current_epoch in range(initial_epoch, epochs):
+                # initialize epoch
+                view.logger.info(f"Training epoch {self.current_epoch + 1}/{epochs}")
+                for c in callbacks_list:
+                    c.on_epoch_start(self.current_epoch)
+                if iterations is not None:
+                    batch_iterations = iterations if len(training_dataset) < iterations else iterations
+                else:
+                    batch_iterations = None
 
-            # on epoch end
+                # train for one epoch
+                summary = self._train(training_dataset, iterations=batch_iterations, device=device, use_multi_gpus=use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
+                if iterations is not None and batch_iterations is not None:
+                    iterations -= batch_iterations
+
+                # validate
+                val_summary = self.test(val_dataset, device=device, use_multi_gpus=use_multi_gpus, empty_cache=False) if val_dataset is not None else {}
+
+                # on epoch end
+                for c in callbacks_list:
+                    try:
+                        c.on_epoch_end(self.current_epoch, summary=summary, val_summary=val_summary)
+                    except errors.StopTraining:
+                        # on train end
+                        for c in callbacks_list:
+                            c.on_train_end(self.raw_model)
+                        return self.raw_model
+                    except Exception:
+                        raise
+
+                # step lr scheduler
+                if lr_scheduler is not None:
+                    lr_summary = update_lr(lr_scheduler)
+                    summary.update(lr_summary)
+
+                # print summary info
+                val_message = f"Epoch {self.current_epoch + 1}/{epochs}: "
+                summary.update({f"val_{name}": value for name, value in val_summary.items()})
+                for i, (name, value) in enumerate(summary.items()):
+                    if i > 0:
+                        val_message += ", "
+                    val_message += f"{name}={value:.4f}"
+                view.logger.info(val_message)
+
+            # on train end
             for c in callbacks_list:
-                try:
-                    c.on_epoch_end(self.current_epoch, summary=summary, val_summary=val_summary)
-                except errors.StopTraining:
-                    # on train end
-                    for c in callbacks_list:
-                        c.on_train_end(self.raw_model)
-                    self.model = self.raw_model.to(cpu)
-                    self.loss_fn = self.raw_loss_fn.to(cpu) if self.raw_loss_fn is not None else self.raw_loss_fn
-                    devices.empty_cache()
-                    return self.model
-                except Exception:
-                    raise
-
-            # step lr scheduler
-            if lr_scheduler is not None:
-                lr_summary = update_lr(lr_scheduler)
-                summary.update(lr_summary)
-
-            # print summary info
-            val_message = f"Epoch {self.current_epoch + 1}/{epochs}: "
-            summary.update({f"val_{name}": value for name, value in val_summary.items()})
-            for i, (name, value) in enumerate(summary.items()):
-                if i > 0:
-                    val_message += ", "
-                val_message += f"{name}={value:.4f}"
-            view.logger.info(val_message)
-
-        # on train end
-        for c in callbacks_list:
-            c.on_train_end(self.raw_model)
-        self.model = self.raw_model.to(cpu)
-        self.loss_fn = self.raw_loss_fn.to(cpu) if self.raw_loss_fn is not None else self.raw_loss_fn
-        devices.empty_cache()
-        return self.model
+                c.on_train_end(self.raw_model)
+            return self.raw_model
+        finally:
+            self.model = self.raw_model.to(cpu)
+            self.loss_fn = self.raw_loss_fn.to(cpu) if self.raw_loss_fn is not None else self.raw_loss_fn
+            devices.empty_cache()
 
     def train(self, *args: Any, **kwargs: Any) -> Dict[str, float]:
         """The single training step for an epoch"""

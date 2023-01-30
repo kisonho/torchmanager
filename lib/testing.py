@@ -54,35 +54,33 @@ class Manager(BaseManager[Module]):
         devices.set_default(target_devices[0])
 
         # move model
-        if use_multi_gpus and not isinstance(self.model, torch.nn.parallel.DataParallel):
-            raw_model = self.model
-            self.model, use_multi_gpus = devices.data_parallel(self.model, devices=target_devices)
-        else:
-            raw_model = None
+        try:
+            if use_multi_gpus and not isinstance(self.model, torch.nn.parallel.DataParallel):
+                self.model, use_multi_gpus = devices.data_parallel(self.model, devices=target_devices)
 
-        # initialize predictions
-        self.model.eval()
-        predictions: List[Any] = []
-        if len(dataset) == 0:
+            # initialize predictions
+            self.model.eval()
+            predictions: List[Any] = []
+            if len(dataset) == 0:
+                return predictions
+            progress_bar = view.tqdm(total=len(dataset)) if show_verbose else None
+            self.to(device)
+
+            # loop the dataset
+            for data in dataset:
+                x, _ = self.unpack_data(data)
+                if use_multi_gpus is not True:
+                    x = devices.move_to_device(x, device)
+                y = self.model(x)
+                predictions.append(y)
+                if progress_bar is not None:
+                    progress_bar.update()
+
+            # reset model and loss
             return predictions
-        progress_bar = view.tqdm(total=len(dataset)) if show_verbose else None
-        self.to(device)
-
-        # loop the dataset
-        for data in dataset:
-            x, _ = self.unpack_data(data)
-            if use_multi_gpus is not True:
-                x = devices.move_to_device(x, device)
-            y = self.model(x)
-            predictions.append(y)
-            if progress_bar is not None:
-                progress_bar.update()
-
-        # reset model and loss
-        if raw_model is not None:
-            self.model = raw_model.to(cpu)
-        devices.empty_cache()
-        return predictions
+        finally:
+            self.model = self.raw_model.to(cpu)
+            devices.empty_cache()
 
     @torch.no_grad()
     def test(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection], device: Optional[Union[torch.device, List[torch.device]]] = None, empty_cache: bool = True, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
@@ -103,68 +101,70 @@ class Manager(BaseManager[Module]):
             use_multi_gpus = False
         devices.set_default(target_devices[0])
 
-        # move model
-        if use_multi_gpus and not isinstance(self.model, torch.nn.parallel.DataParallel):
-            self.model, use_multi_gpus = devices.data_parallel(self.model, devices=target_devices)
+        try:
+            # move model
+            if use_multi_gpus and not isinstance(self.model, torch.nn.parallel.DataParallel):
+                self.model, use_multi_gpus = devices.data_parallel(self.model, devices=target_devices)
 
-        # move loss function
-        if use_multi_gpus and self.loss_fn is not None and not isinstance(self.loss_fn, torch.nn.parallel.DataParallel):
-            paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.loss_fn, devices=target_devices, parallel_type=ParallelLoss)
-            assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), _raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
-            self.loss_fn = paralleled_loss_fn
+            # move loss function
+            if use_multi_gpus and self.loss_fn is not None and not isinstance(self.loss_fn, torch.nn.parallel.DataParallel):
+                paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.loss_fn, devices=target_devices, parallel_type=ParallelLoss)
+                assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), _raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
+                self.loss_fn = paralleled_loss_fn
 
-        # set module status
-        self.model.eval()
-        if self.loss_fn is not None:
-            self.loss_fn.eval().reset()
-        for _, m in self.metric_fns.items():
-            m.eval().reset()
-        self.to(device)
+            # set module status
+            self.model.eval()
+            if self.loss_fn is not None:
+                self.loss_fn.eval().reset()
+            for _, m in self.metric_fns.items():
+                m.eval().reset()
+            self.to(device)
 
-        # initialize progress bar
-        if len(dataset) == 0:
-            return {}
-        progress_bar = view.tqdm(total=len(dataset)) if show_verbose else None
+            # initialize progress bar
+            if len(dataset) == 0:
+                return {}
+            progress_bar = view.tqdm(total=len(dataset)) if show_verbose else None
 
-        # batch loop
-        for data in dataset:
-            # move x_test, y_test to device
-            x_test, y_test = self.unpack_data(data)
-            if use_multi_gpus is not True:
-                x_test = devices.move_to_device(x_test, device)
-            y_test = devices.move_to_device(y_test, device)
+            # batch loop
+            for data in dataset:
+                # move x_test, y_test to device
+                x_test, y_test = self.unpack_data(data)
+                if use_multi_gpus is not True:
+                    x_test = devices.move_to_device(x_test, device)
+                y_test = devices.move_to_device(y_test, device)
 
-            # test for one step
-            step_summary = self.test_step(x_test, y_test)
+                # test for one step
+                step_summary = self.test_step(x_test, y_test)
 
-            # implement progress bar
+                # implement progress bar
+                if progress_bar is not None:
+                    progress_bar.set_postfix(step_summary)
+                    progress_bar.update()
+
+            # end epoch training
             if progress_bar is not None:
-                progress_bar.set_postfix(step_summary)
-                progress_bar.update()
+                progress_bar.close()
 
-        # end epoch training
-        if progress_bar is not None:
-            progress_bar.close()
+            # summarize
+            summary: Dict[str, float] = {}
+            for name, fn in self.metric_fns.items():
+                if name.startswith("val_"):
+                    name = name.replace("val_", "")
+                try:
+                    summary[name] = float(fn.result.detach())
+                except Exception as metric_error:
+                    runtime_error = RuntimeError(f"Cannot fetrch metric '{name}'.")
+                    raise runtime_error from metric_error
+            if self.loss_fn is not None:
+                summary["loss"] = float(self.loss_fn.result.detach())
 
-        # summarize
-        summary: Dict[str, float] = {}
-        for name, fn in self.metric_fns.items():
-            if name.startswith("val_"):
-                name = name.replace("val_", "")
-            try:
-                summary[name] = float(fn.result.detach())
-            except Exception as metric_error:
-                runtime_error = RuntimeError(f"Cannot fetrch metric '{name}'.")
-                raise runtime_error from metric_error
-        if self.loss_fn is not None:
-            summary["loss"] = float(self.loss_fn.result.detach())
-
-        # reset model and loss
-        if empty_cache:
-            self.model = self.raw_model.to(cpu)
-            self.loss_fn = self.raw_loss_fn.to(cpu) if self.raw_loss_fn is not None else self.raw_loss_fn
-            devices.empty_cache()
-        return summary
+            # reset model and loss
+            return summary
+        finally:
+            if empty_cache:
+                self.model = self.raw_model.to(cpu)
+                self.loss_fn = self.raw_loss_fn.to(cpu) if self.raw_loss_fn is not None else self.raw_loss_fn
+                devices.empty_cache()
 
     def test_step(self, x_test: Any, y_test: Any) -> Dict[str, float]:
         """
