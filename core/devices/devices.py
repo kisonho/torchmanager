@@ -69,6 +69,28 @@ def find(specified: Optional[torch.device] = None) -> Tuple[torch.device, torch.
         return (CPU, CPU)
     else: return CPU, specified
 
+def limit_graph_memory(usage: Union[int, float], device: torch.device) -> None:
+    """
+    Limit a GPU memory usage
+
+    - Parameters:
+        - usage: A `float` of GRAM usage percentage or an `int` of exact GRAM usage amount
+        - device: A target `torch.device` with type must be `cuda`
+    """
+    # initialize check
+    assert usage > 0, f"Usage percentage must be a positive number, got {usage}."
+    assert device.type == "cuda", f"Device must be a CUDA GPU, got {device.type}."
+
+    # calculate usage percent
+    if isinstance(usage, float) and usage > 1:
+        raise ValueError(f"Usage percentage must be in range (0,1], got {usage}.")
+    elif isinstance(usage, int):
+        total_memory = int(torch.cuda.get_device_properties(device.index).total_memory)
+        usage /= total_memory
+
+    # limit device usage
+    torch.cuda.set_per_process_memory_fraction(usage, device)
+
 def search(specified: Optional[Union[torch.device, List[torch.device]]] = None) -> Tuple[torch.device, torch.device, List[torch.device]]:
     """
     Find available devices
