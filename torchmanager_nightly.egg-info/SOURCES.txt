@@ -6,9 +6,10 @@ core/protocols.py
 core/typing.py
 core/version.py
 core/devices/__init__.py
-core/devices/devices.py
+core/devices/device.py
 core/devices/protocols.py
 core/errors/__init__.py
+core/errors/runtime.py
 core/errors/train.py
 core/view/__init__.py
 core/view/protocols.py
