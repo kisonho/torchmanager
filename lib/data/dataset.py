@@ -161,6 +161,6 @@ def batched(fn: Callable[..., _Dataset]):
         loaded_dataset = fn(*args, **kwargs)
         if isinstance(loaded_dataset, Dataset):
             warnings.warn("The loaded dataset is a `torchmanager.data.Dataset` which has already been wrapped with batch loader during iteration.", RuntimeWarning)
-        data_loader = DataLoader(loaded_dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last, pin_memory=pin_memory, num_workers=cpu_count)
+        data_loader = DataLoader(loaded_dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last, pin_memory=pin_memory, num_workers=cpu_count, pin_memory_device=f"{targeted_devices[0].type}:{targeted_devices.index}")
         return data_loader
     return wrapped_fn
