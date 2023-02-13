@@ -1,6 +1,6 @@
 from torch.utils.data import Dataset as _Dataset, DataLoader, IterableDataset
 from torchmanager_core import abc, devices, math, os, torch
-from torchmanager_core.typing import Any, Callable, Iterator, Sequence, Tuple, TypeVar
+from torchmanager_core.typing import Any, Callable, Iterator, Sequence, TypeVar
 from torchmanager_core.view import warnings
 
 T = TypeVar("T")
@@ -111,7 +111,7 @@ class Dataset(IterableDataset[T], abc.ABC):
 
         - Parameters:
             - data: `Any` kind of single data
-        - Returns: A `tuple` of `Any` kind of inputs and `Any` kind of targets
+        - Returns: `Any` kind of inputs with type `T`
         """
         if isinstance(data, Sequence):
             return data[0], data[1] if len(data) >= 2 else NotImplemented # type: ignore
