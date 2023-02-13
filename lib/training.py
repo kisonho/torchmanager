@@ -1,5 +1,5 @@
 from torch.utils.data import DataLoader
-from torchmanager_core import devices, errors, math, torch, view
+from torchmanager_core import devices, errors, math, torch, view, deprecated
 from torchmanager_core.protocols import Resulting
 from torchmanager_core.typing import Any, Collection, Dict, List, Module, Optional, Self, Union
 
@@ -84,48 +84,49 @@ class Manager(_Manager[Module]):
         iterations = len(dataset) if iterations is None else iterations
         progress_bar = view.tqdm(total=iterations) if show_verbose else None
 
-        # batch loop
-        for batch, data in enumerate(dataset):
-            # on batch start
-            for c in callbacks_list:
-                c.on_batch_start(batch)
+        try:
+            # batch loop
+            for batch, data in enumerate(dataset):
+                # on batch start
+                for c in callbacks_list:
+                    c.on_batch_start(batch)
 
-            # move x_train and y_train to device
-            x_train, y_train = self.unpack_data(data)
-            if use_multi_gpus is not True:
-                x_train = devices.move_to_device(x_train, device)
-            y_train = devices.move_to_device(y_train, device)
+                # move x_train and y_train to device
+                x_train, y_train = self.unpack_data(data)
+                if use_multi_gpus is not True:
+                    x_train = devices.move_to_device(x_train, device)
+                y_train = devices.move_to_device(y_train, device)
 
-            # train for one step
-            summary = self.train_step(x_train, y_train)
+                # train for one step
+                summary = self.train_step(x_train, y_train)
 
-            # on batch start
-            for c in callbacks_list:
-                c.on_batch_end(batch, summary=summary)
+                # on batch start
+                for c in callbacks_list:
+                    c.on_batch_end(batch, summary=summary)
 
-            # implement progress bar
+                # implement progress bar
+                if progress_bar is not None:
+                    # initialize progress summary
+                    if verbose_type == view.VerboseType.LOSS:
+                        progress_summary = {name: s for name, s in summary.items() if "loss" in name}
+                    elif verbose_type == view.VerboseType.METRICS:
+                        progress_summary = {name: s for name, s in summary.items() if "loss" not in name}
+                    elif verbose_type == view.VerboseType.ALL:
+                        progress_summary = summary
+                    else:
+                        raise TypeError(f"Verbose type {verbose_type} is not supported.")
+
+                    # update progress bar
+                    progress_bar.set_postfix(progress_summary)
+                    progress_bar.update()
+
+                # check for iterations
+                if batch + 1 >= iterations:
+                    break
+        finally:
+            # end epoch training
             if progress_bar is not None:
-                # initialize progress summary
-                if verbose_type == view.VerboseType.LOSS:
-                    progress_summary = {name: s for name, s in summary.items() if "loss" in name}
-                elif verbose_type == view.VerboseType.METRICS:
-                    progress_summary = {name: s for name, s in summary.items() if "loss" not in name}
-                elif verbose_type == view.VerboseType.ALL:
-                    progress_summary = summary
-                else:
-                    raise TypeError(f"Verbose type {verbose_type} is not supported.")
-
-                # update progress bar
-                progress_bar.set_postfix(progress_summary)
-                progress_bar.update()
-
-            # check for iterations
-            if batch + 1 >= iterations:
-                break
-
-        # end epoch training
-        if progress_bar is not None:
-            progress_bar.close()
+                progress_bar.close()
 
         # summarize
         summary = {name: float(fn.result.detach()) for name, fn in self.metric_fns.items() if not name.startswith("val_")}
@@ -179,76 +180,82 @@ class Manager(_Manager[Module]):
         for c in callbacks_list:
             c.on_train_start(initial_epoch)
 
-        # multi gpus support for model
-        if use_multi_gpus and not isinstance(self.model, torch.nn.parallel.DataParallel):
-            model, use_multi_gpus = devices.data_parallel(self.model, devices=target_devices)
-        else:
-            model = self.model
-        self.model = model
-
-        # multi gpus support for loss
-        if use_multi_gpus and not isinstance(self.compiled_losses, ParallelLoss):
-            assert isinstance(self.compiled_losses, Loss), errors._raise(TypeError("The compiled loss function is not a valid `Loss` object."))
-            paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.compiled_losses, devices=target_devices, parallel_type=ParallelLoss)
-            assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), errors._raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
-            self.loss_fn = paralleled_loss_fn
-        self.to(device)
-
-        # epoch loop
-        for self.current_epoch in range(initial_epoch, epochs):
-            # initialize epoch
-            view.logger.info(f"Training epoch {self.current_epoch + 1}/{epochs}")
-            for c in callbacks_list:
-                c.on_epoch_start(self.current_epoch)
-            if iterations is not None:
-                batch_iterations = iterations if len(training_dataset) < iterations else iterations
+        try:
+            # multi gpus support for model
+            if use_multi_gpus and not isinstance(self.model, torch.nn.parallel.DataParallel):
+                model, use_multi_gpus = devices.data_parallel(self.model, devices=target_devices)
             else:
-                batch_iterations = None
+                model = self.model
+            self.model = model
 
-            # train for one epoch
-            summary = self._train(training_dataset, iterations=batch_iterations, device=device, use_multi_gpus=use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
-            if iterations is not None and batch_iterations is not None:
-                iterations -= batch_iterations
+            # multi gpus support for loss
+            if use_multi_gpus and not isinstance(self.compiled_losses, torch.nn.parallel.DataParallel):
+                assert isinstance(self.compiled_losses, Loss), errors._raise(TypeError("The compiled loss function is not a valid `Loss` object."))
+                paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.compiled_losses, devices=target_devices, parallel_type=ParallelLoss)
+                assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), errors._raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
+                self.loss_fn = paralleled_loss_fn
 
-            # validate
-            val_summary = self.test(val_dataset, device=device, use_multi_gpus=use_multi_gpus, empty_cache=False) if val_dataset is not None else {}
+            # move to device
+            self.to(device)
 
-            # on epoch end
+            # epoch loop
+            for self.current_epoch in range(initial_epoch, epochs):
+                # initialize epoch
+                view.logger.info(f"Training epoch {self.current_epoch + 1}/{epochs}")
+                for c in callbacks_list:
+                    c.on_epoch_start(self.current_epoch)
+                if iterations is not None:
+                    batch_iterations = iterations if len(training_dataset) < iterations else iterations
+                else:
+                    batch_iterations = None
+
+                # train for one epoch
+                summary = self._train(training_dataset, iterations=batch_iterations, device=device, use_multi_gpus=use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
+                if iterations is not None and batch_iterations is not None:
+                    iterations -= batch_iterations
+
+                # validate
+                val_summary = self.test(val_dataset, device=device, use_multi_gpus=use_multi_gpus, empty_cache=False) if val_dataset is not None else {}
+
+                # on epoch end
+                for c in callbacks_list:
+                    try:
+                        c.on_epoch_end(self.current_epoch, summary=summary, val_summary=val_summary)
+                    except errors.StopTraining:
+                        # on train end
+                        for c in callbacks_list:
+                            c.on_train_end(self.raw_model)
+                        return self.raw_model
+
+                # step lr scheduler
+                if lr_scheduler is not None:
+                    lr_summary = update_lr(lr_scheduler)
+                    summary.update(lr_summary)
+
+                # print summary info
+                val_message = f"Epoch {self.current_epoch + 1}/{epochs}: "
+                summary.update({f"val_{name}": value for name, value in val_summary.items()})
+                for i, (name, value) in enumerate(summary.items()):
+                    if i > 0:
+                        val_message += ", "
+                    val_message += f"{name}={value:.4f}"
+                view.logger.info(val_message)
+
+            # on train end
             for c in callbacks_list:
-                try:
-                    c.on_epoch_end(self.current_epoch, summary=summary, val_summary=val_summary)
-                except errors.StopTraining:
-                    # on train end
-                    for c in callbacks_list:
-                        c.on_train_end(self.raw_model)
-                    self.model = self.raw_model.to(cpu)
-                    self.loss_fn = self.raw_loss_fn.to(cpu) if self.raw_loss_fn is not None else self.raw_loss_fn
-                    devices.empty_cache()
-                    return self.model
-                except Exception:
-                    raise
-
-            # step lr scheduler
-            if lr_scheduler is not None:
-                lr_summary = update_lr(lr_scheduler)
-                summary.update(lr_summary)
-
-            # print summary info
-            val_message = f"Epoch {self.current_epoch + 1}/{epochs}: "
-            summary.update({f"val_{name}": value for name, value in val_summary.items()})
-            for i, (name, value) in enumerate(summary.items()):
-                if i > 0:
-                    val_message += ", "
-                val_message += f"{name}={value:.4f}"
-            view.logger.info(val_message)
-
-        # on train end
-        for c in callbacks_list:
-            c.on_train_end(self.raw_model)
-        self.model = self.raw_model.to(cpu)
-        self.loss_fn = self.raw_loss_fn.to(cpu) if self.raw_loss_fn is not None else self.raw_loss_fn
-        devices.empty_cache()
-        return self.model
+                c.on_train_end(self.raw_model)
+            return self.raw_model
+        except KeyboardInterrupt:
+            view.logger.info("Training interrupted.")
+            return self.raw_model
+        except Exception as error:
+            view.logger.error(error)
+            runtime_error = errors.StopTraining(self.current_epoch, "Training failed.")
+            raise runtime_error from error
+        finally:
+            self.model = self.raw_model.to(cpu)
+            self.loss_fn = self.raw_loss_fn.to(cpu) if self.raw_loss_fn is not None else self.raw_loss_fn
+            devices.empty_cache()
 
     def train_step(self, x_train: Any, y_train: Any) -> Dict[str, float]:
         """
@@ -278,14 +285,14 @@ class Manager(_Manager[Module]):
         try:
             summary["loss"] = float(self.compiled_losses.result.detach())
         except Exception as e:
-            raise RuntimeError("Cannot fetch loss.") from e
+            raise errors.LossError() from e
         for name, fn in self.metric_fns.items():
             if name.startswith("val_"):
                 continue
             try:
                 summary[name] = float(fn.result.detach())
             except Exception as metric_error:
-                runtime_error = RuntimeError(f"Cannot fetch metric '{name}'.")
+                runtime_error = errors.MetricError(name)
                 raise runtime_error from metric_error
         return summary
 

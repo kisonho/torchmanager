@@ -54,7 +54,7 @@ class Metric(torch.nn.Module):
 
         # call
         m: torch.Tensor = super().__call__(input, target)
-        self._results.append(m.unsqueeze(0).detach())
+        self._results.append(m.unsqueeze(0).cpu().detach())
         return m
 
     def forward(self, input: Any, target: Any) -> torch.Tensor:

@@ -114,13 +114,16 @@ class KLDiv(Loss):
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # softmax input and target
         if self._t is not None:
-            input /= self._t
-            target /= self._t
-            input = input.softmax(dim=1).log()
-            target = target if self.log_target else target.softmax(dim=1)
+            temperatured_input = input / self._t
+            temperatured_target = target / self._t
+            temperatured_input = temperatured_input.softmax(dim=1).log()
+            temperatured_target = temperatured_target if self.log_target else target.softmax(dim=1)
+        else:
+            temperatured_input = input
+            temperatured_target = target
 
         # calculate kd-div loss
-        loss = super().forward(input, target)
+        loss = super().forward(temperatured_input, temperatured_target)
 
         # temperature control for knowledge distillation
         if self._t is not None:

@@ -110,6 +110,12 @@ class MultiLosses(Loss):
         assert isinstance(loss, torch.Tensor), _raise(TypeError("The total loss is not a valid `torch.Tensor`."))
         return loss
 
+    def reset(self) -> None:
+        for fn in self.losses:
+            assert isinstance(fn, Loss), _raise(TypeError(f"Function {fn} is not a Loss object."))
+            fn.reset()
+        return super().reset()
+
 
 class ParallelLoss(Loss):
     """
@@ -122,20 +128,15 @@ class ParallelLoss(Loss):
         - result: A `torch.Tensor` of current result
         - results: A `torch.Tensor` of concatenated results
     """
-    __paralleled_loss: torch.nn.DataParallel
+    _metric_fn: torch.nn.DataParallel
     module: Loss
 
-    @property
-    def _paralleled_loss(self) -> torch.nn.DataParallel:
-        return self.__paralleled_loss
-
     def __init__(self, module: Loss, device_ids: Optional[List[int]] = None, output_device: Optional[torch.device] = None, dim: int = 0) -> None:
-        super().__init__()
-        self.__paralleled_loss = torch.nn.DataParallel(module, device_ids, output_device, dim=dim)
+        super().__init__(torch.nn.DataParallel(module, device_ids, output_device, dim=dim))
         self.module = module
 
-    def forward(self, *inputs: Any, **kwargs: Any) -> torch.Tensor:
-        loss: torch.Tensor = self._paralleled_loss(*inputs, **kwargs)
+    def forward(self, input: Any, target: Any) -> torch.Tensor:
+        loss: torch.Tensor = super().forward(input, target)
         return loss.mean()
 
     def reset(self) -> None:
