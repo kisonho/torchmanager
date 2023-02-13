@@ -1,4 +1,4 @@
-import numpy as np, random, time, torch
+import numpy as np, random, torch
 
 from torchmanager_core import devices
 
