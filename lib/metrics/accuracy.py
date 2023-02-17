@@ -1,7 +1,7 @@
 from torchmanager_core import torch, deprecated
 from torchmanager_core.typing import Optional
 
-from .metric import Metric
+from .metric import Metric, Reduction
 
 
 class Accuracy(Metric):
@@ -72,8 +72,21 @@ class MAE(Metric):
 
     * extends: `.metrics.Metric`
     """
+    reduction: Reduction
+
+    def __init__(self, reduction: Reduction = Reduction.MEAN, target: Optional[str] = None) -> None:
+        super().__init__(target=target)
+        self.reduction = reduction
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        # calculate MAE
         error = input - target
         error = error.abs()
-        return error.mean()
+
+        # error reduction
+        if self.reduction == Reduction.MEAN:
+            return error.mean()
+        elif self.reduction == Reduction.SUM:
+            return error.sum()
+        else:
+            return error

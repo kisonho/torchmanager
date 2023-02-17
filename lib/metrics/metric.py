@@ -1,5 +1,11 @@
 from torchmanager_core import torch, _raise
-from torchmanager_core.typing import Any, Callable, List, Optional
+from torchmanager_core.typing import Any, Callable, Enum, List, Optional
+
+
+class Reduction(Enum):
+    NONE = 0
+    MEAN = 1
+    SUM = 2
 
 
 class Metric(torch.nn.Module):

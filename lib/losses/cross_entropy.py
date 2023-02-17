@@ -117,7 +117,9 @@ class KLDiv(Loss):
             temperatured_input = input / self._t
             temperatured_target = target / self._t
             temperatured_input = temperatured_input.softmax(dim=1).log()
+            temperatured_input = temperatured_input.nan_to_num(0)
             temperatured_target = temperatured_target if self.log_target else target.softmax(dim=1)
+            temperatured_target = temperatured_target.nan_to_num(0)
         else:
             temperatured_input = input
             temperatured_target = target
