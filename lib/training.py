@@ -262,7 +262,7 @@ class Manager(_Manager[Module]):
             self.loss_fn = self.raw_loss_fn.to(cpu) if self.raw_loss_fn is not None else self.raw_loss_fn
             devices.empty_cache()
 
-    @deprecated("1.0.2", "1.2.0")
+    @deprecated("v1.0.2", "v1.2.0")
     def train(self, *args: Any, **kwargs: Any) -> Dict[str, float]:
         """The single training step for an epoch"""
         return NotImplemented
