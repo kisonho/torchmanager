@@ -2,8 +2,8 @@ import functools
 from .view import warnings
 
 API: str = "v1.1"
-CURRENT: str = "v1.1b10"
-DESCRIPTION: str = "PyTorch Training Manager v1.1 (Beta 10)"
+CURRENT: str = "v1.1"
+DESCRIPTION: str = "PyTorch Training Manager v1.1"
 
 class VersionError(SystemError):
     def __init__(self, method_name: str, maximum_supported_version: str) -> None:
@@ -15,7 +15,7 @@ def deprecated(target_version: str, removing_version: str):
 
     - Parameters:
         - target_version: A `str` of version for the deprecation
-        - remove_version: A `str` of version for removing
+        - removing_version: A `str` of version for removing
     '''
     # define wrapping function
     def wrapping_fn(fn):
