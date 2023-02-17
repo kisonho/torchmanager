@@ -1,6 +1,7 @@
 import functools
 from .view import warnings
 
+API: str = "v1.1"
 CURRENT: str = "v1.1b10"
 DESCRIPTION: str = "PyTorch Training Manager v1.1 (Beta 10)"
 

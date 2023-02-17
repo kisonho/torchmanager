@@ -1,6 +1,7 @@
-from torchmanager_core import torch, _raise, VERSION as CURRENT_VERSION
+from torchmanager_core import torch, _raise, API_VERSION, VERSION as CURRENT_VERSION
 from torchmanager_core.typing import Any, Collection, Dict, Generic, Module, Optional, OrderedDict, Self, Tuple, Union
 
+from .compatibility import convert
 from .losses import Loss, MultiLosses, MultiOutputsLosses, ParallelLoss
 from .metrics import Metric
 from .train import Checkpoint
@@ -152,6 +153,12 @@ class BaseManager(Generic[Module]):
                 manager.loss_fn = None
         else:
             raise TypeError(f"The saved checkpoint contains a model with type of {type(ckpt.model)} that cannot be recoverred to a `Manager`.")
+        
+        # convert manager version
+        if not hasattr(manager, "version"):
+            manager = convert(manager)
+        elif manager.version < API_VERSION:
+            manager = convert(manager, manager.version)
         return manager
 
     def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> None:

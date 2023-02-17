@@ -88,19 +88,22 @@ class KLDiv(Loss):
 
     - Properties:
         - log_target: A `bool` flag of if `target` is in log space
+        - replace_nan: A `boolean` flag of if replacing nan results to zeros
     """
     _metric_fn: torch.nn.KLDivLoss
     _t: Optional[float]
+    replace_nan: bool
 
     @property
     def log_target(self) -> bool:
         return self._metric_fn.log_target
 
-    def __init__(self, *args: Any, softmax_temperature: Optional[float] = None, target: Optional[str] = None, weight: float = 1, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, replace_nan: bool = False, softmax_temperature: Optional[float] = None, target: Optional[str] = None, weight: float = 1, **kwargs: Any) -> None:
         """
         Constructor
 
         - Parameters:
+            - replace_nan: A `boolean` flag of if replacing nan results to zeros
             - softmax_temperature: An optional softmax temperature in `float`, softmax will not be applied if `None` is given.
             - target: An optional `str` of target name in `input` and `target` during direct calling
             - weight: A `float` of the loss weight
@@ -110,6 +113,7 @@ class KLDiv(Loss):
         self._t = softmax_temperature
         if self._t is not None:
             assert self._t > 0, _raise(ValueError(f"Temperature must be a positive number, got {self._t}."))
+        self.replace_nan = replace_nan
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # softmax input and target
@@ -117,12 +121,17 @@ class KLDiv(Loss):
             temperatured_input = input / self._t
             temperatured_target = target / self._t
             temperatured_input = temperatured_input.softmax(dim=1).log()
-            temperatured_input = temperatured_input.nan_to_num(0)
             temperatured_target = temperatured_target if self.log_target else target.softmax(dim=1)
-            temperatured_target = temperatured_target.nan_to_num(0)
         else:
             temperatured_input = input
             temperatured_target = target
+
+        # check nan
+        if self.replace_nan:
+            input_max_value = torch.finfo(input.dtype).max
+            target_max_value = torch.finfo(target.dtype).max
+            temperatured_input = temperatured_input.nan_to_num(0, posinf=input_max_value, neginf=-1)
+            temperatured_target = temperatured_target.nan_to_num(0, posinf=target_max_value, neginf=-1)
 
         # calculate kd-div loss
         loss = super().forward(temperatured_input, temperatured_target)
