@@ -117,7 +117,6 @@ class MultiLosses(Loss):
         return super().reset()
 
 
-@deprecated("v1.1.0", "v1.2.0")
 class MultiOutputsLosses(Loss):
     """
     A loss with multiple losses for multiple outputs
@@ -135,6 +134,7 @@ class MultiOutputsLosses(Loss):
     def losses(self) -> torch.nn.ModuleDict:
         return self.__losses
 
+    @deprecated("v1.1.0", "v1.2.0")
     def __init__(self, loss_fns: Dict[str, Loss]) -> None:
         super().__init__()
         assert len(loss_fns) > 0, "The loss dictionary should not be empty."
