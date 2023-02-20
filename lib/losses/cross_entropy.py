@@ -135,6 +135,10 @@ class KLDiv(Loss):
 
         # calculate kd-div loss
         loss = super().forward(temperatured_input, temperatured_target)
+        
+        # check nan
+        if self.replace_nan:
+            loss = loss.nan_to_num(0)
 
         # temperature control for knowledge distillation
         if self._t is not None:
