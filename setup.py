@@ -4,7 +4,7 @@ from pathlib import Path
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
-setup(name='torchmanager-nightly',
+setup(name='torchmanager',
     version="v1.1",
     description="PyTorch Training Manager v1.1",
     long_description=long_description,

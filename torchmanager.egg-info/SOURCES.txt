@@ -15,6 +15,7 @@ core/view/__init__.py
 core/view/protocols.py
 lib/__init__.py
 lib/basic.py
+lib/compatibility.py
 lib/testing.py
 lib/training.py
 lib/callbacks/__init__.py
@@ -42,8 +43,8 @@ lib/metrics/metrics.py
 lib/train/__init__.py
 lib/train/checkpoint.py
 lib/train/learning_rate.py
-torchmanager_nightly.egg-info/PKG-INFO
-torchmanager_nightly.egg-info/SOURCES.txt
-torchmanager_nightly.egg-info/dependency_links.txt
-torchmanager_nightly.egg-info/requires.txt
-torchmanager_nightly.egg-info/top_level.txt
+torchmanager.egg-info/PKG-INFO
+torchmanager.egg-info/SOURCES.txt
+torchmanager.egg-info/dependency_links.txt
+torchmanager.egg-info/requires.txt
+torchmanager.egg-info/top_level.txt
