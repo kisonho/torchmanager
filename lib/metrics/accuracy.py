@@ -1,7 +1,7 @@
 from torchmanager_core import torch, deprecated
 from torchmanager_core.typing import Optional
 
-from .metric import Metric
+from .metric import Metric, Reduction
 
 
 class Accuracy(Metric):
@@ -10,9 +10,19 @@ class Accuracy(Metric):
 
     * extends: `.metric.Metric`
     """
+    reduction: Reduction
+
+    def __init__(self, reduction: Reduction = Reduction.MEAN, target: Optional[str] = None) -> None:
+        super().__init__(target=target)
+        self.reduction = reduction
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        return input.eq(target).to(torch.float32).mean()
+        if self.reduction == Reduction.MEAN:
+            return input.eq(target).to(torch.float32).mean()
+        elif self.reduction == Reduction.SUM:
+            return input.eq(target).to(torch.float32).sum()
+        else:
+            return input.eq(target)
 
 
 class SparseCategoricalAccuracy(Accuracy):
@@ -61,9 +71,32 @@ class MAE(Metric):
     The Mean Absolute Error metric
 
     * extends: `.metrics.Metric`
+
+    - Properties:
+        - reduction: A `.loss.Reduction` of reduction method
     """
+    reduction: Reduction
+
+    def __init__(self, reduction: Reduction = Reduction.MEAN, target: Optional[str] = None) -> None:
+        """
+        Constructor
+
+        - Parameters:
+            - reduction: A `.loss.Reduction` of reduction method
+            - target: An optional `str` of target name in `input` and `target` during direct calling
+        """
+        super().__init__(target=target)
+        self.reduction = reduction
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        # calculate MAE
         error = input - target
         error = error.abs()
-        return error.mean()
+
+        # error reduction
+        if self.reduction == Reduction.MEAN:
+            return error.mean()
+        elif self.reduction == Reduction.SUM:
+            return error.sum()
+        else:
+            return error
