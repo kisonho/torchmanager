@@ -1,7 +1,6 @@
-from torchmanager_core import os
+from torchmanager_core import os, view
 from torchmanager_core.typing import Any, Dict, Generic, List, TypeVar, Union
 from torchmanager_core.protocols import MonitorType, StateDictLoadable
-from torchmanager_core.view import logging
 
 from .callback import Callback
 from .ckpt import BestCheckpoint, LastCheckpoint
@@ -58,20 +57,14 @@ class Experiment(Callback, Generic[T]):
         # initialize logging
         log_file = os.path.basename(experiment.replace(".exp", ".log"))
         log_path = os.path.join(experiment, log_file)
-        logger = logging.getLogger("torchmanager")
-        logger.handlers.clear()
-        logger.setLevel(logging.INFO)
-        file_handler = logging.FileHandler(log_path)
-        formatter = logging.Formatter("%(message)s")
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
+        formatter = view.set_log_path(log_path)
 
         # initialize console
         if show_verbose:
-            console = logging.StreamHandler()
-            console.setLevel(logging.INFO)
+            console = view.logging.StreamHandler()
+            console.setLevel(view.logging.INFO)
             console.setFormatter(formatter)
-            logger.addHandler(console)
+            view.logger.addHandler(console)
 
     def on_train_start(self, initial_epoch: int = 0) -> None:
         for best_ckpt in self.best_ckpts:
