@@ -28,6 +28,7 @@ class MSE(Loss):
         mse = torch.nn.MSELoss(reduction="none")
         super().__init__(mse, target=target, weight=weight)
         self.reduction = reduction
+        self.replace_nan = replace_nan
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # calculate mse loss
