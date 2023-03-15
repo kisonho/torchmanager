@@ -1,7 +1,6 @@
 from torch.utils.data import Dataset as _Dataset, DataLoader, IterableDataset
-from torchmanager_core import abc, devices, math, os, torch
+from torchmanager_core import abc, devices, math, os, torch, _raise
 from torchmanager_core.typing import Any, Callable, Iterator, Sequence, TypeVar
-from torchmanager_core.view import warnings
 
 T = TypeVar("T")
 
@@ -163,8 +162,7 @@ def batched(fn: Callable[..., _Dataset]):
 
         # load dataset
         loaded_dataset = fn(*args, **kwargs)
-        if isinstance(loaded_dataset, Dataset):
-            warnings.warn("The loaded dataset is a `torchmanager.data.Dataset` which has already been wrapped with batch loader during iteration.", RuntimeWarning)
+        assert isinstance(loaded_dataset, Dataset), _raise(TypeError("The loaded dataset is a `torchmanager.data.Dataset` which has already been wrapped with batch loader during iteration."))
         data_loader = DataLoader(loaded_dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last, pin_memory=pin_memory, num_workers=cpu_count, pin_memory_device=f"{targeted_devices[0].type}:{targeted_devices.index}")
         return data_loader
     return wrapped_fn
