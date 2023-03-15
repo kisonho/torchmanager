@@ -18,13 +18,13 @@ class Configs(argparse.Namespace):
     """
     experiment: str
 
-    def __init__(self, experiment: str = NotImplemented, **kwargs: Any) -> None:
+    def __init__(self, experiment: str = "test.exp", **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.experiment = experiment if experiment.endswith(".exp") else f"{experiment}.exp"
+        self.experiment = experiment
 
     def _show_settings(self) -> None:
         view.logger.info("-----------Settings------------")
-        view.logger.info(f"Experiments {self.experiment}")
+        view.logger.info(f"Experiment name: {self.experiment}")
         self.show_settings()
         view.logger.info("----------Environments----------")
         self.show_environments()
@@ -34,21 +34,24 @@ class Configs(argparse.Namespace):
         self.experiment = self.experiment if self.experiment.endswith(".exp") else f"{self.experiment}.exp"
 
     @classmethod
-    def from_arguments(cls):
+    def from_arguments(cls, *arguments: str):
         parser = cls.get_arguments()
         assert isinstance(parser, argparse.ArgumentParser), "Get arguments should be finished by returning an `ArgumentParser` instead of an `_ArgumentGroup`."
-        configs = parser.parse_args(namespace=cls())
+        configs = parser.parse_args(arguments, namespace=cls())
         configs.format_arguments()
 
         # initialize logging
+        log_dir = os.path.join("experiments", configs.experiment)
+        os.makedirs(log_dir, exist_ok=True)
         log_file = os.path.basename(configs.experiment.replace(".exp", ".log"))
-        log_path = os.path.join(configs.experiment, log_file)
+        log_path = os.path.join(log_dir, log_file)
         view.set_log_path(log_path=log_path)
+        configs._show_settings()
         return configs
 
     @staticmethod
     def get_arguments(parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup] = argparse.ArgumentParser()) -> Union[argparse.ArgumentParser, argparse._ArgumentGroup]:
-        parser.add_argument("-exp", "--experiments", type=str, default="test.exp")
+        parser.add_argument("-exp", "--experiment", type=str, default="test.exp", help="The name of experiment")
         return parser
     
     def show_environments(self) -> None:
