@@ -31,6 +31,10 @@ class Dataset(IterableDataset[T], abc.ABC):
         - device: A `torch.device` for the data to be pinned during iteration
         - drop_last: A `bool` flag of if drop the last data that not enought for the batch size
         - shuffle: A `bool` flag of if shuffling the data
+
+    - Methods to implement:
+        - unbatched_len: A property method that returns the total length of unbatched dataset
+        - __get_item__: The built in method to get items by index (as in `torch.utils.data.Dataset`)
     """
 
     __batch_size: int
