@@ -1,6 +1,6 @@
 *.pyc
 *__pycache__*
 *.DS_Store
-test*.py
+tests/*
 torchmanager_core
 *Icon*
