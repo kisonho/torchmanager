@@ -97,11 +97,12 @@ class Dataset(IterableDataset[T], abc.ABC):
         device = self.device
 
         # yield data
-        data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=cpu_count, pin_memory=(device == devices.CPU))
+        data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=cpu_count, pin_memory=(device != devices.CPU), pin_memory_device=str(self.device))
         for data in data_loader:
             yield self.unpack_data(data)
 
     def __len__(self) -> int:
+        """Returns the batched length"""
         if self.drop_last:
             return int(self.unbatched_len / self.batch_size)
         else:
@@ -162,7 +163,7 @@ def batched(fn: Callable[..., _Dataset]):
 
         # load dataset
         loaded_dataset = fn(*args, **kwargs)
-        assert isinstance(loaded_dataset, Dataset), _raise(TypeError("The loaded dataset is a `torchmanager.data.Dataset` which has already been wrapped with batch loader during iteration."))
+        assert not isinstance(loaded_dataset, Dataset), _raise(RuntimeError("The loaded dataset is a `torchmanager.data.Dataset` which has already been wrapped with batch loader during iteration."))
         data_loader = DataLoader(loaded_dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last, pin_memory=pin_memory, num_workers=cpu_count, pin_memory_device=f"{targeted_devices[0].type}:{targeted_devices.index}")
         return data_loader
     return wrapped_fn
