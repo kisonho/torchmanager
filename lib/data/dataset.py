@@ -1,18 +1,18 @@
-from torch.utils.data import Dataset as _Dataset, DataLoader, IterableDataset
+from torch.utils.data import Dataset as _Dataset, DataLoader
 from torchmanager_core import abc, devices, math, os, torch, _raise
 from torchmanager_core.typing import Any, Callable, Iterator, Sequence, TypeVar
 
 T = TypeVar("T")
 
 
-class Dataset(IterableDataset[T], abc.ABC):
+class Dataset(_Dataset[T], abc.ABC):
     """
     A dataset that iterates with batch size
 
-    * extends: `IterableDataset`
+    * extends: `torch.utils.data.Dataset`
     * implements: `typing.Collection`
     * Abstract class
-    * Used as a combination of `torch.utils.data.IterableDataset` and `torch.utils.data.DataLoader`
+    * Used as a combination of `torch.utils.data.Dataset` and `torch.utils.data.DataLoader`
 
     >>> from torchmanager import Manager
     >>> class SomeDataset(Dataset):
