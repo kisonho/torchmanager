@@ -53,6 +53,11 @@ class Manager(BaseManager[Module]):
             use_multi_gpus = False
         devices.set_default(target_devices[0])
 
+        # initialize
+        if len(dataset) == 0:
+            return []
+        progress_bar = view.tqdm(total=len(dataset)) if show_verbose else None
+
         # move model
         try:
             if use_multi_gpus and not isinstance(self.model, torch.nn.parallel.DataParallel):
@@ -61,9 +66,6 @@ class Manager(BaseManager[Module]):
             # initialize predictions
             self.model.eval()
             predictions: List[Any] = []
-            if len(dataset) == 0:
-                return predictions
-            progress_bar = view.tqdm(total=len(dataset)) if show_verbose else None
             self.to(device)
 
             # loop the dataset
@@ -86,6 +88,11 @@ class Manager(BaseManager[Module]):
             runtime_error = errors.PredictionError()
             raise runtime_error from error
         finally:
+            # end epoch training
+            if progress_bar is not None:
+                progress_bar.close()
+
+            # empty cache
             self.model = self.raw_model.to(cpu)
             devices.empty_cache()
 
