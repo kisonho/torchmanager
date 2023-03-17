@@ -103,8 +103,13 @@ class Dataset(_Dataset[T], abc.ABC):
             cpu_count = 0
         device = self.device
 
+        # initialize loader
+        if device != devices.CPU:
+            data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=cpu_count, pin_memory=True, pin_memory_device=str(self.device))
+        else:
+            data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=cpu_count)
+
         # yield data
-        data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=cpu_count, pin_memory=(device != devices.CPU), pin_memory_device=str(self.device))
         for data in data_loader:
             yield self.unpack_data(data)
 
