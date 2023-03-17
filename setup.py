@@ -40,6 +40,7 @@ setup(name='torchmanager-nightly',
         'torchmanager_core.view': 'core/view',
     },
     install_requires=[
+        'shutil',
         'torch',
         'tqdm',
     ],

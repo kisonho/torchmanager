@@ -1,4 +1,4 @@
-from torchmanager_core import argparse, abc, os, torch, view
+from torchmanager_core import argparse, abc, os, shutil, torch, view
 from torchmanager_core.typing import Any, Union
 from torchmanager_core import VERSION
 
@@ -17,6 +17,7 @@ class Configs(argparse.Namespace):
         - show_settings: Printout current configurations, `torchmanager_core.view.logger` is recommended.
     """
     experiment: str
+    replace_experiment: bool
 
     def __init__(self, experiment: str = "test.exp", **kwargs: Any) -> None:
         super().__init__(**kwargs)
@@ -45,6 +46,8 @@ class Configs(argparse.Namespace):
 
         # initialize logging
         log_dir = os.path.join("experiments", configs.experiment)
+        if configs.replace_experiment and os.path.exists(log_dir) and os.path.isdir(log_dir):
+            shutil.rmtree(log_dir)
         os.makedirs(log_dir, exist_ok=True)
         log_file = os.path.basename(configs.experiment.replace(".exp", ".log"))
         log_path = os.path.join(log_dir, log_file)
@@ -55,6 +58,7 @@ class Configs(argparse.Namespace):
     @staticmethod
     def get_arguments(parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup] = argparse.ArgumentParser()) -> Union[argparse.ArgumentParser, argparse._ArgumentGroup]:
         parser.add_argument("-exp", "--experiment", type=str, default="test.exp", help="The name of experiment")
+        parser.add_argument("--replace_experiment", action="store_true", default=False, help="The flag to replace given experiment if exists.")
         return parser
     
     def show_environments(self) -> None:
