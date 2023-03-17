@@ -37,7 +37,10 @@ class Configs(argparse.Namespace):
     def from_arguments(cls, *arguments: str):
         parser = cls.get_arguments()
         assert isinstance(parser, argparse.ArgumentParser), "Get arguments should be finished by returning an `ArgumentParser` instead of an `_ArgumentGroup`."
-        configs = parser.parse_args(arguments, namespace=cls())
+        if len(arguments) > 0:
+            configs = parser.parse_args(arguments, namespace=cls())
+        else:
+            configs = parser.parse_args(namespace=cls())
         configs.format_arguments()
 
         # initialize logging
