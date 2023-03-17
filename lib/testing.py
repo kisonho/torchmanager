@@ -26,12 +26,6 @@ class Manager(BaseManager[Module]):
     model: Union[Module, torch.nn.parallel.DataParallel]
 
     @property
-    @deprecated("v1.1.0", "v1.2.0")
-    def compiled_losses(self) -> Resulting:
-        assert self.loss_fn is not None, _raise(NotImplementedError("The manager is not compiled properly, `loss_fn` is missing."))
-        return self.loss_fn
-
-    @property
     def compiled_metrics(self) -> Dict[str, Resulting]:
         return {name: m for name, m in self.metric_fns.items() if "loss" not in name}
 
@@ -56,7 +50,11 @@ class Manager(BaseManager[Module]):
         # initialize
         if len(dataset) == 0:
             return []
-        progress_bar = view.tqdm(total=len(dataset)) if show_verbose else None
+        elif isinstance(dataset, Dataset):
+            dataset_len = dataset.batched_len
+        else:
+            dataset_len = len(dataset)
+        progress_bar = view.tqdm(total=dataset_len) if show_verbose else None
 
         # move model
         try:
@@ -121,7 +119,11 @@ class Manager(BaseManager[Module]):
         # initialize progress bar
         if len(dataset) == 0:
             return {}
-        progress_bar = view.tqdm(total=len(dataset)) if show_verbose else None
+        elif isinstance(dataset, Dataset):
+            dataset_len = dataset.batched_len
+        else:
+            dataset_len = len(dataset)
+        progress_bar = view.tqdm(total=dataset_len) if show_verbose else None
 
         # reset loss function and metrics
         if self.loss_fn is not None:

@@ -62,6 +62,13 @@ class Dataset(_Dataset[T], abc.ABC):
     def unbatched_len(self) -> int:
         return NotImplemented
 
+    @property
+    def batched_len(self) -> int:
+        if self.drop_last:
+            return int(self.unbatched_len / self.batch_size)
+        else:
+            return math.ceil(self.unbatched_len / self.batch_size)
+
     def __init__(self, batch_size: int, device: torch.device = devices.CPU, drop_last: bool = False, shuffle: bool = False) -> None:
         """
         Constructor
@@ -102,11 +109,8 @@ class Dataset(_Dataset[T], abc.ABC):
             yield self.unpack_data(data)
 
     def __len__(self) -> int:
-        """Returns the batched length"""
-        if self.drop_last:
-            return int(self.unbatched_len / self.batch_size)
-        else:
-            return math.ceil(self.unbatched_len / self.batch_size)
+        """Returns the unbatched length"""
+        return self.unbatched_len
 
     @staticmethod
     def unpack_data(data: Any) -> T:
