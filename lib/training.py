@@ -81,7 +81,8 @@ class Manager(_Manager[Module]):
             m.reset()
 
         # initialize progress bar
-        iterations = len(dataset) if iterations is None else iterations
+        dataset_len = dataset.batched_len if isinstance(dataset, Dataset) else len(dataset)
+        iterations = dataset_len if iterations is None else iterations
         progress_bar = view.tqdm(total=iterations) if show_verbose else None
 
         try:
@@ -150,6 +151,7 @@ class Manager(_Manager[Module]):
         - Returns: A trained `torch.nn.Module`
         """
         # arguments checking
+        dataset_len = training_dataset.batched_len if isinstance(training_dataset, Dataset) else len(training_dataset)
         assert self.compiled is True, errors._raise(ValueError("Manager has not yet been compiled. Either loss_fn or optimizer, or both, are not given."))
         if epochs is not None:
             assert epochs > 0, errors._raise(ValueError(f"The epochs must be a positive integer, got {epochs}."))
@@ -158,7 +160,7 @@ class Manager(_Manager[Module]):
             assert iterations is not None, errors._raise(ValueError(f"The iterations must be given if epochs is not given."))
             assert iterations > 0, errors._raise(ValueError(f"The iterations must be a positive integer, got {iterations}."))
             assert epochs is None, errors._raise(ValueError(f"The epochs must be given as `None` when iterations is given, got {epochs}."))
-            epochs = math.ceil(iterations / len(training_dataset))
+            epochs = math.ceil(iterations / dataset_len)
 
         # initialize initial epoch
         if initial_epoch is not None:
@@ -205,7 +207,7 @@ class Manager(_Manager[Module]):
                 for c in callbacks_list:
                     c.on_epoch_start(self.current_epoch)
                 if iterations is not None:
-                    batch_iterations = iterations if len(training_dataset) < iterations else iterations
+                    batch_iterations = iterations if dataset_len < iterations else iterations
                 else:
                     batch_iterations = None
 

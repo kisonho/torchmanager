@@ -50,7 +50,11 @@ class Manager(BaseManager[Module]):
         # initialize
         if len(dataset) == 0:
             return []
-        progress_bar = view.tqdm(total=len(dataset)) if show_verbose else None
+        elif isinstance(dataset, Dataset):
+            dataset_len = dataset.batched_len
+        else:
+            dataset_len = len(dataset)
+        progress_bar = view.tqdm(total=dataset_len) if show_verbose else None
 
         # move model
         try:
@@ -115,7 +119,11 @@ class Manager(BaseManager[Module]):
         # initialize progress bar
         if len(dataset) == 0:
             return {}
-        progress_bar = view.tqdm(total=len(dataset)) if show_verbose else None
+        elif isinstance(dataset, Dataset):
+            dataset_len = dataset.batched_len
+        else:
+            dataset_len = len(dataset)
+        progress_bar = view.tqdm(total=dataset_len) if show_verbose else None
 
         # reset loss function and metrics
         if self.loss_fn is not None:
