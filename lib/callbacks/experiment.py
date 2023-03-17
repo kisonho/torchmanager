@@ -56,7 +56,7 @@ class Experiment(Callback, Generic[T]):
 
         # initialize logging
         log_file = os.path.basename(experiment.replace(".exp", ".log"))
-        log_path = os.path.join(experiment, log_file)
+        log_path = os.path.join("experiment", experiment, log_file)
         formatter = view.set_log_path(log_path)
 
         # initialize console
