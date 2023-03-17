@@ -56,8 +56,10 @@ class Experiment(Callback, Generic[T]):
             self.best_ckpts.append(best_ckpt)
 
         # initialize logging
+        log_dir = os.path.join("experiment", experiment)
         log_file = os.path.basename(experiment.replace(".exp", ".log"))
-        log_path = os.path.join("experiments", experiment, log_file)
+        log_path = os.path.join(log_dir, log_file)
+        os.makedirs(log_dir, exist_ok=True)
         logger = logging.getLogger("torchmanager")
         logger.handlers.clear()
         logger.setLevel(logging.INFO)
