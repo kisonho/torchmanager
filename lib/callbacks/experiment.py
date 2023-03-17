@@ -57,7 +57,7 @@ class Experiment(Callback, Generic[T]):
 
         # initialize logging
         log_file = os.path.basename(experiment.replace(".exp", ".log"))
-        log_path = os.path.join(experiment, log_file)
+        log_path = os.path.join("experiments", experiment, log_file)
         logger = logging.getLogger("torchmanager")
         logger.handlers.clear()
         logger.setLevel(logging.INFO)
