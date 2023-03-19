@@ -1,5 +1,5 @@
 from torchmanager_core import torch
-from torchmanager_core.typing import Optional, Self
+from torchmanager_core.typing import List, Optional, Self
 from torchvision.models import inception_v3
 
 from .metric import Metric
@@ -18,11 +18,11 @@ class FID(Metric):
     """
     feature_extractor: torch.nn.Module
     """A `torch.nn.Module` to extract the features"""
-    input_features: list[torch.Tensor]
+    input_features: List[torch.Tensor]
     """A `list` of current features for generated images that extracted in `torch.Tensor`"""
     return_when_forwarding: bool
     """A `bool` flag of if returning results when calculating the metrics, a `torch.nan` will be returned if set to `False` during forwarding"""
-    target_features: list[torch.Tensor]
+    target_features: List[torch.Tensor]
     """A `list` of current features for real images that extracted in `torch.Tensor`"""
 
     @property
