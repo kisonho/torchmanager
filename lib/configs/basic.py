@@ -23,14 +23,6 @@ class Configs(argparse.Namespace):
         super().__init__(**kwargs)
         self.experiment = experiment
 
-    def _show_settings(self) -> None:
-        view.logger.info("-----------Settings------------")
-        view.logger.info(f"Experiment name: {self.experiment}")
-        self.show_settings()
-        view.logger.info("----------Environments----------")
-        self.show_environments()
-        view.logger.info("--------------------------------")
-
     def format_arguments(self) -> None:
         self.experiment = self.experiment if self.experiment.endswith(".exp") else f"{self.experiment}.exp"
 
@@ -52,7 +44,14 @@ class Configs(argparse.Namespace):
         log_file = os.path.basename(configs.experiment.replace(".exp", ".log"))
         log_path = os.path.join(log_dir, log_file)
         view.set_log_path(log_path=log_path)
-        configs._show_settings()
+
+        # show configs summarize
+        view.logger.info("-----------Settings------------")
+        view.logger.info(f"Experiment name: {configs.experiment}")
+        configs.show_settings()
+        view.logger.info("----------Environments----------")
+        configs.show_environments()
+        view.logger.info("--------------------------------")
         return configs
 
     @staticmethod
