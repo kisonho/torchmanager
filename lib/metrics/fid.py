@@ -1,6 +1,5 @@
 from torchmanager_core import torch
 from torchmanager_core.typing import List, Optional, Self
-from torchvision.models import inception_v3
 
 from .metric import Metric
 
@@ -49,7 +48,7 @@ class FID(Metric):
         Constructor
 
         - Parameters:
-            - feature_extractor: An optional `torch.nn.Module` to extract features, a pre-trained InceptionV3 will be used if not given
+            - feature_extractor: An optional `torch.nn.Module` to extract features, a pre-trained InceptionV3 (torchvision package required) will be used if not given
             - return_when_forwarding: A `bool` flag of if returning results when calculating the metrics, a `torch.nan` will be returned if set to `False` during forwarding
             - target: A `str` of target name in `input` and `target` during direct calling
         """
@@ -60,6 +59,7 @@ class FID(Metric):
 
         # initialize inception model
         if feature_extractor is None:
+            from torchvision.models import inception_v3
             self.feature_extractor = inception_v3(pretrained=True, transform_input=False)
             self.feature_extractor.fc = torch.nn.Identity()  # Remove last layer # type: ignore
             self.feature_extractor.eval()
