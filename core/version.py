@@ -2,8 +2,8 @@ import functools
 from .view import warnings
 
 API: str = "v1.2"
-CURRENT: str = "v1.2a5"
-DESCRIPTION: str = "PyTorch Training Manager v1.2 (Alpha 5)"
+CURRENT: str = "v1.2a6"
+DESCRIPTION: str = "PyTorch Training Manager v1.2 (Alpha 6)"
 
 class VersionError(SystemError):
     def __init__(self, method_name: str, maximum_supported_version: str) -> None:
