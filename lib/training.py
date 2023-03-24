@@ -1,4 +1,3 @@
-from torch.nn.utils import clip_grad
 from torch.utils.data import DataLoader
 from torchmanager_core import devices, errors, math, torch, view, deprecated
 from torchmanager_core.protocols import Resulting
@@ -30,7 +29,6 @@ class Manager(_Manager[Module]):
         - compiled_optimizer: The `torch.optim.Optimizer` that must be exist
     """
     __current_epoch: int
-    clip_gradients: bool
 
     @property
     def current_epoch(self) -> int:
@@ -53,10 +51,9 @@ class Manager(_Manager[Module]):
         assert self.optimizer is not None, errors._raise(NotImplementedError("The manager is not compiled properly, `optimizer` is missing."))
         return self.optimizer
 
-    def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss]]] = None, metrics: Dict[str, Metric] = {}, clip_gradients: bool = False) -> None:
+    def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss]]] = None, metrics: Dict[str, Metric] = {}) -> None:
         super().__init__(model, optimizer, loss_fn, metrics)
         self.__current_epoch = 0
-        self.clip_gradients = clip_gradients
 
     def _train(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection], iterations: Optional[int] = None, device: torch.device = devices.CPU, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, callbacks_list: List[Callback] = []) -> Dict[str, float]:
         """
@@ -284,8 +281,6 @@ class Manager(_Manager[Module]):
         # backward pass
         self.compiled_optimizer.zero_grad()
         loss.backward()
-        if self.clip_gradients:
-            clip_grad.clip_grad_norm(self.model.parameters(), max_norm=1)
         self.compiled_optimizer.step()
 
         # summary result

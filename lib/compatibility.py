@@ -10,11 +10,8 @@ def convert(obj: T, from_version: Optional[str] = None) -> T:
     """
     Convert an object from old version of torchmanager to the latest one.
     """
-    # Return if None
-    if obj is None:
-        return obj
-
-    if from_version is None: # convert from 1.0 (from_version = None)
+    # convert from 1.0 (from_version = None)
+    if from_version is None and obj is not None:
         # convert KLDiv
         if isinstance(obj, KLDiv) and not hasattr(obj, "replace_nan"):
             obj.replace_nan = False
