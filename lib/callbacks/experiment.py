@@ -38,8 +38,8 @@ class Experiment(Callback, Generic[T]):
         # call super constructor
         experiment = os.path.normpath(experiment)
         if not experiment.endswith(".exp"): experiment += ".exp"
-        os.makedirs(experiment, exist_ok=True)
         experiment_dir = os.path.join("experiments", experiment)
+        os.makedirs(experiment_dir, exist_ok=True)
         log_dir = os.path.join(experiment_dir, "data")
         ckpt_path = os.path.join(experiment_dir, "checkpoints")
         
