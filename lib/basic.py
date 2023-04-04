@@ -153,9 +153,13 @@ class BaseManager(Generic[Module]):
         
         # convert manager version
         if not hasattr(manager, "version"):
-            manager = convert(manager)
+            manager.loss_fn = convert(manager.loss_fn)
+            for k in manager.metric_fns:
+                manager.metric_fns[k] = convert(manager.metric_fns[k])
         elif manager.version < API_VERSION:
-            manager = convert(manager, manager.version)
+            manager.loss_fn = convert(manager.loss_fn, from_version=manager.version)
+            for k in manager.metric_fns:
+                manager.metric_fns[k] = convert(manager.metric_fns[k], from_version=manager.version)
         return manager
 
     def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> None:

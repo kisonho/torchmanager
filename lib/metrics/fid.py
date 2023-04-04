@@ -39,12 +39,14 @@ class FID(Metric, Generic[Module]):
         # calculate mean and covariance
         mu_real = target.mean(0)
         mu_gen = input.mean(0)
-        sigma_real = target.cov()
-        sigma_gen = input.cov()
-        diff = mu_real - mu_gen
+        sigma_real = target.cov() / (target.shape[0] - 1)
+        sigma_gen = input.cov() / (input.shape[0] - 1)
 
         # Calculate the squared Euclidean distance between the means
-        return diff @ diff + torch.trace(sigma_real + sigma_gen - 2 * (sigma_real * sigma_gen).sqrt())
+        fid_score = (mu_real - mu_gen) ** 2
+        sigma = torch.trace(sigma_real + sigma_gen - 2 * (sigma_real @ sigma_gen).sqrt())
+        fid_score += sigma
+        return fid_score
 
     def __init__(self, feature_extractor: Optional[Module] = None, return_when_forwarding: bool = True, target: Optional[str] = None) -> None:
         """
@@ -79,7 +81,9 @@ class FID(Metric, Generic[Module]):
         """
         # get features]
         if self.feature_extractor is not None:
-            return self.feature_extractor(x)
+            features: torch.Tensor = self.feature_extractor(x)
+            features = features.squeeze(3).squeeze(2)
+            return features
         else:
             return x
     
