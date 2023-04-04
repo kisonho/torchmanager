@@ -1,5 +1,5 @@
 from torch.utils.data import DataLoader
-from torchmanager_core import devices, errors, math, torch, view, deprecated
+from torchmanager_core import devices, errors, math, torch, view
 from torchmanager_core.protocols import Resulting
 from torchmanager_core.typing import Any, Collection, Dict, List, Module, Optional, Self, Union
 
