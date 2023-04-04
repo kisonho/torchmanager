@@ -1,19 +1,18 @@
-from torch.utils.data import Dataset as _Dataset, DataLoader, IterableDataset
-from torchmanager_core import abc, devices, math, os, torch
+from torch.utils.data import Dataset as _Dataset, DataLoader
+from torchmanager_core import abc, devices, math, os, torch, _raise
 from torchmanager_core.typing import Any, Callable, Iterator, Sequence, TypeVar
-from torchmanager_core.view import warnings
 
 T = TypeVar("T")
 
 
-class Dataset(IterableDataset[T], abc.ABC):
+class Dataset(_Dataset[T], abc.ABC):
     """
     A dataset that iterates with batch size
 
-    * extends: `IterableDataset`
+    * extends: `torch.utils.data.Dataset`
     * implements: `typing.Collection`
     * Abstract class
-    * Used as a combination of `torch.utils.data.IterableDataset` and `torch.utils.data.DataLoader`
+    * Used as a combination of `torch.utils.data.Dataset` and `torch.utils.data.DataLoader`
 
     >>> from torchmanager import Manager
     >>> class SomeDataset(Dataset):
@@ -31,6 +30,10 @@ class Dataset(IterableDataset[T], abc.ABC):
         - device: A `torch.device` for the data to be pinned during iteration
         - drop_last: A `bool` flag of if drop the last data that not enought for the batch size
         - shuffle: A `bool` flag of if shuffling the data
+
+    - Methods to implement:
+        - unbatched_len: A property method that returns the total length of unbatched dataset
+        - __get_item__: The built in method to get items by index (as in `torch.utils.data.Dataset`)
     """
 
     __batch_size: int
@@ -58,6 +61,13 @@ class Dataset(IterableDataset[T], abc.ABC):
     @abc.abstractmethod
     def unbatched_len(self) -> int:
         return NotImplemented
+
+    @property
+    def batched_len(self) -> int:
+        if self.drop_last:
+            return int(self.unbatched_len / self.batch_size)
+        else:
+            return math.ceil(self.unbatched_len / self.batch_size)
 
     def __init__(self, batch_size: int, device: torch.device = devices.CPU, drop_last: bool = False, shuffle: bool = False) -> None:
         """
@@ -93,16 +103,19 @@ class Dataset(IterableDataset[T], abc.ABC):
             cpu_count = 0
         device = self.device
 
+        # initialize loader
+        if device != devices.CPU:
+            data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=cpu_count, pin_memory=True, pin_memory_device=str(self.device))
+        else:
+            data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=cpu_count)
+
         # yield data
-        data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=cpu_count, pin_memory=(device == devices.CPU))
         for data in data_loader:
             yield self.unpack_data(data)
 
     def __len__(self) -> int:
-        if self.drop_last:
-            return int(self.unbatched_len / self.batch_size)
-        else:
-            return math.ceil(self.unbatched_len / self.batch_size)
+        """Returns the unbatched length"""
+        return self.unbatched_len
 
     @staticmethod
     def unpack_data(data: Any) -> T:
@@ -159,8 +172,7 @@ def batched(fn: Callable[..., _Dataset]):
 
         # load dataset
         loaded_dataset = fn(*args, **kwargs)
-        if isinstance(loaded_dataset, Dataset):
-            warnings.warn("The loaded dataset is a `torchmanager.data.Dataset` which has already been wrapped with batch loader during iteration.", RuntimeWarning)
+        assert not isinstance(loaded_dataset, Dataset), _raise(RuntimeError("The loaded dataset is a `torchmanager.data.Dataset` which has already been wrapped with batch loader during iteration."))
         data_loader = DataLoader(loaded_dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last, pin_memory=pin_memory, num_workers=cpu_count, pin_memory_device=f"{targeted_devices[0].type}:{targeted_devices.index}")
         return data_loader
     return wrapped_fn
