@@ -34,7 +34,6 @@ class Configs(argparse.Namespace):
             configs = parser.parse_args(arguments, namespace=cls())
         else:
             configs = parser.parse_args(namespace=cls())
-        configs.format_arguments()
 
         # initialize logging
         log_dir = os.path.join("experiments", configs.experiment)
@@ -44,6 +43,7 @@ class Configs(argparse.Namespace):
         log_file = os.path.basename(configs.experiment.replace(".exp", ".log"))
         log_path = os.path.join(log_dir, log_file)
         view.set_log_path(log_path=log_path)
+        configs.format_arguments()
 
         # show configs summarize
         view.logger.info("-----------Settings------------")

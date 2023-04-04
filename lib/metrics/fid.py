@@ -34,8 +34,8 @@ class FID(Metric, Generic[Module]):
         # calculate mean and covariance
         mu_real = target.mean(0)
         mu_gen = input.mean(0)
-        sigma_real = target.cov()
-        sigma_gen = input.cov()
+        sigma_real = target.cov() / (target.shape[0] - 1)
+        sigma_gen = input.cov() / (input.shape[0] - 1)
 
         # Calculate the squared Euclidean distance between the means
         fid_score = (mu_real - mu_gen) ** 2
