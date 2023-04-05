@@ -41,12 +41,10 @@ class FID(Metric, Generic[Module]):
         mu_gen = input.mean(0)
         sigma_real = target.cov() / (target.shape[0] - 1)
         sigma_gen = input.cov() / (input.shape[0] - 1)
+        diff = mu_real - mu_gen
 
         # Calculate the squared Euclidean distance between the means
-        fid_score = (mu_real - mu_gen) ** 2
-        sigma = torch.trace(sigma_real + sigma_gen - 2 * (sigma_real @ sigma_gen).sqrt())
-        fid_score += sigma
-        return fid_score
+        return diff @ diff + torch.trace(sigma_real + sigma_gen - 2 * (sigma_real * sigma_gen).sqrt())
 
     def __init__(self, feature_extractor: Optional[Module] = None, return_when_forwarding: bool = True, target: Optional[str] = None) -> None:
         """
@@ -66,8 +64,8 @@ class FID(Metric, Generic[Module]):
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         input_features = self.forward_features(input)
         target_features = self.forward_features(target)
-        self.input_features += [f.unsqueeze(0).cpu().detach() for f in input_features]
-        self.target_features += [f.unsqueeze(0).cpu().detach() for f in target_features]
+        self.input_features += [input_features.cpu().detach()]
+        self.target_features += [target_features.cpu().detach()]
         return self.result if self.return_when_forwarding else torch.tensor(torch.nan)
 
     @torch.no_grad()
@@ -81,9 +79,7 @@ class FID(Metric, Generic[Module]):
         """
         # get features]
         if self.feature_extractor is not None:
-            features: torch.Tensor = self.feature_extractor(x)
-            features = features.squeeze(3).squeeze(2)
-            return features
+            return self.feature_extractor(x)
         else:
             return x
     
