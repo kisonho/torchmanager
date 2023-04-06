@@ -43,8 +43,7 @@ class FID(Metric, Generic[Module]):
         diff = mu_real - mu_gen
 
         # Calculate the squared Euclidean distance between the means
-        d_square = diff @ diff + torch.trace(sigma_real + sigma_gen - 2 * sqrtm)
-        return d_square.sqrt()
+        return diff @ diff + torch.trace(sigma_real + sigma_gen - 2 * sqrtm)
 
     def __init__(self, feature_extractor: Optional[Module] = None, return_when_forwarding: bool = True, target: Optional[str] = None) -> None:
         """
