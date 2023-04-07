@@ -19,7 +19,7 @@ class Histogram(Metric):
     def num_classes(self) -> int:
         return self.__num_classes
 
-    def __init__(self, num_classes: int, target: Optional[str] = None) -> None:
+    def __init__(self, num_classes: int, /, *, target: Optional[str] = None) -> None:
         """
         Constructor
 

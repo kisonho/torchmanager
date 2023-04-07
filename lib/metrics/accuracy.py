@@ -12,7 +12,7 @@ class Accuracy(Metric):
     """
     reduction: Reduction
 
-    def __init__(self, reduction: Reduction = Reduction.MEAN, target: Optional[str] = None) -> None:
+    def __init__(self, *, reduction: Reduction = Reduction.MEAN, target: Optional[str] = None) -> None:
         super().__init__(target=target)
         self.reduction = reduction
 
@@ -38,7 +38,7 @@ class SparseCategoricalAccuracy(Accuracy):
 
     _dim: int
 
-    def __init__(self, dim: int = -1, target: Optional[str] = None) -> None:
+    def __init__(self, dim: int = -1, *, target: Optional[str] = None) -> None:
         """
         Constructor
 
@@ -77,7 +77,7 @@ class MAE(Metric):
     """
     reduction: Reduction
 
-    def __init__(self, reduction: Reduction = Reduction.MEAN, target: Optional[str] = None) -> None:
+    def __init__(self, *, reduction: Reduction = Reduction.MEAN, target: Optional[str] = None) -> None:
         """
         Constructor
 

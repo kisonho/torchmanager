@@ -12,7 +12,7 @@ class InstanceIoU(ConfusionMetrics):
     * extends: `.conf_met.ConfusionMetrics`
     """
 
-    def __init__(self, num_classes: int, target: Optional[str] = None) -> None:
+    def __init__(self, num_classes: int, /, *, target: Optional[str] = None) -> None:
         super().__init__(num_classes, target=target)
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
@@ -36,7 +36,7 @@ class MeanIoU(Metric):
     _smooth: float
     _threshold: float
 
-    def __init__(self, dim: int = 1, smooth: float = 1e-4, threshold: float = 0, target: Optional[str] = None) -> None:
+    def __init__(self, dim: int = 1, smooth: float = 1e-4, threshold: float = 0, *, target: Optional[str] = None) -> None:
         """
         Constructor
 

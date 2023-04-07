@@ -2,7 +2,7 @@ import numpy as np, random, torch
 
 from .. import devices
 
-def freeze_seed(seed: int) -> None:
+def freeze_seed(seed: int, /) -> None:
     """
     Freeze random with given seed
 

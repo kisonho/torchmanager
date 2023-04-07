@@ -7,7 +7,7 @@ from .callbacks import Callback
 from .data import Dataset
 from .losses import Loss, ParallelLoss
 from .metrics import Metric
-from .train import Checkpoint, update_lr
+from .train import Checkpoint
 from .testing import Manager as _Manager
 
 
@@ -55,7 +55,7 @@ class Manager(_Manager[Module]):
         super().__init__(model, optimizer, loss_fn, metrics)
         self.__current_epoch = 0
 
-    def _train(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection], iterations: Optional[int] = None, device: torch.device = devices.CPU, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, callbacks_list: List[Callback] = []) -> Dict[str, float]:
+    def _train(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, iterations: Optional[int] = None, *, device: torch.device = devices.CPU, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, callbacks_list: List[Callback] = []) -> Dict[str, float]:
         """
         The single training step for an epoch
 
@@ -134,19 +134,18 @@ class Manager(_Manager[Module]):
         summary["loss"] = float(self.compiled_losses.result.detach())
         return summary
 
-    def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any], Collection], epochs: Optional[int] = None, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any], Collection]] = None, device: Optional[Union[torch.device, List[torch.device]]] = None, use_multi_gpus: bool = False, callbacks_list: List[Callback] = [], **kwargs) -> Module:
+    def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, epochs: Optional[int] = None, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any], Collection]] = None, callbacks_list: List[Callback] = [], *, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, device: Optional[Union[torch.device, List[torch.device]]] = None, use_multi_gpus: bool = False, **kwargs) -> Module:
         """
         Training algorithm
 
         - Parameters:
             - training_dataset: Any kind of training dataset in `torch.utils.data.DataLoader` or `.data.Dataset`
-            - epochs: An optional `int` number of training epochs
-            - iterations: An optional `int` number of training iterations
-            - lr_scheduelr: An optioanl `torch.optim.lr_scheduler._LRScheduler` to update the lr per epoch
+            - epochs: An optional `int` number of training epochs (`iterations` must be not given)
             - val_dataset: An optional validation `Any`
+            - callbacks_list: A `list` of callbacks in `Callback`
+            - iterations: An optional `int` number of training iterations (`epochs` must be not given)
             - device: An optional `torch.device` to test on if not using multi-GPUs or an optional default `torch.device` for testing otherwise
             - use_multi_gpus: A `bool` flag of if using multi gpus
-            - callbacks_list: A `list` of callbacks in `Callback`
             - **kwargs: Additional keyword arguments that will be passed to `train` method.
         - Returns: A trained `torch.nn.Module`
         """
@@ -177,8 +176,6 @@ class Manager(_Manager[Module]):
         if device == cpu and len(target_devices) < 2:
             use_multi_gpus = False
         devices.set_default(target_devices[0])
-        if lr_scheduler is not None:
-            view.warnings.warn("Parameter `lr_scheduler` has been deprecated after v1.1.0 and will be removed from v1.2.0, use `.callbacks.LrScheduler` callback instead.", DeprecationWarning)
         for c in callbacks_list:
             c.on_train_start(initial_epoch)
 
@@ -228,11 +225,6 @@ class Manager(_Manager[Module]):
                         for c in callbacks_list:
                             c.on_train_end(self.raw_model)
                         return self.raw_model
-
-                # step lr scheduler
-                if lr_scheduler is not None:
-                    lr_summary = update_lr(lr_scheduler)
-                    summary.update(lr_summary)
 
                 # print summary info
                 val_message = f"Epoch {self.current_epoch + 1}/{epochs}: "

@@ -55,7 +55,7 @@ class FID(Metric, Generic[Module]):
         # Calculate the squared Euclidean distance between the means
         return diff @ diff + torch.trace(sigma_real + sigma_gen - 2 * sigma)
 
-    def __init__(self, feature_extractor: Optional[Module] = None, return_when_forwarding: bool = True, target: Optional[str] = None) -> None:
+    def __init__(self, feature_extractor: Optional[Module] = None, *, return_when_forwarding: bool = True, target: Optional[str] = None) -> None:
         """
         Constructor
 
@@ -78,7 +78,7 @@ class FID(Metric, Generic[Module]):
         return self.result if self.return_when_forwarding else torch.tensor(torch.nan)
 
     @torch.no_grad()
-    def forward_features(self, x: torch.Tensor) -> torch.Tensor:
+    def forward_features(self, x: torch.Tensor, /) -> torch.Tensor:
         """
         Extract features
 

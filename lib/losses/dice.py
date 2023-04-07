@@ -13,7 +13,7 @@ class Dice(Loss):
     _smooth: int
     _softmax_input: bool
 
-    def __init__(self, smooth: int = 1, softmax_input: bool = True, **kwargs: Any) -> None:
+    def __init__(self, smooth: int = 1, *, softmax_input: bool = True, **kwargs: Any) -> None:
         """
         Constructor
 

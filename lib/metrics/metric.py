@@ -38,7 +38,7 @@ class Metric(torch.nn.Module):
         else:
             return None
 
-    def __init__(self, metric_fn: Optional[Callable[[Any, Any], torch.Tensor]] = None, target: Optional[str] = None) -> None:
+    def __init__(self, metric_fn: Optional[Callable[[Any, Any], torch.Tensor]] = None, *, target: Optional[str] = None) -> None:
         """
         Constructor
 

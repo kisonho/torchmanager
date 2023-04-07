@@ -40,7 +40,7 @@ class Loss(Metric):
         assert w >= 0, f"Weight must be a non-negative number, got {w}."
         self.__weight = w
 
-    def __init__(self, loss_fn: Optional[Callable[[Any, Any], torch.Tensor]] = None, target: Optional[str] = None, weight: float = 1) -> None:
+    def __init__(self, loss_fn: Optional[Callable[[Any, Any], torch.Tensor]] = None, *, target: Optional[str] = None, weight: float = 1) -> None:
         """
         Constructor
 
@@ -84,7 +84,7 @@ class MultiLosses(Loss):
     def losses(self) -> torch.nn.ModuleList:
         return self.__losses
 
-    def __init__(self, losses: List[Loss], target: Optional[str] = None, weight: float = 1) -> None:
+    def __init__(self, losses: List[Loss], *, target: Optional[str] = None, weight: float = 1) -> None:
         """
         Constructor
 

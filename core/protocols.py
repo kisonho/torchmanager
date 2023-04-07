@@ -53,7 +53,7 @@ class StateDictLoadable(Protocol):
     """An object that can load state dict"""
 
     @abc.abstractmethod
-    def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> Any:
+    def load_state_dict(self, *, state_dict: OrderedDict[str, Any], strict: bool = True) -> Any:
         return NotImplemented
 
     @abc.abstractmethod

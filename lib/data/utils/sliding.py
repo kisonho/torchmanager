@@ -2,7 +2,7 @@ from itertools import product
 from torchmanager_core import torch, _raise
 from torchmanager_core.typing import List, Tuple
 
-def sliding_window(image: torch.Tensor, window_size: Tuple[int, ...], stride: Tuple[int, ...]) -> torch.Tensor:
+def sliding_window(image: torch.Tensor, /, window_size: Tuple[int, ...], stride: Tuple[int, ...]) -> torch.Tensor:
     """
     Extract sliding windows from a multi-dimensional PyTorch tensor.
 

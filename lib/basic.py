@@ -1,4 +1,4 @@
-from torchmanager_core import torch, _raise, API_VERSION, VERSION as CURRENT_VERSION
+from torchmanager_core import torch, deprecated, _raise, API_VERSION, VERSION as CURRENT_VERSION
 from torchmanager_core.typing import Any, Collection, Dict, Generic, Module, Optional, OrderedDict, Self, Tuple, Union
 
 from .compatibility import convert
@@ -110,6 +110,7 @@ class BaseManager(Generic[Module]):
         # initialize optimizer
         self.optimizer = optimizer
 
+    @deprecated('v1.3', 'v1.4')
     def compile(self, optimizer: torch.optim.Optimizer, loss_fn: Union[Loss, Dict[str, Loss]], metrics: Dict[str, Metric] = {}) -> None:
         """
         Recompiles the manager with optimizer loss function and metrics
