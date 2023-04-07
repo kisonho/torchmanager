@@ -1,4 +1,4 @@
-from torchmanager_core import torch
+from torchmanager_core import torch, view
 from torchmanager_core.typing import Generic, List, Module, Optional
 
 from .metric import Metric
@@ -7,6 +7,9 @@ from .metric import Metric
 class FID(Metric, Generic[Module]):
     """
     Fréchet Inception Distance (FID) metric
+
+    * Extends: `.metric.Metric`
+    * Generic class of `Module`
 
     - Parameters:
         - feature_extractor: A `Module` to extract the features
@@ -36,14 +39,21 @@ class FID(Metric, Generic[Module]):
         mu_gen = input.mean(0)
         sigma_real = target.cov() / (target.shape[0] - 1)
         sigma_gen = input.cov() / (input.shape[0] - 1)
-        sigma_prod = sigma_real @ sigma_gen
-        u, s, v = torch.linalg.svd(sigma_prod)
-        sqrt_s = torch.diag(torch.sqrt(s))
-        sqrtm: torch.Tensor = u @ sqrt_s @ v.t()
+        sigma = sigma_real @ sigma_gen
         diff = mu_real - mu_gen
 
+        # square root of sigma
+        try:
+            from scipy import linalg
+            covmean = linalg.sqrtm(sigma)
+            assert not isinstance(covmean, tuple), "The square root of `sigma` should not contain errest number."
+            sigma = torch.from_numpy(covmean.real).to(sigma.device)
+        except ImportError:
+            view.warnings.warn("The `scipy` package is not installed to calculate matrix square root. The matrix square root will be calculated as an element-wise square root, which may result in different calculation results than the actual matrix square root.")
+            sigma = sigma.sqrt()
+
         # Calculate the squared Euclidean distance between the means
-        return diff @ diff + torch.trace(sigma_real + sigma_gen - 2 * sqrtm)
+        return diff @ diff + torch.trace(sigma_real + sigma_gen - 2 * sigma)
 
     def __init__(self, feature_extractor: Optional[Module] = None, return_when_forwarding: bool = True, target: Optional[str] = None) -> None:
         """
@@ -81,7 +91,7 @@ class FID(Metric, Generic[Module]):
             return self.feature_extractor(x)
         else:
             return x
-    
+
     def train(self, mode: bool = True):
         self.training = mode
         return self
