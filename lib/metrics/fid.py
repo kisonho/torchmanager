@@ -39,17 +39,18 @@ class FID(Metric, Generic[Module]):
         mu_gen = input.mean(0)
         sigma_real = target.cov() / (target.shape[0] - 1)
         sigma_gen = input.cov() / (input.shape[0] - 1)
-        sigma = sigma_real @ sigma_gen
         diff = mu_real - mu_gen
 
         # square root of sigma
         try:
-            from scipy import linalg
-            covmean = linalg.sqrtm(sigma)
+            from scipy import linalg # type: ignore
+            sigma = sigma_real @ sigma_gen
+            covmean = linalg.sqrtm(sigma.cpu().numpy())
             assert not isinstance(covmean, tuple), "The square root of `sigma` should not contain errest number."
             sigma = torch.from_numpy(covmean.real).to(sigma.device)
         except ImportError:
-            view.warnings.warn("The `scipy` package is not installed to calculate matrix square root. The matrix square root will be calculated as an element-wise square root, which may result in different calculation results than the actual matrix square root.")
+            view.warnings.warn("The `scipy` package is not installed to calculate matrix square root. The matrix times and square root of sigma will be calculated element-wisely, which may result in different calculation results than the actual matrix square root.")
+            sigma = sigma_real * sigma_gen
             sigma = sigma.sqrt()
 
         # Calculate the squared Euclidean distance between the means
@@ -73,8 +74,8 @@ class FID(Metric, Generic[Module]):
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         input_features = self.forward_features(input)
         target_features = self.forward_features(target)
-        self.input_features += [input_features.cpu().detach()]
-        self.target_features += [target_features.cpu().detach()]
+        self.input_features += [input_features]
+        self.target_features += [target_features]
         return self.result if self.return_when_forwarding else torch.tensor(torch.nan)
 
     @torch.no_grad()
