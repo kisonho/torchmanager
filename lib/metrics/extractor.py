@@ -4,7 +4,7 @@ from torchmanager_core.typing import Any, Callable, Generic, List, Module, Optio
 from .metric import Metric
 
 
-class FeatureExtractorMetric(Metric, Generic[Module]):
+class _FeatureMetric(Metric, Generic[Module]):
     """
     A metric that extracts inputs and targets with feature extractor and evaluates the extracted features instead of raw inputs
 
@@ -53,7 +53,7 @@ class FeatureExtractorMetric(Metric, Generic[Module]):
         return self
 
 
-class ExtractorScore(FeatureExtractorMetric[Module]):
+class ExtractorScore(_FeatureMetric[Module]):
     """
     A general feature score metric which can be used as `InceptionScore` by taking the `feature_extractor` as an InceptionV3 model
 
@@ -73,7 +73,7 @@ class ExtractorScore(FeatureExtractorMetric[Module]):
         return scores
 
 
-class FID(FeatureExtractorMetric[Module]):
+class FID(_FeatureMetric[Module]):
     """
     Fréchet Inception Distance (FID) metric
 
