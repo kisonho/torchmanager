@@ -74,8 +74,8 @@ class FID(Metric, Generic[Module]):
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         input_features = self.forward_features(input)
         target_features = self.forward_features(target)
-        self.input_features += [input_features]
-        self.target_features += [target_features]
+        self.input_features += [input_features.cpu().detach()]
+        self.target_features += [target_features.cpu().detach()]
         return self.result if self.return_when_forwarding else torch.tensor(torch.nan)
 
     @torch.no_grad()
