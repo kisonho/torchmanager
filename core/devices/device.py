@@ -92,8 +92,8 @@ def search(specified: Optional[Union[torch.device, List[torch.device]]] = None) 
 
         # check for each device
         for d in specified:
-            if d.type != GPU.type: raise SystemError("All devices in the specified list must have the same device type with GPU type")
-            if d.index is None: raise SystemError("All devices in the specified list must have a device index")
+            if d.type != specified[0].type: raise SystemError("All devices in the specified list must have the same device type.")
+            if d.index is None: raise SystemError("All devices in the specified list must have a device index.")
     else: raise SystemError("Specified device list must not be empty")
     return CPU, device, specified
 
