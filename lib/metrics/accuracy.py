@@ -1,6 +1,7 @@
-from torchmanager_core import torch, deprecated
-from torchmanager_core.typing import Optional
+from torchmanager_core import torch
+from torchmanager_core.typing import Optional, Tuple
 
+from .conf_met import BinaryConfusionMetric
 from .metric import Metric, Reduction
 
 
@@ -30,7 +31,6 @@ class SparseCategoricalAccuracy(Accuracy):
     The accuracy metric for normal integer labels
 
     * extends: `Accuracy`
-    * [Deprecation Warning]: The property `dim` has been deprecated from v1.1.0, and no longer be available in v1.2.0
 
     - Properties:
         - dim: An `int` of the probability dim index for the input
@@ -64,6 +64,25 @@ class CategoricalAccuracy(SparseCategoricalAccuracy):
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         target = target.argmax(dim=self._dim)
         return super().forward(input, target)
+
+
+class F1(BinaryConfusionMetric):
+    """
+    The F1 metrics
+    """
+
+    def forward(self, input: Tuple[torch.Tensor, torch.Tensor, torch.Tensor], target: torch.Tensor) -> torch.Tensor:
+        # extract input
+        tp, fp, fn = input
+
+        # calculate precision and recall
+        precision = tp / (tp + fp + self._eps)
+        recall = tp / (tp + fn + self._eps)
+
+        # calculate F1
+        f1 = 2 * precision * recall / (precision + recall + self._eps)
+        f1 = torch.mean(f1)
+        return f1
 
 
 class MAE(Metric):
@@ -100,3 +119,23 @@ class MAE(Metric):
             return error.sum()
         else:
             return error
+
+
+class Precision(BinaryConfusionMetric):
+    """
+    The Precision metrics
+    """
+
+    def forward(self, input: Tuple[torch.Tensor, torch.Tensor, torch.Tensor], target: torch.Tensor) -> torch.Tensor:
+        tp, fp, _ = input
+        return tp / (tp + fp + self._eps)
+
+
+class Recall(BinaryConfusionMetric):
+    """
+    The Recall metrics
+    """
+
+    def forward(self, input: Tuple[torch.Tensor, torch.Tensor, torch.Tensor], target: torch.Tensor) -> torch.Tensor:
+        tp, _, fn = input
+        return tp / (tp + fn + self._eps)

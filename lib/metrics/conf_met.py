@@ -1,7 +1,40 @@
-from torchmanager_core import torch, _raise
-from torchmanager_core.typing import Optional
+from torchmanager_core import abc, torch, _raise
+from torchmanager_core.typing import Optional, Tuple
 
 from .metric import Metric
+
+
+class BinaryConfusionMetric(Metric, abc.ABC):
+    """
+    The binary confusion metrics that forwards input as a `tuple` of TP, FP, and FN
+
+    * extends: `.metric.Metric`
+    * Abstract class
+
+    - Methods to implement:
+        - forward: The main `forward` method that accepts input as a `tuple` of TP, FP, and FN as `torch.Tensor` and returns the final metric as `torch.Tensor`
+    """
+    _dim: int
+    _eps: float
+
+    def __init__(self, dim: int = -1, *, eps: float=1e-7):
+        super().__init__()
+        self._dim = dim
+        self._eps = eps
+
+    def __call__(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        # argmax input
+        input = input.argmax(dim=self._dim)
+
+        # calculate TP, FP, and FN
+        tp = torch.sum(target * input, dim=0)
+        fp = torch.sum((1 - target) * input, dim=0)
+        fn = torch.sum(target * (1 - input), dim=0)
+        return super().__call__((tp, fp, fn), target)
+
+    @abc.abstractmethod
+    def forward(self, input: Tuple[torch.Tensor, torch.Tensor, torch.Tensor], target: torch.Tensor) -> torch.Tensor:
+        return NotImplemented
 
 
 class Histogram(Metric):
