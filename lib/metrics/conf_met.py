@@ -40,8 +40,7 @@ class ConfusionMetrics(Metric, abc.ABC):
 
         # add confusion metrics
         for y_pred, y_true in zip(input, target):
-            y_pred: torch.Tensor
-            y_true: torch.Tensor
+            y_pred = y_pred.argmax(-1)
             conf_mat += self.forward_hist(y_pred.flatten(), y_true.flatten())
 
         # calculate final metric
