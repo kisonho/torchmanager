@@ -1,5 +1,5 @@
-from .accuracy import Accuracy, CategoricalAccuracy, MAE, SparseCategoricalAccuracy
-from .conf_met import ConfusionMetrics
+from .accuracy import Accuracy, CategoricalAccuracy, F1, MAE, Precision, Recall, SparseCategoricalAccuracy
+from .conf_met import BinaryConfusionMetric, ConfusionMetrics
 from .extractor import ExtractorScore, FID
 from .iou import InstanceIoU, MeanIoU
 from .metric import Metric, Reduction, metric, metric_fn
