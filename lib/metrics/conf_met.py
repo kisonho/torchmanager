@@ -1,17 +1,20 @@
-from torchmanager_core import torch, _raise
-from torchmanager_core.typing import Optional
+from torchmanager_core import abc, torch, _raise, deprecated
+from torchmanager_core.typing import Any, Optional
 
 from .metric import Metric
 
 
-class Histogram(Metric):
+class ConfusionMetrics(Metric, abc.ABC):
     """
-    The metric that calculates histogram
+    The metric that forward confusion metrics calculated by given `input` and `target` as final `input` in `forward` method
 
-    * extends: `.metric.Metric`
+    * Extends: `.metric.Metric`
+    * Abstract class
 
     - Properties:
         - num_classes: An `int` of the total number of classes
+    - Methods to implement:
+        - forward: The main forward function to calculate final metric as `torch.Tensor`, which accepts the confusion metrics of `torch.Tensor` with the label of `torch.Tensor
     """
     __num_classes: int
 
@@ -31,7 +34,24 @@ class Histogram(Metric):
         assert num_classes > 0, _raise(ValueError(f"The number of classes must be a positive number, got {num_classes}."))
         self.__num_classes = num_classes
 
-    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    def __call__(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        # initialize metrics
+        conf_mat = torch.zeros((self.num_classes, self.num_classes), device=input.device)
+
+        # add confusion metrics
+        for y_pred, y_true in zip(input, target):
+            y_pred: torch.Tensor
+            y_true: torch.Tensor
+            conf_mat += self.forward_hist(y_pred.flatten(), y_true.flatten())
+
+        # calculate final metric
+        return super().__call__(conf_mat, target)
+
+    @abc.abstractmethod
+    def forward(self, input: Any, target: Any) -> torch.Tensor:
+        return NotImplemented
+
+    def forward_hist(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """
         Calculate historgram
 
@@ -45,22 +65,6 @@ class Histogram(Metric):
         return hist
 
 
-class ConfusionMetrics(Histogram):
-    """
-    The metric that calculates confusion metrics
-
-    * extends: `Histogram`
-    """
-
-    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        # initialize metrics
-        conf_mat = torch.zeros((self.num_classes, self.num_classes), device=input.device)
-
-        # add confusion metrics
-        for y_pred, y_true in zip(input, target):
-            y_pred: torch.Tensor
-            y_true: torch.Tensor
-            conf_mat += super().forward(y_pred.flatten(), y_true.flatten())
-
-        # calculate mean IoU
-        return conf_mat
+@deprecated('v1.2', 'v1.3')
+class Histogram(ConfusionMetrics):
+    pass
