@@ -3,7 +3,7 @@ from torchmanager_core.typing import Any, Union
 from torchmanager_core import VERSION
 
 
-class Configs(argparse.Namespace):
+class Configs(argparse.Namespace, abc.ABC):
     """
     Basic Configurations
     
@@ -67,4 +67,4 @@ class Configs(argparse.Namespace):
     
     @abc.abstractmethod
     def show_settings(self) -> None:
-        raise NotImplementedError
+        pass
