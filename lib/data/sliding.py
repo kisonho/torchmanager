@@ -25,27 +25,25 @@ def sliding_window(image: torch.Tensor, window_size: Tuple[int, ...], stride: Tu
     ```
     """
     # initialize
-    assert len(window_size) == len(image.shape) == len(image.shape), _raise(ValueError(f"Window size dimension ({len(window_size)}) and stride dimension ({stride}) must be the same of image ({len(image.shape)})."))
+    assert len(window_size) == len(stride), _raise(ValueError(f"Window size dimension ({len(window_size)}) and stride dimension ({stride}) must be the same."))
     stride_dims: List[int] = []
     windows: List[torch.Tensor] = []
     window_dims: List[int] = []
 
     # Calculate number of windows in each dimension
-    for dim_size, window_dim, stride_dim in zip(image.shape, window_size, stride):
+    for dim_size, window_dim, stride_dim in zip(image.shape[1:], window_size, stride):
         num_windows = (dim_size - window_dim) // stride_dim + 1
         window_dims.append(num_windows)
         stride_dims.append(stride_dim)
 
     # Iterate over each window
     window_starts = product(*[range(num_windows) for num_windows in window_dims])
-    for starts in window_starts:
+    for indices in window_starts:
         # Calculate the starting coordinates of the window
-        starts = torch.tensor(starts)
-        window_starts = starts * torch.tensor(stride_dims)
-        window_ends = window_starts + torch.tensor(window_size)
+        indices = (slice(None),) + tuple(slice(i, i+ws) for i, ws in zip(indices, window_size))
 
         # Extract the window from the image
-        window = image[tuple(slice(s, e) for s, e in zip(window_starts, window_ends))]
+        window = image[indices]
 
         # Add the window to the list
         windows.append(window.unsqueeze(0))
