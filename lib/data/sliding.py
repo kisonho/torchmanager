@@ -21,7 +21,7 @@ def sliding_window(image: torch.Tensor, window_size: Tuple[int, ...], stride: Tu
     >>> stride = (32, 32)
     >>> windows = sliding_window(image, window_size, stride)
     >>> windows.shape[0]
-    49
+    36
     ```
     """
     # initialize
