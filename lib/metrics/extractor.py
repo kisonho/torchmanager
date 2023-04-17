@@ -9,7 +9,7 @@ except ImportError:
     linalg = NotImplemented
 
 
-class _FeatureMetric(Metric, Generic[Module]):
+class FeatureMetric(Metric, Generic[Module]):
     """
     A metric that extracts inputs and targets with feature extractor and evaluates the extracted features instead of raw inputs
 
@@ -58,7 +58,7 @@ class _FeatureMetric(Metric, Generic[Module]):
         return self
 
 
-class ExtractorScore(_FeatureMetric[Module]):
+class ExtractorScore(FeatureMetric[Module]):
     """
     A general feature score metric which can be used as `InceptionScore` by taking the `feature_extractor` as an InceptionV3 model
 
@@ -78,35 +78,30 @@ class ExtractorScore(_FeatureMetric[Module]):
         return scores
 
 
-class FID(_FeatureMetric[Module]):
+class FID(FeatureMetric[Module]):
     """
     Fréchet Inception Distance (FID) metric
 
     * Extends: `FeatureExtractorMetric`
     * Generic class of `Module`
-
-    - Parameters:
-        - input_features: A `list` of current features for generated images that extracted in `torch.Tensor`
-        - result: A `torch.Tensor` of the current FID result
-        - return_when_forwarding: A `bool` flag of if returning results when calculating the metrics, a `torch.nan` will be returned if set to `False` during forwarding
-        - target_features: A `list` of current features for real images that extracted in `torch.Tensor`
     """
-    input_features: List[torch.Tensor]
-    """A `list` of current features for generated images that extracted in `torch.Tensor`"""
-    return_when_forwarding: bool
-    """A `bool` flag of if returning results when calculating the metrics, a `torch.nan` will be returned if set to `False` during forwarding"""
-    target_features: List[torch.Tensor]
-    """A `list` of current features for real images that extracted in `torch.Tensor`"""
     use_linalg: bool
     """use_linalg: A `bool` flag of if use `scipy.linalg` package"""
 
-    @property
-    def result(self) -> torch.Tensor:
-        """A `torch.Tensor` of the current FID result"""
-        # concat input and target
-        input = torch.cat(self.input_features)
-        target = torch.cat(self.target_features)
+    def __init__(self, feature_extractor: Optional[Module] = None, *, use_linalg: bool = True, target: Optional[str] = None) -> None:
+        """
+        Constructor
 
+        - Parameters:
+            - feature_extractor: An optional `Module` to extract features, a pre-trained InceptionV3 will be used if not given
+            - return_when_forwarding: A `bool` flag of if returning results when calculating the metrics, a `torch.nan` will be returned if set to `False` during forwarding
+            - target: A `str` of target name in `input` and `target` during direct calling
+            - use_linalg: A `bool` flag of if use `scipy.linalg` package
+        """
+        super().__init__(feature_extractor=feature_extractor, target=target)
+        self.use_linalg = use_linalg
+
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # calculate mean and covariance
         mu_real = target.mean(0)
         mu_gen = input.mean(0)
@@ -128,28 +123,5 @@ class FID(_FeatureMetric[Module]):
         # Calculate the squared Euclidean distance between the means
         return diff @ diff + torch.trace(sigma_real + sigma_gen - 2 * sigma)
 
-    def __init__(self, feature_extractor: Optional[Module] = None, *, use_linalg: bool = True, return_when_forwarding: bool = True, target: Optional[str] = None) -> None:
-        """
-        Constructor
-
-        - Parameters:
-            - feature_extractor: An optional `Module` to extract features, a pre-trained InceptionV3 will be used if not given
-            - return_when_forwarding: A `bool` flag of if returning results when calculating the metrics, a `torch.nan` will be returned if set to `False` during forwarding
-            - target: A `str` of target name in `input` and `target` during direct calling
-            - use_linalg: A `bool` flag of if use `scipy.linalg` package
-        """
-        super().__init__(feature_extractor=feature_extractor, target=target)
-        self.input_features = []
-        self.return_when_forwarding = return_when_forwarding
-        self.target_features = []
-        self.use_linalg = use_linalg
-
-    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        self.input_features += [input.cpu().detach()]
-        self.target_features += [target.cpu().detach()]
-        return self.result if self.return_when_forwarding else torch.tensor(torch.nan)
-
     def reset(self) -> None:
         super().reset()
-        self.input_features.clear()
-        self.target_features.clear()
