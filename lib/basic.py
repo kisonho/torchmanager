@@ -1,4 +1,4 @@
-from torchmanager_core import torch, _raise, API_VERSION, VERSION as CURRENT_VERSION
+from torchmanager_core import torch, Version, _raise, API_VERSION, VERSION as CURRENT_VERSION
 from torchmanager_core.typing import Any, Collection, Dict, Generic, Module, Optional, OrderedDict, Self, Tuple, Union
 
 from .compatibility import convert
@@ -47,7 +47,7 @@ class BaseManager(Generic[Module]):
     metric_fns: Dict[str, Metric]
     model: Module
     optimizer: Optional[torch.optim.Optimizer]
-    version: str
+    version: Version
 
     @property
     def compiled(self) -> bool:
