@@ -1,7 +1,12 @@
-from torchmanager_core import torch, view
+from torchmanager_core import torch, view, _raise
 from torchmanager_core.typing import Any, Callable, Generic, List, Module, Optional
 
 from .metric import Metric
+
+try:
+    from scipy import linalg  # type: ignore
+except ImportError:
+    linalg = NotImplemented
 
 
 class _FeatureMetric(Metric, Generic[Module]):
@@ -92,6 +97,8 @@ class FID(_FeatureMetric[Module]):
     """A `bool` flag of if returning results when calculating the metrics, a `torch.nan` will be returned if set to `False` during forwarding"""
     target_features: List[torch.Tensor]
     """A `list` of current features for real images that extracted in `torch.Tensor`"""
+    use_linalg: bool
+    """use_linalg: A `bool` flag of if use `scipy.linalg` package"""
 
     @property
     def result(self) -> torch.Tensor:
@@ -108,21 +115,20 @@ class FID(_FeatureMetric[Module]):
         diff = mu_real - mu_gen
 
         # square root of sigma
-        try:
-            from scipy import linalg  # type: ignore
-            sigma = sigma_real @ sigma_gen
-            covmean = linalg.sqrtm(sigma.cpu().numpy())
-            assert not isinstance(covmean, tuple), "The square root of `sigma` should not contain errest number."
-            sigma = torch.from_numpy(covmean.real).to(sigma.device)
-        except ImportError:
-            view.warnings.warn("The `scipy` package is not installed to calculate matrix square root. The matrix times and square root of sigma will be calculated element-wisely, which may result in different calculation results than the actual matrix square root.")
+        if linalg is NotImplemented or not self.use_linalg:
+            view.warnings.warn("The `scipy` package is not installed to calculate matrix square root or `use_linalg` is set to `False`. The matrix times and square root of sigma will be calculated element-wisely, which may result in different calculation results than the actual matrix square root.")
             sigma = sigma_real * sigma_gen
             sigma = sigma.sqrt()
+        else:
+            sigma = sigma_real @ sigma_gen
+            covmean = linalg.sqrtm(sigma.cpu().numpy())
+            assert not isinstance(covmean, tuple), _raise(TypeError("The square root of `covmean` should not contain errest number."))
+            sigma = torch.from_numpy(covmean.real).to(sigma.device)
 
         # Calculate the squared Euclidean distance between the means
         return diff @ diff + torch.trace(sigma_real + sigma_gen - 2 * sigma)
 
-    def __init__(self, feature_extractor: Optional[Module] = None, *, return_when_forwarding: bool = True, target: Optional[str] = None) -> None:
+    def __init__(self, feature_extractor: Optional[Module] = None, *, use_linalg: bool = True, return_when_forwarding: bool = True, target: Optional[str] = None) -> None:
         """
         Constructor
 
@@ -130,11 +136,13 @@ class FID(_FeatureMetric[Module]):
             - feature_extractor: An optional `Module` to extract features, a pre-trained InceptionV3 will be used if not given
             - return_when_forwarding: A `bool` flag of if returning results when calculating the metrics, a `torch.nan` will be returned if set to `False` during forwarding
             - target: A `str` of target name in `input` and `target` during direct calling
+            - use_linalg: A `bool` flag of if use `scipy.linalg` package
         """
         super().__init__(feature_extractor=feature_extractor, target=target)
         self.input_features = []
         self.return_when_forwarding = return_when_forwarding
         self.target_features = []
+        self.use_linalg = use_linalg
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         self.input_features += [input.cpu().detach()]

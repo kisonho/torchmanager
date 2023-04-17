@@ -37,8 +37,10 @@ class Configs(argparse.Namespace):
 
         # initialize logging
         log_dir = os.path.join("experiments", configs.experiment)
-        if configs.replace_experiment and os.path.exists(log_dir) and os.path.isdir(log_dir):
+        if os.path.exists(log_dir) and configs.replace_experiment:
             shutil.rmtree(log_dir)
+        elif os.path.exists(log_dir) and not configs.replace_experiment:
+            raise IOError(f"Path '{log_dir}' has already existed.")
         os.makedirs(log_dir, exist_ok=True)
         log_file = os.path.basename(configs.experiment.replace(".exp", ".log"))
         log_path = os.path.join(log_dir, log_file)
