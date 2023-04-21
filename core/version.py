@@ -18,28 +18,22 @@ class Version:
         if version_str.startswith('v'):
             version_str = version_str[1:]
 
+        # split pre-release version
+        pre_release_parts = version_str.split('a')
+        if len(pre_release_parts) > 1:
+            self.pre_release = 'a' + pre_release_parts[1]
+            version_str = pre_release_parts[0]
+        else:
+            pre_release_parts = version_str.split('b')
+            if len(pre_release_parts) > 1:
+                self.pre_release = 'b' + pre_release_parts[1]
+                version_str = pre_release_parts[0]
+
         # split version
         version_parts = version_str.split('.')
         self.main_version = int(version_parts[0])
         self.minor_version = int(version_parts[1])
-        self.pre_release = None
-
-        # set sub  version
-        if len(version_parts) > 2:
-            # split alpha subversion parts
-            sub_version_parts = version_parts[2].split('a')
-            if len(sub_version_parts) > 1:
-                self.sub_version = int(sub_version_parts[0])
-                self.pre_release = 'a' + sub_version_parts[1]
-            else:
-                sub_version_parts = version_parts[2].split('b')
-                if len(sub_version_parts) > 1:
-                    self.sub_version = int(sub_version_parts[0])
-                    self.pre_release = 'b' + sub_version_parts[1]
-                else:
-                    self.sub_version = int(version_parts[2])
-        else:
-            self.sub_version = 0
+        self.sub_version = version_parts[2] if len(version_parts) > 2 else 0
 
     def __repr__(self) -> str:
         version_str = f"v{self.main_version}"
@@ -96,8 +90,8 @@ class Version:
 
 
 API = Version("v1.1")
-CURRENT = Version("v1.1.2")
-DESCRIPTION: str = "PyTorch Training Manager v1.1.2"
+CURRENT = Version("v1.1.3")
+DESCRIPTION: str = "PyTorch Training Manager v1.1.3"
 
 
 class VersionError(SystemError):
