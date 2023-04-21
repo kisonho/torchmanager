@@ -1,9 +1,103 @@
 import functools
+
+from .typing import Any, Optional
 from .view import warnings
 
-API: str = "v1.2"
-CURRENT: str = "v1.2b2"
-DESCRIPTION: str = "PyTorch Training Manager v1.2 (Beta 2)"
+
+class Version:
+    main_version: int
+    minor_version: int
+    pre_release: Optional[str]
+    sub_version: int
+
+    def __init__(self, v: Any, /) -> None:
+        # convert to string
+        version_str = str(v)
+
+        # format version
+        if version_str.startswith('v'):
+            version_str = version_str[1:]
+
+        # split version
+        version_parts = version_str.split('.')
+        self.main_version = int(version_parts[0])
+        self.minor_version = int(version_parts[1])
+        self.pre_release = None
+
+        # set sub  version
+        if len(version_parts) > 2:
+            # split alpha subversion parts
+            sub_version_parts = version_parts[2].split('a')
+            if len(sub_version_parts) > 1:
+                self.sub_version = int(sub_version_parts[0])
+                self.pre_release = 'a' + sub_version_parts[1]
+            else:
+                sub_version_parts = version_parts[2].split('b')
+                if len(sub_version_parts) > 1:
+                    self.sub_version = int(sub_version_parts[0])
+                    self.pre_release = 'b' + sub_version_parts[1]
+                else:
+                    self.sub_version = int(version_parts[2])
+        else:
+            self.sub_version = 0
+
+    def __repr__(self) -> str:
+        version_str = f"v{self.main_version}"
+        if self.minor_version > 0 or self.sub_version > 0:
+            version_str += f".{self.minor_version}"
+        if self.sub_version > 0:
+            version_str += f".{self.sub_version}"
+        if self.pre_release is not None:
+            version_str += self.pre_release
+        return version_str
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, Version):
+            return self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and self.pre_release == other.pre_release
+        else:
+            other = Version(str(other))
+            return self.__eq__(other)
+
+    def __lt__(self, other: Any) -> bool:
+        if isinstance(other, Version):
+            if self.main_version < other.main_version:
+                return True
+            elif self.main_version == other.main_version and self.minor_version < other.minor_version:
+                    return True
+            elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version < other.sub_version:
+                return True
+            elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and self.pre_release is not None and other.pre_release is not None:
+                return self.sub_version < other.sub_version
+            return False
+        else:
+            other = Version(str(other))
+            return self.__lt__(other)
+
+    def __gt__(self, other: Any) -> bool:
+        if isinstance(other, Version):
+            if self.main_version > other.main_version:
+                return True
+            elif self.main_version == other.main_version and self.minor_version > other.minor_version:
+                return True
+            elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version > other.sub_version:
+                return True
+            elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and self.pre_release is not None and other.pre_release is not None:
+                return self.sub_version > other.sub_version
+            return False
+        else:
+            other = Version(str(other))
+            return self.__gt__(other)
+
+    def __le__(self, other: Any) -> bool:
+        return self == other or self < other
+
+    def __ge__(self, other: Any) -> bool:
+        return self == other or self > other
+
+
+API = Version("v1.2")
+CURRENT = Version("v1.2b3")
+DESCRIPTION: str = "PyTorch Training Manager v1.2 (Beta 3)"
 
 
 class VersionError(SystemError):

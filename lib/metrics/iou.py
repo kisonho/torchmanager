@@ -17,11 +17,7 @@ class InstanceIoU(ConfusionMetrics):
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # argmax for input
-        input = input.argmax(1).to(target.dtype)
-
-        # calculate mean IoU
-        hist = super().forward(input, target)
-        iou = torch.diag(hist) / (hist.sum(1) + hist.sum(0) - torch.diag(hist))
+        iou = torch.diag(input) / (input.sum(1) + input.sum(0) - torch.diag(input))
         return iou.nanmean()
 
 

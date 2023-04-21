@@ -4,7 +4,7 @@ from torch.utils import data
 
 from . import devices, errors, random, view
 from .errors import _raise
-from .version import deprecated, API as API_VERSION, CURRENT as VERSION, DESCRIPTION
+from .version import Version, deprecated, API as API_VERSION, CURRENT as VERSION, DESCRIPTION
 
 try:
     from torch.utils import tensorboard

@@ -10,6 +10,9 @@ try:
     from .experiment import Experiment
     from .tensorboard import TensorBoard
 except:
+    from torchmanager_core import view
+    view.warnings.warn("Tensorboard dependency is not installed, install it to use `Experiment` and `TensorBoard` callbacks.", ImportWarning)
+
     Experiment = NotImplemented
     TensorBoard = NotImplemented
     pass
