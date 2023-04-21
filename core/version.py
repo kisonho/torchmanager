@@ -35,7 +35,7 @@ class Version:
         version_parts = version_str.split('.')
         self.main_version = int(version_parts[0])
         self.minor_version = int(version_parts[1])
-        self.sub_version = version_parts[2] if len(version_parts) > 2 else "0"
+        self.sub_version = int(version_parts[2]) if len(version_parts) > 2 else 0
 
     def __repr__(self) -> str:
         version_str = f"v{self.main_version}"
