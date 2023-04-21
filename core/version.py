@@ -28,6 +28,8 @@ class Version:
             if len(pre_release_parts) > 1:
                 self.pre_release = 'b' + pre_release_parts[1]
                 version_str = pre_release_parts[0]
+            else:
+                self.pre_release = 0
 
         # split version
         version_parts = version_str.split('.')
