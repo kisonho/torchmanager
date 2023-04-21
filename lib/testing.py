@@ -29,6 +29,16 @@ class Manager(BaseManager[Module]):
     def compiled_metrics(self) -> Dict[str, Resulting]:
         return {name: m for name, m in self.metric_fns.items() if "loss" not in name}
 
+    def forward(self, x_train: Any) -> Any:
+        """
+        Forward pass function
+
+        - Parameters:
+            - x_train: The training data
+        - Returns: `Any` kind of model output
+        """
+        return self.model(x_train)
+
     @torch.no_grad()
     def predict(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection[Any]], /, *, device: Optional[Union[torch.device, List[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> List[Any]:
         '''
@@ -71,7 +81,7 @@ class Manager(BaseManager[Module]):
                 x, _ = self.unpack_data(data)
                 if use_multi_gpus is not True:
                     x = devices.move_to_device(x, device)
-                y = self.model(x)
+                y = self.forward(x)
                 predictions.append(y)
                 if progress_bar is not None:
                     progress_bar.update()
@@ -207,7 +217,7 @@ class Manager(BaseManager[Module]):
         summary: Dict[str, float] = {}
 
         # forward pass
-        y = self.model(x_test)
+        y = self.forward(x_test)
 
         # forward metrics
         for name, fn in self.compiled_metrics.items():

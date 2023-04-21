@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader
 from torchmanager_core import devices, errors, math, torch, view
 from torchmanager_core.protocols import Resulting
-from torchmanager_core.typing import Any, Collection, Dict, List, Module, Optional, Self, Union
+from torchmanager_core.typing import Any, Collection, Dict, List, Module, Optional, Self, Tuple, Union
 
 from .callbacks import Callback
 from .data import Dataset
@@ -134,6 +134,15 @@ class Manager(_Manager[Module]):
         summary["loss"] = float(self.compiled_losses.result.detach())
         return summary
 
+    def backward(self, loss: torch.Tensor) -> None:
+        """
+        Backward function to calculate the gradients
+        
+        - Parameters:
+            - loss: A `torch.Tensor` of loss value
+        """
+        loss.backward()
+
     def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, epochs: Optional[int] = None, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any], Collection]] = None, callbacks_list: List[Callback] = [], *, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, device: Optional[Union[torch.device, List[torch.device]]] = None, use_multi_gpus: bool = False, **kwargs) -> Module:
         """
         Training algorithm
@@ -262,7 +271,7 @@ class Manager(_Manager[Module]):
         """
         # forward pass
         summary: Dict[str, float] = {}
-        y = self.model(x_train)
+        y = self.forward(x_train)
         loss = self.compiled_losses(y, y_train)
 
         # forward metrics
@@ -272,7 +281,7 @@ class Manager(_Manager[Module]):
 
         # backward pass
         self.compiled_optimizer.zero_grad()
-        loss.backward()
+        self.backward(loss)
         self.compiled_optimizer.step()
 
         # summary result
