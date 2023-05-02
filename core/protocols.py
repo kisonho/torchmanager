@@ -13,7 +13,9 @@ class Frequency(Enum):
     """
 
     EPOCH = 0
+    EPOCH_START = -1
     BATCH = 1
+    BATCH_START = 2
 
 
 class MonitorType(Enum):

@@ -115,7 +115,7 @@ class FrequencyCallback(Callback, abc.ABC):
             self.current_step += 1
 
     def on_train_start(self, initial_epoch: int = 0) -> None:
-        if self.freq == Frequency.EPOCH:
+        if self.freq == Frequency.EPOCH or self.freq == Frequency.EPOCH_START:
             self.current_step = initial_epoch
 
     def on_epoch_end(self, epoch: int, summary: Dict[str, float] = {}, val_summary: Optional[Dict[str, float]] = None) -> None:
@@ -124,8 +124,14 @@ class FrequencyCallback(Callback, abc.ABC):
             self._update(result)
             self.current_step += 1
 
+    def on_epoch_start(self, epoch: int) -> None:
+        if self.freq == Frequency.EPOCH_START:
+            result = self.step()
+            self._update(result)
+            self.current_step += 1
+
     @abc.abstractmethod
-    def step(self, summary: Dict[str, float], val_summary: Optional[Dict[str, float]] = None) -> Any:
+    def step(self, *args: Any, **kwargs: Any) -> Any:
         """
         Abstract method to step the callback
         

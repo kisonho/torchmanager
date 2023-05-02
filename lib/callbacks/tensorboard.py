@@ -32,6 +32,7 @@ class TensorBoard(FrequencyCallback):
         """
         super().__init__(freq, initial_step=initial_step)
         self.__writer = tensorboard.writer.SummaryWriter(log_dir)
+        assert self.freq == Frequency.EPOCH or self.freq == Frequency.BATCH, "Record to tensorboard at start of batch or epoch is not supported."
 
     def add_graph(self, model: torch.nn.Module, input_shape: Optional[Tuple[int, ...]] = None) -> None:
         """
