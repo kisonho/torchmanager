@@ -34,7 +34,8 @@ def unfreeze_seed() -> int:
     # set 32 bit seed for random and np package
     seed_32 = int(seed_64 / (2 ** 32)) if seed_64 > 2 ** 32 - 1 else seed_64 # convert to 32 bit seed
     random.seed(seed_32)
-    np.random.seed(seed_32)
+    if np is not NotImplemented:
+        np.random.seed(seed_32)
 
     # set cuda seed
     if devices.GPU is not NotImplemented:

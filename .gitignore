@@ -133,4 +133,3 @@ Pyre type checker
 .pyre/
 
 tests/*
-torchmanager_core
