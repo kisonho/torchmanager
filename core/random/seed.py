@@ -1,4 +1,9 @@
-import numpy as np, random, torch
+import random, torch
+
+try:
+    import numpy as np  # type: ignore
+except ImportError:
+    np = NotImplemented
 
 from .. import devices
 
@@ -10,7 +15,8 @@ def freeze_seed(seed: int, /) -> None:
         - seed: An `int` for the random seed
     """
     random.seed(seed)
-    np.random.seed(seed)
+    if np is not NotImplemented:
+        np.random.seed(seed)
     torch.manual_seed(seed)
 
     if devices.GPU is not NotImplemented:
