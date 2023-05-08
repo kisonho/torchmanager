@@ -5,8 +5,8 @@ this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
 setup(name='torchmanager-nightly',
-    version="1.2b4",
-    description="PyTorch Training Manager v1.2 (Beta 4)",
+    version="1.2b5",
+    description="PyTorch Training Manager v1.2 (Beta 5)",
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Kison Ho',
@@ -24,6 +24,10 @@ setup(name='torchmanager-nightly',
         'torchmanager_core.errors',
         'torchmanager_core.random',
         'torchmanager_core.view',
+        'torchmanager_scipy',
+        'torchmanager_scipy.metrics',
+        'torchmanager_tensorboard',
+        'torchmanager_tensorboard.callbacks',
     ],
     package_dir={
         'torchmanager': 'torchmanager',
@@ -41,15 +45,16 @@ setup(name='torchmanager-nightly',
         'torchmanager_scipy': 'torchmanager_scipy',
         'torchmanager_scipy.metrics': 'torchmanager_scipy/metrics',
         'torchmanager_tensorboard': 'torchmanager_tensorboard',
-        'torchmanager_tensorboard.callbacks': 'torchmanager_tensorboard/callbacks'
+        'torchmanager_tensorboard.callbacks': 'torchmanager_tensorboard/callbacks',
     },
     install_requires=[
         'torch',
         'tqdm',
     ],
     extra_requires={
-        'scipy': ['torchmanager_scipy', 'torchmanager_scipy.metrics'],
-        'tensorboard': ['torchmanager_tensorboard', 'torchmanager_tensorboard.callbacks']
+        'all': ['scipy', 'tensorboard'],
+        'scipy': ['scipy'],
+        'tensorboard': ['tensorboard']
     },
     python_requires=">=3.8",
     url="https://github.com/kisonho/torchmanager.git"

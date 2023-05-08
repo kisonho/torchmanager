@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "torchmanager-nightly"
-version = "1.2b4"
-description = "PyTorch Training Manager v1.2 (Beta 4)"
+version = "1.2b45"
+description = "PyTorch Training Manager v1.2 (Beta 5)"
 authors = ["Qisheng He <Qisheng.He@wayne.edu>"]
 repository = "https://github.com/kisonho/torchmanager.git"
 packages = [
@@ -15,8 +15,13 @@ torch = "*"
 tqdm = "*"
 
 [tool.poetry.optional-dependencies]
-scipy = { version = "*", extras = ["torchmanager_scipy"] }
-tensorboard = { version = "*", extras = ["torchmanager_tensorboard"] }
+scipy = { version = "*", packages = ["torchmanager_scipy"] }
+tensorboard = { version = "*", packages = ["torchmanager_tensorboard"] }
+
+[tool.poetry.extras]
+scipy = ["scipy"]
+tensorboard = ["tensorboard"]
+all = ["scipy", "tensorboard"]
 
 [build-system]
 requires = ["poetry-core"]
