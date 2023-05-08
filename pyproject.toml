@@ -15,7 +15,13 @@ torch = "*"
 tqdm = "*"
 
 [tool.poetry.optional-dependencies]
+scipy = "*"
 tensorboard = "*"
+
+[tool.poetry.extras]
+scipy = ["scipy"]
+tensorboard = ["tensorboard"]
+all = ["scipy", "tensorboard"]
 
 [build-system]
 requires = ["poetry-core"]
