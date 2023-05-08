@@ -133,4 +133,3 @@ dmypy.json
 .pyre/
 
 tests/*
-torchmanager_core
