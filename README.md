@@ -55,9 +55,22 @@ manager.test(testing_dataset)
 ```
 ...
 
-tensorboard_callback = torchmanager.callbacks.TensorBoard('logs')
-last_ckpt_callback = torchmanager.callbacks.LastCheckpoint(model, 'last.model')
-manager.fit(..., callbacks_list=[tensorboard_callback, last_ckpt_callback])
+tensorboard_callback = torchmanager.callbacks.TensorBoard('logs') # tensorboard dependency required
+last_ckpt_callback = torchmanager.callbacks.LastCheckpoint(manager, 'last.model')
+model = manager.fit(..., callbacks_list=[tensorboard_callback, last_ckpt_callback])
+```
+
+- Or use `callbacks.Experiment` to handle both `callbacks.TensorBoard` and `callbacks.LastCheckpoint`:
+```
+...
+
+exp_callback = torchmanager.callbacks.Experiment('test.exp', manager) # tensorboard dependency required
+model = manager.fit(..., callbacks_list=[exp_callback])
+```
+
+- Save final model in PyTorch format:
+```
+torch.save(model, "model.pth")
 ```
 
 ## Custom your training loop
