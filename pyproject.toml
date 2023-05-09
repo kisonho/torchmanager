@@ -15,8 +15,8 @@ torch = "*"
 tqdm = "*"
 
 [tool.poetry.optional-dependencies]
-scipy = { version = "*", packages = ["torchmanager_scipy"] }
-tensorboard = { version = "*", packages = ["torchmanager_tensorboard"] }
+scipy = { version = "*" }
+tensorboard = { version = "*" }
 
 [tool.poetry.extras]
 scipy = ["scipy"]
