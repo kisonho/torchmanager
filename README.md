@@ -5,6 +5,7 @@
 * Python 3.8+
 * PyTorch
 * tqdm
+* scipy (Optional)
 * tensorboard (Optional)
 
 ## Installation
@@ -12,6 +13,23 @@
 * Conda: `conda install -c kisonho torchmanager-nightly`
 
 ## The Manager
+- Start with configurations:
+```
+from torchmanager.configs import Configs as _Configs
+
+# define necessary configurations
+class Configs(_Configs):
+    epochs: int
+    lr: float
+
+    ...
+
+    def show_settings(self) -> None:
+        ...
+
+# get configs from terminal arguments
+configs = Configs.from_arguments()
+```
 - Initialize the manager with target model, optimizer, loss function, and metrics:
 ```
 import torch, torchmanager
@@ -22,7 +40,7 @@ class PytorchModel(torch.nn.Module):
 
 # initialize model, optimizer, loss function, and metrics
 model = PytorchModel(...)
-optimizer = torch.optim.SGD(model.parameters())
+optimizer = torch.optim.SGD(model.parameters(), lr=configs.lr)
 loss_fn = torchmanager.losses.CrossEntropy()
 metrics = {'accuracy': torchmanager.metrics.SparseCategoricalAccuracy()}
 
@@ -39,7 +57,7 @@ training_dataset: Dataset = ...
 val_dataset: Dataset = ...
 
 # train with fit method
-manager.fit(training_dataset, epochs=10, val_dataset=val_dataset)
+manager.fit(training_dataset, epochs=configs.epochs, val_dataset=val_dataset)
 ```
 
 * Test the model with test method:
