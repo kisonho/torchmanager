@@ -101,14 +101,18 @@ class VersionError(SystemError):
         super().__init__(f"`{method_name}` has been deprecated and removed from version {maximum_supported_version}. Current version: {CURRENT}.")
 
 
-def deprecated(target_version: str, removing_version: str):
+def deprecated(target_version: Any, removing_version: Any):
     '''
     Deprecated decorator function
 
     - Parameters:
-        - target_version: A `str` of version for the deprecation
-        - removing_version: A `str` of version for removing
+        - target_version: `Any` type of version for the deprecation
+        - removing_version: `Any` type of version for removing
     '''
+    # format versions
+    target_version = Version(target_version)
+    removing_version = Version(removing_version)
+
     # define wrapping function
     def wrapping_fn(fn):
         @functools.wraps(fn)
