@@ -12,7 +12,7 @@
 * Conda: `conda install -c kisonho torchmanager`
 
 ## The Manager
-- Initialize the manager with target model, optimizer, loss function, and metrics:
+1. Initialize the manager with target model, optimizer, loss function, and metrics:
 ```
 import torch, torchmanager
 
@@ -30,7 +30,7 @@ metrics = {'accuracy': torchmanager.metrics.SparseCategoricalAccuracy()}
 manager = torchmanager.Manager(model, optimizer, loss_fn=loss_fn, metrics=metrics)
 ```
 
-- Train the model with fit method:
+2. Train the model with fit method:
 ```
 from torchmanager.data import Dataset
 
@@ -40,15 +40,6 @@ val_dataset: Dataset = ...
 
 # train with fit method
 manager.fit(training_dataset, epochs=10, val_dataset=val_dataset)
-```
-
-* Test the model with test method:
-```
-# get dataset
-testing_dataset: Dataset = ...
-
-# test with test method
-manager.test(testing_dataset)
 ```
 
 - There are also some other callbacks to use:
@@ -68,7 +59,16 @@ exp_callback = torchmanager.callbacks.Experiment('test.exp', manager) # tensorbo
 model = manager.fit(..., callbacks_list=[exp_callback])
 ```
 
-- Save final model in PyTorch format:
+3. Test the model with test method:
+```
+# get dataset
+testing_dataset: Dataset = ...
+
+# test with test method
+manager.test(testing_dataset)
+```
+
+4. Save final model in PyTorch format:
 ```
 torch.save(model, "model.pth")
 ```
