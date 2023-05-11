@@ -19,7 +19,6 @@ class Dataset(_Dataset[T], abc.ABC):
     ...    @property
     ...    def unbatched_size(self) -> int: ...
     ...
-    ...    def __init__(self, ...,  batch_size: int, device: torch.device = devices.CPU) -> None: ...
     ...    def __getitem__(self, index: Any) -> Any: ...
     >>> dataset = SomeDataset(..., batch_size)
     >>> manager = Manager(...)
@@ -101,10 +100,9 @@ class Dataset(_Dataset[T], abc.ABC):
         cpu_count = os.cpu_count()
         if cpu_count is None:
             cpu_count = 0
-        device = self.device
 
         # initialize loader
-        if device != devices.CPU:
+        if self.device != devices.CPU:
             data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=cpu_count, pin_memory=True, pin_memory_device=str(self.device))
         else:
             data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=cpu_count)
