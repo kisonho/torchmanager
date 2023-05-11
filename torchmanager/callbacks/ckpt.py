@@ -17,7 +17,7 @@ class _Checkpoint(Callback, Generic[T]):
         - ckpt_path: A `str` of checkpoint path
     """
     __ckpt_path: str
-    _checkpoint: Ckpt[T]
+    __checkpoint: Ckpt[T]
 
     @property
     def ckpt_path(self) -> str:
@@ -26,6 +26,10 @@ class _Checkpoint(Callback, Generic[T]):
     @ckpt_path.setter
     def ckpt_path(self, p: str) -> None:
         self.__ckpt_path = os.path.normpath(p)
+
+    @property
+    def checkpoint(self) -> Ckpt[T]:
+        return self.__checkpoint
 
     def __init__(self, model: T, ckpt_path: str, **kwargs: Any) -> None:
         """
@@ -37,11 +41,11 @@ class _Checkpoint(Callback, Generic[T]):
             - **kwargs: Other arguments in `Checkpoint` constructor
         """
         super().__init__()
-        self._checkpoint = Ckpt(model, **kwargs)
+        self.__checkpoint = Ckpt(model, **kwargs)
         self.ckpt_path = os.path.normpath(ckpt_path)
 
     def on_epoch_end(self, epoch: int, summary: Dict[str, float] = ..., val_summary: Optional[Dict[str, float]] = ...) -> None:
-        self._checkpoint.save(epoch, self.ckpt_path)
+        self.checkpoint.save(epoch, self.ckpt_path)
 
 class LastCheckpoint(_Checkpoint[T]):
     """
