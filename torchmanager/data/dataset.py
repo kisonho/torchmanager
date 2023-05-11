@@ -124,10 +124,12 @@ class Dataset(_Dataset[T], abc.ABC):
             - data: `Any` kind of single data
         - Returns: `Any` kind of inputs with type `T`
         """
+        if isinstance(data, torch.Tensor) or isinstance(data, dict):
+            return data, data  # type: ignore # suppose for unsupervised reconstruction or a dictionary of packed data
         if isinstance(data, Sequence):
-            return data[0], data[1] if len(data) >= 2 else NotImplemented # type: ignore
+            return data[0], data[1] if len(data) == 2 else NotImplemented  # type: ignore # suppose for supervised
         else:
-            return NotImplemented
+            return NotImplemented  # unknown type of dataset
 
 
 def batched(fn: Callable[..., _Dataset]):
