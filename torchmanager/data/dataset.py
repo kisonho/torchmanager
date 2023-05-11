@@ -126,8 +126,8 @@ class Dataset(_Dataset[T], abc.ABC):
         """
         if isinstance(data, torch.Tensor) or isinstance(data, dict):
             return data, data  # type: ignore # suppose for unsupervised reconstruction or a dictionary of packed data
-        if isinstance(data, Sequence):
-            return data[0], data[1] if len(data) == 2 else NotImplemented  # type: ignore # suppose for supervised
+        if isinstance(data, Sequence) and len(data) == 2:
+            return data[0], data[1]  # type: ignore # suppose for supervised
         else:
             return NotImplemented  # unknown type of dataset
 
