@@ -19,7 +19,6 @@ class Dataset(_Dataset[T], abc.ABC):
     ...    @property
     ...    def unbatched_size(self) -> int: ...
     ...
-    ...    def __init__(self, ...,  batch_size: int, device: torch.device = devices.CPU) -> None: ...
     ...    def __getitem__(self, index: Any) -> Any: ...
     >>> dataset = SomeDataset(..., batch_size)
     >>> manager = Manager(...)
@@ -101,10 +100,9 @@ class Dataset(_Dataset[T], abc.ABC):
         cpu_count = os.cpu_count()
         if cpu_count is None:
             cpu_count = 0
-        device = self.device
 
         # initialize loader
-        if device != devices.CPU:
+        if self.device != devices.CPU:
             data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=cpu_count, pin_memory=True, pin_memory_device=str(self.device))
         else:
             data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=cpu_count)
@@ -126,10 +124,12 @@ class Dataset(_Dataset[T], abc.ABC):
             - data: `Any` kind of single data
         - Returns: `Any` kind of inputs with type `T`
         """
-        if isinstance(data, Sequence):
-            return data[0], data[1] if len(data) >= 2 else NotImplemented # type: ignore
+        if isinstance(data, torch.Tensor) or isinstance(data, dict):
+            return data, data  # type: ignore # suppose for unsupervised reconstruction or a dictionary of packed data
+        if isinstance(data, Sequence) and len(data) == 2:
+            return data[0], data[1]  # type: ignore # suppose for supervised
         else:
-            return NotImplemented
+            return NotImplemented  # unknown type of dataset
 
 
 def batched(fn: Callable[..., _Dataset]):
