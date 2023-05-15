@@ -61,10 +61,10 @@ class Configs(argparse.Namespace, abc.ABC):
         parser.add_argument("-exp", "--experiment", type=str, default="test.exp", help="The name of experiment")
         parser.add_argument("--replace_experiment", action="store_true", default=False, help="The flag to replace given experiment if exists.")
         return parser
-    
+
     def show_environments(self) -> None:
         view.logger.info(f"torch={torch.__version__}, torchmanager={VERSION}")
-    
+
     @abc.abstractmethod
     def show_settings(self) -> None:
         pass
