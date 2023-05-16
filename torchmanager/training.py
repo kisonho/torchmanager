@@ -272,7 +272,6 @@ class Manager(_Manager[Module]):
         - Returns: A summary of `dict` with keys as `str` and values as `float`
         """
         # forward pass
-        summary: Dict[str, float] = {}
         y = self.forward(x_train)
         loss = self.compiled_losses(y, y_train)
 
@@ -283,21 +282,7 @@ class Manager(_Manager[Module]):
         for name, fn in self.compiled_metrics.items():
             if not name.startswith("val_") and "loss" not in name:
                 fn(y, y_train)
-
-        # summary result
-        try:
-            summary["loss"] = float(self.compiled_losses.result.detach())
-        except Exception as e:
-            raise errors.LossError() from e
-        for name, fn in self.metric_fns.items():
-            if name.startswith("val_"):
-                continue
-            try:
-                summary[name] = float(fn.result.detach())
-            except Exception as metric_error:
-                runtime_error = errors.MetricError(name)
-                raise runtime_error from metric_error
-        return summary
+        return self.summary
 
     def to_checkpoint(self) -> Checkpoint[Self]:
         ckpt = super().to_checkpoint()

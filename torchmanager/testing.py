@@ -20,14 +20,35 @@ class Manager(BaseManager[Module]):
     >>> manager.test(dataset, ...)
 
     - Properties:
-        - compiled_losses: The loss function in `Loss` that must be exist
         - compiled_metrics: The `dict` of metrics in `Resulting` that does not contain losses
+        - summary: A `dict` of metrics summary with name in `str` and value in `float`
     """
     model: Union[Module, torch.nn.parallel.DataParallel]
 
     @property
     def compiled_metrics(self) -> Dict[str, Resulting]:
         return {name: m for name, m in self.metric_fns.items() if "loss" not in name}
+
+    @property
+    def summary(self) -> Dict[str, float]:
+        # initialize
+        summary: Dict[str, float] = {}
+
+        # summarize loss
+        if self.loss_fn is not None:
+            summary["loss"] = float(self.loss_fn.result.detach())
+
+        # summarize metrics
+        for name, fn in self.metric_fns.items():
+            if name.startswith("val_"):
+                name = name.replace("val_", "")
+            try:
+                summary[name] = float(fn.result.detach())
+            except Exception as metric_error:
+                runtime_error = errors.MetricError(name)
+                raise runtime_error from metric_error
+        return summary
+
 
     def forward(self, x_train: Any) -> Any:
         """
@@ -123,9 +144,6 @@ class Manager(BaseManager[Module]):
             use_multi_gpus = False
         devices.set_default(target_devices[0])
 
-        # initialize summary
-        summary: Dict[str, float] = {}
-
         # initialize progress bar
         if len(dataset) == 0:
             return {}
@@ -172,20 +190,8 @@ class Manager(BaseManager[Module]):
                     progress_bar.set_postfix(step_summary)
                     progress_bar.update()
 
-            # summarize
-            for name, fn in self.metric_fns.items():
-                if name.startswith("val_"):
-                    name = name.replace("val_", "")
-                try:
-                    summary[name] = float(fn.result.detach())
-                except Exception as metric_error:
-                    runtime_error = errors.MetricError(name)
-                    raise runtime_error from metric_error
-            if self.loss_fn is not None:
-                summary["loss"] = float(self.loss_fn.result.detach())
-
             # reset model and loss
-            return summary
+            return self.summary
         except KeyboardInterrupt:
             view.logger.info("Testing interrupted.")
             return {}
@@ -213,9 +219,6 @@ class Manager(BaseManager[Module]):
             - y_train: The testing label in `torch.Tensor`
         - Returns: A `dict` of validation summary
         """
-        # initialize
-        summary: Dict[str, float] = {}
-
         # forward pass
         y = self.forward(x_test)
 
@@ -227,7 +230,6 @@ class Manager(BaseManager[Module]):
                 continue
             try:
                 fn(y, y_test)
-                summary[name] = float(fn.result.detach())
             except Exception as metric_error:
                 runtime_error = errors.MetricError(name)
                 raise runtime_error from metric_error
@@ -236,8 +238,7 @@ class Manager(BaseManager[Module]):
         if self.loss_fn is not None:
             try:
                 self.loss_fn(y, y_test)
-                summary["loss"] = float(self.loss_fn.result.detach())
             except Exception as loss_error:
                 runtime_error = errors.LossError()
                 raise loss_error from runtime_error
-        return summary
+        return self.summary
