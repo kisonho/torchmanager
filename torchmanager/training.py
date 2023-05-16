@@ -141,7 +141,9 @@ class Manager(_Manager[Module]):
         - Parameters:
             - loss: A `torch.Tensor` of loss value
         """
+        self.compiled_optimizer.zero_grad()
         loss.backward()
+        self.compiled_optimizer.step()
 
     def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, epochs: Optional[int] = None, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any], Collection]] = None, callbacks_list: List[Callback] = [], *, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, device: Optional[Union[torch.device, List[torch.device]]] = None, use_multi_gpus: bool = False, **kwargs) -> Module:
         """
@@ -274,15 +276,13 @@ class Manager(_Manager[Module]):
         y = self.forward(x_train)
         loss = self.compiled_losses(y, y_train)
 
+        # backward pass
+        self.backward(loss)
+
         # forward metrics
         for name, fn in self.compiled_metrics.items():
             if not name.startswith("val_") and "loss" not in name:
                 fn(y, y_train)
-
-        # backward pass
-        self.compiled_optimizer.zero_grad()
-        self.backward(loss)
-        self.compiled_optimizer.step()
 
         # summary result
         try:
