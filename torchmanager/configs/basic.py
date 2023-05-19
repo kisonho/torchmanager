@@ -1,6 +1,6 @@
 from torchmanager_core import argparse, abc, os, shutil, torch, view
 from torchmanager_core.typing import Any, Union
-from torchmanager_core import VERSION
+from torchmanager_core import VERSION, DESCRIPTION
 
 
 class Configs(argparse.Namespace, abc.ABC):
@@ -62,7 +62,8 @@ class Configs(argparse.Namespace, abc.ABC):
         parser.add_argument("--replace_experiment", action="store_true", default=False, help="The flag to replace given experiment if exists.")
         return parser
 
-    def show_environments(self) -> None:
+    def show_environments(self, description: str = DESCRIPTION) -> None:
+        view.logger.info(description)
         view.logger.info(f"torch={torch.__version__}, torchmanager={VERSION}")
 
     @abc.abstractmethod

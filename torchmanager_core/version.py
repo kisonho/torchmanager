@@ -92,8 +92,8 @@ class Version:
 
 
 API = Version("v1.2")
-CURRENT = Version("v1.2b6")
-DESCRIPTION: str = "PyTorch Training Manager v1.2 (Beta 6)"
+CURRENT = Version("v1.2b7")
+DESCRIPTION: str = "PyTorch Training Manager v1.2 (Beta 7)"
 
 
 class VersionError(SystemError):
