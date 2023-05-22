@@ -128,11 +128,7 @@ class Manager(_Manager[Module]):
             # end epoch training
             if progress_bar is not None:
                 progress_bar.close()
-
-        # summarize
-        summary = {name: float(fn.result.detach()) for name, fn in self.metric_fns.items() if not name.startswith("val_")}
-        summary["loss"] = float(self.compiled_losses.result.detach())
-        return summary
+        return self.summary
 
     def backward(self, loss: torch.Tensor) -> None:
         """
@@ -249,10 +245,9 @@ class Manager(_Manager[Module]):
             # on train end
             for c in callbacks_list:
                 c.on_train_end(self.raw_model)
-            return self.raw_model
         except KeyboardInterrupt:
             view.logger.info("Training interrupted.")
-            return self.raw_model
+            pass
         except Exception as error:
             view.logger.error(error)
             runtime_error = errors.StopTraining(self.current_epoch, "Training failed.")
@@ -261,6 +256,7 @@ class Manager(_Manager[Module]):
             self.model = self.raw_model.to(cpu)
             self.loss_fn = self.raw_loss_fn.to(cpu) if self.raw_loss_fn is not None else self.raw_loss_fn
             devices.empty_cache()
+        return self.raw_model
 
     def train_step(self, x_train: Any, y_train: Any) -> Dict[str, float]:
         """
