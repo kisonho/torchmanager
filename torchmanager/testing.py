@@ -49,7 +49,6 @@ class Manager(BaseManager[Module]):
                 raise runtime_error from metric_error
         return summary
 
-
     def forward(self, x_train: Any) -> Any:
         """
         Forward pass function
@@ -89,8 +88,8 @@ class Manager(BaseManager[Module]):
 
         # move model
         try:
-            if use_multi_gpus and not isinstance(self.model, torch.nn.parallel.DataParallel):
-                self.model, use_multi_gpus = devices.data_parallel(self.model, devices=target_devices)
+            # multi gpus support
+            use_multi_gpus = self.data_parallel(target_devices)
 
             # initialize predictions
             self.model.eval()
@@ -138,7 +137,7 @@ class Manager(BaseManager[Module]):
             - show_verbose: A `bool` flag to show the progress bar during testing
         - Returns: A `dict` of validation summary
         """
-        # initialize device
+        # find available device
         cpu, device, target_devices = devices.search(device)
         if device == cpu and len(target_devices) < 2:
             use_multi_gpus = False
@@ -161,18 +160,11 @@ class Manager(BaseManager[Module]):
 
         try:
             # multi-gpus support for model
-            if use_multi_gpus and not isinstance(self.model, torch.nn.parallel.DataParallel):
-                self.model, use_multi_gpus = devices.data_parallel(self.model, devices=target_devices)
-
-            # multi-gpus support for loss function
-            if use_multi_gpus and self.loss_fn is not None and not isinstance(self.loss_fn, torch.nn.parallel.DataParallel):
-                paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.loss_fn, devices=target_devices, parallel_type=ParallelLoss)
-                assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), _raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
-                self.loss_fn = paralleled_loss_fn
-
-            # set module status and move to device
-            self.model.eval()
+            use_multi_gpus = self.data_parallel(target_devices)
             self.to(device)
+
+            # move to device
+            self.model.eval()
 
             # batch loop
             for data in dataset:

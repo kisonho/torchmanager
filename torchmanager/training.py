@@ -141,6 +141,17 @@ class Manager(_Manager[Module]):
         loss.backward()
         self.compiled_optimizer.step()
 
+    def data_parallel(self, target_devices: List[torch.device]) -> bool:
+        # multi gpus support for loss
+        if not isinstance(self.compiled_losses, torch.nn.parallel.DataParallel):
+            assert isinstance(self.compiled_losses, Loss), errors._raise(TypeError("The compiled loss function is not a valid `Loss` object."))
+            paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.compiled_losses, devices=target_devices, parallel_type=ParallelLoss)
+            assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), errors._raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
+            self.loss_fn = paralleled_loss_fn
+            return super().data_parallel(target_devices) if use_multi_gpus else False
+        else:
+            return False
+
     def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, epochs: Optional[int] = None, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any], Collection]] = None, callbacks_list: List[Callback] = [], *, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, device: Optional[Union[torch.device, List[torch.device]]] = None, use_multi_gpus: bool = False, **kwargs) -> Module:
         """
         Training algorithm
@@ -178,30 +189,19 @@ class Manager(_Manager[Module]):
         else:
             initial_epoch = self.current_epoch
 
-        # initialize training
+        # find available device
         cpu, device, target_devices = devices.search(device)
         if device == cpu and len(target_devices) < 2:
             use_multi_gpus = False
         devices.set_default(target_devices[0])
+
+        # initialize training
         for c in callbacks_list:
             c.on_train_start(initial_epoch)
 
         try:
-            # multi gpus support for model
-            if use_multi_gpus and not isinstance(self.model, torch.nn.parallel.DataParallel):
-                model, use_multi_gpus = devices.data_parallel(self.model, devices=target_devices)
-            else:
-                model = self.model
-            self.model = model
-
-            # multi gpus support for loss
-            if use_multi_gpus and not isinstance(self.compiled_losses, torch.nn.parallel.DataParallel):
-                assert isinstance(self.compiled_losses, Loss), errors._raise(TypeError("The compiled loss function is not a valid `Loss` object."))
-                paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.compiled_losses, devices=target_devices, parallel_type=ParallelLoss)
-                assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), errors._raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
-                self.loss_fn = paralleled_loss_fn
-
             # move to device
+            use_multi_gpus = self.data_parallel(target_devices)
             self.to(device)
 
             # epoch loop

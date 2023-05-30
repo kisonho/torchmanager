@@ -1,5 +1,5 @@
-from torchmanager_core import torch, Version, deprecated, _raise, API_VERSION, VERSION as CURRENT_VERSION
-from torchmanager_core.typing import Any, Collection, Dict, Generic, Module, Optional, OrderedDict, Self, Tuple, Union
+from torchmanager_core import devices, torch, Version, deprecated, _raise, API_VERSION, VERSION as CURRENT_VERSION
+from torchmanager_core.typing import Any, Collection, Dict, Generic, List, Module, Optional, OrderedDict, Self, Tuple, Union
 
 from .compatibility import convert
 from .losses import Loss, MultiLosses, ParallelLoss
@@ -122,6 +122,14 @@ class BaseManager(Generic[Module]):
         """
         self._compile(optimizer, loss_fn, metrics)
 
+    def data_parallel(self, target_devices: List[torch.device]) -> bool:
+        # multi gpus support for model
+        if isinstance(self.model, torch.nn.parallel.DataParallel):
+            self.model, use_multi_gpus = devices.data_parallel(self.model, devices=target_devices)
+            return use_multi_gpus
+        else:
+            return False
+
     @classmethod
     def from_checkpoint(cls, ckpt: Union[Checkpoint[Any], str], map_location: Optional[torch.device] = None):
         """
@@ -195,13 +203,14 @@ class BaseManager(Generic[Module]):
             "metrics": {k: m.state_dict(keep_vars=keep_vars) for k, m in self.metric_fns.items()}
         })
 
-    def to(self, device: torch.device) -> None:
+    def to(self, device: torch.device, use_multi_gpus: bool = False) -> None:
         """
         Move the elements in the manager to a target device
 
         - Parameters:
             - device: A target `torch.device`
         """
+        # Move to device
         self.model = self.model.to(device)
         if self.loss_fn is not None:
             self.loss_fn = self.loss_fn.to(device)
