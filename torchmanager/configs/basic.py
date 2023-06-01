@@ -1,6 +1,6 @@
 from torchmanager_core import argparse, abc, os, shutil, torch, view
 from torchmanager_core.typing import Any, Union
-from torchmanager_core import VERSION, DESCRIPTION
+from torchmanager_core import DESCRIPTION
 
 
 class Configs(argparse.Namespace, abc.ABC):
@@ -64,7 +64,7 @@ class Configs(argparse.Namespace, abc.ABC):
 
     def show_environments(self, description: str = DESCRIPTION) -> None:
         view.logger.info(description)
-        view.logger.info(f"torch={torch.__version__}, torchmanager={VERSION}")
+        view.logger.info(f"torch={torch.__version__}")
 
     @abc.abstractmethod
     def show_settings(self) -> None:

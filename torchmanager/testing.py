@@ -121,8 +121,7 @@ class Manager(BaseManager[Module]):
                 progress_bar.close()
 
             # empty cache
-            self.model = self.raw_model.to(cpu)
-            devices.empty_cache()
+            self.reset(cpu)
 
     @torch.no_grad()
     def test(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection[Any]],  /, *,device: Optional[Union[torch.device, List[torch.device]]] = None, empty_cache: bool = True, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
@@ -198,9 +197,7 @@ class Manager(BaseManager[Module]):
 
             # empty cache
             if empty_cache:
-                self.model = self.raw_model.to(cpu)
-                self.loss_fn = self.raw_loss_fn.to(cpu) if self.raw_loss_fn is not None else self.raw_loss_fn
-                devices.empty_cache()
+                self.reset(cpu)
 
     def test_step(self, x_test: Any, y_test: Any) -> Dict[str, float]:
         """

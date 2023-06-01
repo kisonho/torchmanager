@@ -143,14 +143,11 @@ class Manager(_Manager[Module]):
 
     def data_parallel(self, target_devices: List[torch.device]) -> bool:
         # multi gpus support for loss
-        if not isinstance(self.compiled_losses, torch.nn.parallel.DataParallel):
-            assert isinstance(self.compiled_losses, Loss), errors._raise(TypeError("The compiled loss function is not a valid `Loss` object."))
-            paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.compiled_losses, devices=target_devices, parallel_type=ParallelLoss)
-            assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), errors._raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
-            self.loss_fn = paralleled_loss_fn
-            return super().data_parallel(target_devices) if use_multi_gpus else False
-        else:
-            return False
+        assert isinstance(self.compiled_losses, Loss), errors._raise(TypeError("The compiled loss function is not a valid `Loss` object."))
+        paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.compiled_losses, devices=target_devices, parallel_type=ParallelLoss)
+        assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), errors._raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
+        self.loss_fn = paralleled_loss_fn
+        return super().data_parallel(target_devices) and use_multi_gpus
 
     def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, epochs: Optional[int] = None, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any], Collection]] = None, callbacks_list: List[Callback] = [], *, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, device: Optional[Union[torch.device, List[torch.device]]] = None, use_multi_gpus: bool = False, **kwargs) -> Module:
         """
@@ -253,9 +250,7 @@ class Manager(_Manager[Module]):
             runtime_error = errors.StopTraining(self.current_epoch, "Training failed.")
             raise runtime_error from error
         finally:
-            self.model = self.raw_model.to(cpu)
-            self.loss_fn = self.raw_loss_fn.to(cpu) if self.raw_loss_fn is not None else self.raw_loss_fn
-            devices.empty_cache()
+            self.reset(cpu)
         return self.raw_model
 
     def train_step(self, x_train: Any, y_train: Any) -> Dict[str, float]:

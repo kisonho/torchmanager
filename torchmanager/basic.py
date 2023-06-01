@@ -45,7 +45,7 @@ class BaseManager(Generic[Module]):
     # properties
     loss_fn: Optional[Union[Loss, ParallelLoss]]
     metric_fns: Dict[str, Metric]
-    model: Module
+    model: Union[Module, torch.nn.DataParallel]
     optimizer: Optional[torch.optim.Optimizer]
     version: Version
 
@@ -67,7 +67,7 @@ class BaseManager(Generic[Module]):
 
     @property
     def raw_model(self) -> Module:
-        return self.model.module if isinstance(self.model, torch.nn.parallel.DataParallel) else self.model
+        return self.model.module if isinstance(self.model, torch.nn.parallel.DataParallel) else self.model  # type: ignore
 
     def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss]]] = None, metrics: Dict[str, Metric] = {}) -> None:
         """
@@ -123,12 +123,16 @@ class BaseManager(Generic[Module]):
         self._compile(optimizer, loss_fn, metrics)
 
     def data_parallel(self, target_devices: List[torch.device]) -> bool:
+        """
+        Data parallel all available models
+
+        - Parameters:
+            - target_devices: The target multiple devices for data parallel
+        - Returns: A `bool` flag of if use multi GPUs
+        """
         # multi gpus support for model
-        if isinstance(self.model, torch.nn.parallel.DataParallel):
-            self.model, use_multi_gpus = devices.data_parallel(self.model, devices=target_devices)
-            return use_multi_gpus
-        else:
-            return False
+        self.model, use_multi_gpus = devices.data_parallel(self.model, devices=target_devices)
+        return use_multi_gpus
 
     @classmethod
     def from_checkpoint(cls, ckpt: Union[Checkpoint[Any], str], map_location: Optional[torch.device] = None):
@@ -194,6 +198,17 @@ class BaseManager(Generic[Module]):
         for k, m in metrics.items():
             assert k in self.metric_fns, _raise(KeyError(f"The manager does not have a metric named '{k}'."))
             self.metric_fns[k].load_state_dict(m)
+
+    def reset(self, cpu: torch.device = devices.CPU) -> None:
+        """
+        Reset model and loss functions, move all to CPU and empty device cache
+
+        - Parameters:
+            - cpu: The CPU in `torch.device`
+        """
+        self.model = self.raw_model.to(cpu)
+        self.loss_fn = self.raw_loss_fn.to(cpu) if self.raw_loss_fn is not None else self.raw_loss_fn
+        devices.empty_cache()
 
     def state_dict(self, prefix: str = '', keep_vars: bool = False) -> OrderedDict[str, Any]:
         return OrderedDict({
