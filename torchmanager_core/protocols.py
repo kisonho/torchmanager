@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, OrderedDict, Protocol, runtime_che
 from typing_extensions import Self
 
 from .devices.protocols import DeviceMovable
+from .version import Version
 from .view.protocols import VerboseControllable
 
 
@@ -104,6 +105,15 @@ class SummaryWriteble(Protocol):
 
     @abc.abstractmethod
     def add_scalars(self, main_tag: str, tag_scalar_dict: Any, global_step: Optional[int] = None) -> None:
+        pass
+
+
+@runtime_checkable
+class VersionConvertible(Protocol):
+    """The protocol that can convert from previous version"""
+
+    @abc.abstractmethod
+    def convert(self, from_version: Version) -> None:
         pass
 
 

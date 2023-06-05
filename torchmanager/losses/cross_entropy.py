@@ -1,4 +1,4 @@
-from torchmanager_core import functional as F, torch, _raise
+from torchmanager_core import functional as F, torch, Version, _raise
 from torchmanager_core.typing import Any, Optional
 
 from .dice import Dice
@@ -114,6 +114,11 @@ class KLDiv(Loss):
         if self._t is not None:
             assert self._t > 0, _raise(ValueError(f"Temperature must be a positive number, got {self._t}."))
         self.replace_nan = replace_nan
+
+    def convert(self, from_version: Version) -> None:
+        if from_version < Version("v1.1"):
+            self.replace_nan = False
+            self._t = None
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # softmax input and target

@@ -1,7 +1,7 @@
 from torchmanager_core import devices, torch, Version, deprecated, _raise, API_VERSION, VERSION as CURRENT_VERSION
+from torchmanager_core.protocols import VersionConvertible
 from torchmanager_core.typing import Any, Collection, Dict, Generic, List, Module, Optional, OrderedDict, Self, Tuple, Union
 
-from .compatibility import convert
 from .losses import Loss, MultiLosses, ParallelLoss
 from .metrics import Metric
 from .train import Checkpoint
@@ -164,15 +164,22 @@ class BaseManager(Generic[Module]):
         else:
             raise TypeError(f"The saved checkpoint contains a model with type of {type(ckpt.model)} that cannot be recoverred to a `Manager`.")
         
-        # convert manager version
+        # initialize manager version
         if not hasattr(manager, "version"):
-            manager.loss_fn = convert(manager.loss_fn)
-            for k in manager.metric_fns:
-                manager.metric_fns[k] = convert(manager.metric_fns[k])
-        elif manager.version < API_VERSION:
-            manager.loss_fn = convert(manager.loss_fn, from_version=manager.version)
-            for k in manager.metric_fns:
-                manager.metric_fns[k] = convert(manager.metric_fns[k], from_version=manager.version)
+            manager.version = Version("v1.0")
+
+        # check manager version
+        if manager.version < API_VERSION:
+            if isinstance(manager.raw_loss_fn, VersionConvertible):
+                manager.raw_loss_fn.convert(manager.version)
+        
+            # convert metrics version
+            for m in manager.metric_fns.items():
+                if isinstance(m, VersionConvertible):
+                    m.convert(manager.version)
+
+        # set to current version
+        manager.version = CURRENT_VERSION
         return manager
 
     def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> None:
@@ -218,7 +225,7 @@ class BaseManager(Generic[Module]):
             "metrics": {k: m.state_dict(keep_vars=keep_vars) for k, m in self.metric_fns.items()}
         })
 
-    def to(self, device: torch.device, use_multi_gpus: bool = False) -> None:
+    def to(self, device: torch.device) -> None:
         """
         Move the elements in the manager to a target device
 

@@ -1,4 +1,4 @@
-from torchmanager_core import torch
+from torchmanager_core import torch, Version
 from torchmanager_core.typing import Optional, Tuple
 
 from .conf_met import BinaryConfusionMetric
@@ -10,12 +10,17 @@ class Accuracy(Metric):
     The traditional accuracy metric to compare two `torch.Tensor`
 
     * extends: `.metric.Metric`
+    * implements: `torchmanager_core.protocols.VersionConvertible`
     """
     reduction: Reduction
 
     def __init__(self, *, reduction: Reduction = Reduction.MEAN, target: Optional[str] = None) -> None:
         super().__init__(target=target)
         self.reduction = reduction
+
+    def convert(self, from_version: Version) -> None:
+        if from_version < Version("v1.1"):
+            self.reduction = Reduction.MEAN
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         if self.reduction == Reduction.MEAN:
