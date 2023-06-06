@@ -1,11 +1,10 @@
 from torch.utils.data import DataLoader
-from torchmanager_core import devices, errors, torch, view, _raise
+from torchmanager_core import devices, errors, torch, view
 from torchmanager_core.protocols import Resulting
-from torchmanager_core.typing import Any, Collection, Dict, List, Module, Optional, Union
+from torchmanager_core.typing import Any, Collection, Dict, List, Module, Optional, Tuple, Union
 
 from .basic import BaseManager
 from .data import Dataset
-from .losses import Loss, ParallelLoss
 
 
 class Manager(BaseManager[Module]):
@@ -49,7 +48,7 @@ class Manager(BaseManager[Module]):
                 raise runtime_error from metric_error
         return summary
 
-    def forward(self, x_train: Any) -> Any:
+    def forward(self, x_train: Any, y_test: Optional[Any] = None) -> Tuple[Any, Optional[torch.Tensor]]:
         """
         Forward pass function
 
@@ -57,7 +56,19 @@ class Manager(BaseManager[Module]):
             - x_train: The training data
         - Returns: `Any` kind of model output
         """
-        return self.model(x_train)
+        # forward model
+        y = self.model(x_train)
+
+        # forward loss
+        if self.loss_fn is not None and y_test is not None:
+            try:
+                loss = self.loss_fn(y, y_test)
+            except Exception as loss_error:
+                runtime_error = errors.LossError()
+                raise loss_error from runtime_error
+        else:
+            loss = None
+        return y, loss
 
     @torch.no_grad()
     def predict(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection[Any]], /, *, device: Optional[Union[torch.device, List[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> List[Any]:
@@ -101,7 +112,7 @@ class Manager(BaseManager[Module]):
                 x, _ = self.unpack_data(data)
                 if use_multi_gpus is not True:
                     x = devices.move_to_device(x, device)
-                y = self.forward(x)
+                y, _ = self.forward(x, None)
                 predictions.append(y)
                 if progress_bar is not None:
                     progress_bar.update()
@@ -158,11 +169,9 @@ class Manager(BaseManager[Module]):
             m.eval().reset()
 
         try:
-            # multi-gpus support for model
+            # move to device
             use_multi_gpus = self.data_parallel(target_devices)
             self.to(device)
-
-            # move to device
             self.model.eval()
 
             # batch loop
@@ -209,7 +218,7 @@ class Manager(BaseManager[Module]):
         - Returns: A `dict` of validation summary
         """
         # forward pass
-        y = self.forward(x_test)
+        y, _ = self.forward(x_test)
 
         # forward metrics
         for name, fn in self.compiled_metrics.items():
@@ -222,12 +231,4 @@ class Manager(BaseManager[Module]):
             except Exception as metric_error:
                 runtime_error = errors.MetricError(name)
                 raise runtime_error from metric_error
-
-        # forward loss
-        if self.loss_fn is not None:
-            try:
-                self.loss_fn(y, y_test)
-            except Exception as loss_error:
-                runtime_error = errors.LossError()
-                raise loss_error from runtime_error
         return self.summary

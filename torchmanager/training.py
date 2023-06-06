@@ -1,5 +1,5 @@
 from torch.utils.data import DataLoader
-from torchmanager_core import devices, errors, math, torch, view
+from torchmanager_core import devices, errors, math, torch, view, _raise
 from torchmanager_core.protocols import Resulting
 from torchmanager_core.typing import Any, Collection, Dict, List, Module, Optional, Self, Union
 
@@ -263,16 +263,16 @@ class Manager(_Manager[Module]):
         - Returns: A summary of `dict` with keys as `str` and values as `float`
         """
         # forward pass
-        y = self.forward(x_train)
-        loss = self.compiled_losses(y, y_train)
-
-        # backward pass
-        self.backward(loss)
+        y, loss = self.forward(x_train, y_train)
+        assert loss is not None, _raise(TypeError("Loss cannot be fetched."))
 
         # forward metrics
         for name, fn in self.compiled_metrics.items():
             if not name.startswith("val_") and "loss" not in name:
                 fn(y, y_train)
+
+        # backward pass
+        self.backward(loss)
         return self.summary
 
     def to_checkpoint(self) -> Checkpoint[Self]:
