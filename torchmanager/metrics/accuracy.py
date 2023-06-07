@@ -72,14 +72,9 @@ class CategoricalAccuracy(SparseCategoricalAccuracy):
 
 
 class F1(BinaryConfusionMetric):
-    """
-    The F1 metrics
-    """
+    """The F1 metrics"""
 
-    def forward(self, input: Tuple[torch.Tensor, torch.Tensor, torch.Tensor], target: torch.Tensor) -> torch.Tensor:
-        # extract input
-        tp, fp, fn = input
-
+    def forward(self, tp: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
         # calculate precision and recall
         precision = tp / (tp + fp + self._eps)
         recall = tp / (tp + fn + self._eps)
@@ -127,20 +122,14 @@ class MAE(Metric):
 
 
 class Precision(BinaryConfusionMetric):
-    """
-    The Precision metrics
-    """
+    """The Precision metrics"""
 
-    def forward(self, input: Tuple[torch.Tensor, torch.Tensor, torch.Tensor], target: torch.Tensor) -> torch.Tensor:
-        tp, fp, _ = input
+    def forward_metric(self, tp: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
         return tp / (tp + fp + self._eps)
 
 
 class Recall(BinaryConfusionMetric):
-    """
-    The Recall metrics
-    """
+    """The Recall metrics"""
 
-    def forward(self, input: Tuple[torch.Tensor, torch.Tensor, torch.Tensor], target: torch.Tensor) -> torch.Tensor:
-        tp, _, fn = input
+    def forward_metric(self, tp: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
         return tp / (tp + fn + self._eps)

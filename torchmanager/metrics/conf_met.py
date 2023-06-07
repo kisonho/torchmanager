@@ -1,18 +1,18 @@
 from torchmanager_core import abc, torch, deprecated, _raise
-from torchmanager_core.typing import Any, Optional, Tuple
+from torchmanager_core.typing import Any, Optional
 
 from .metric import Metric
 
 
 class BinaryConfusionMetric(Metric, abc.ABC):
     """
-    The binary confusion metrics that forwards input as a `tuple` of TP, FP, and FN
+    The binary confusion metrics that calculates TP, FP, and FN and forward further to calculate the final metric
 
     * extends: `.metric.Metric`
     * Abstract class
 
     - Methods to implement:
-        - forward: The main `forward` method that accepts input as a `tuple` of TP, FP, and FN as `torch.Tensor` and returns the final metric as `torch.Tensor`
+        - forward_metric: The main method that accepts TP, FP, and FN as `torch.Tensor` and returns the final metric as `torch.Tensor`
     """
     _dim: int
     _eps: float
@@ -22,7 +22,7 @@ class BinaryConfusionMetric(Metric, abc.ABC):
         self._dim = dim
         self._eps = eps
 
-    def __call__(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # argmax input
         input = input.argmax(dim=self._dim)
 
@@ -30,10 +30,10 @@ class BinaryConfusionMetric(Metric, abc.ABC):
         tp = torch.sum(target * input, dim=0)
         fp = torch.sum((1 - target) * input, dim=0)
         fn = torch.sum(target * (1 - input), dim=0)
-        return super().__call__((tp, fp, fn), target)
+        return self.forward_metric(tp, fp, fn)
 
     @abc.abstractmethod
-    def forward(self, input: Tuple[torch.Tensor, torch.Tensor, torch.Tensor], target: torch.Tensor) -> torch.Tensor:
+    def forward_metric(self, tp: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
         return NotImplemented
 
 
