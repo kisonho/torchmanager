@@ -1,6 +1,6 @@
 from torchmanager_core import torch, Version
 from torchmanager_core.protocols import Reduction
-from torchmanager_core.typing import Optional, Tuple
+from torchmanager_core.typing import Optional
 
 from .conf_met import BinaryConfusionMetric
 from .metric import Metric
@@ -75,7 +75,7 @@ class CategoricalAccuracy(SparseCategoricalAccuracy):
 class F1(BinaryConfusionMetric):
     """The F1 metrics"""
 
-    def forward(self, tp: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
+    def forward(self, tp: torch.Tensor, tn: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
         # calculate precision and recall
         precision = tp / (tp + fp + self._eps)
         recall = tp / (tp + fn + self._eps)
@@ -125,12 +125,12 @@ class MAE(Metric):
 class Precision(BinaryConfusionMetric):
     """The Precision metrics"""
 
-    def forward_metric(self, tp: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
+    def forward_metric(self, tp: torch.Tensor, tn: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
         return tp / (tp + fp + self._eps)
 
 
 class Recall(BinaryConfusionMetric):
     """The Recall metrics"""
 
-    def forward_metric(self, tp: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
+    def forward_metric(self, tp: torch.Tensor, tn: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
         return tp / (tp + fn + self._eps)

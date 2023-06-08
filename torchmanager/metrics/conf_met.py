@@ -17,8 +17,8 @@ class BinaryConfusionMetric(Metric, abc.ABC):
     _dim: int
     _eps: float
 
-    def __init__(self, dim: int = -1, *, eps: float=1e-7):
-        super().__init__()
+    def __init__(self, dim: int = -1, *, eps: float=1e-7, target: Optional[str] = None):
+        super().__init__(target=target)
         self._dim = dim
         self._eps = eps
 
@@ -28,12 +28,13 @@ class BinaryConfusionMetric(Metric, abc.ABC):
 
         # calculate TP, FP, and FN
         tp = torch.sum(target * input, dim=0)
+        tn = ((1 - target) * (1 - input)).sum(dim=0)
         fp = torch.sum((1 - target) * input, dim=0)
         fn = torch.sum(target * (1 - input), dim=0)
-        return self.forward_metric(tp, fp, fn)
+        return self.forward_metric(tp, tn, fp, fn)
 
     @abc.abstractmethod
-    def forward_metric(self, tp: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
+    def forward_metric(self, tp: torch.Tensor, tn: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
         return NotImplemented
 
 

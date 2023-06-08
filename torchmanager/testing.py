@@ -220,7 +220,7 @@ class Manager(BaseManager[Module]):
         - Returns: A `dict` of validation summary
         """
         # forward pass
-        y, _ = self.forward(x_test)
+        y, _ = self.forward(x_test, y_test)
 
         # forward metrics
         for name, fn in self.compiled_metrics.items():
