@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "torchmanager-nightly"
-version = "1.2b9"
-description = "PyTorch Training Manager v1.2 (Beta 9)"
+version = "1.2b10"
+description = "PyTorch Training Manager v1.2 (Beta 10)"
 authors = ["Qisheng He <Qisheng.He@wayne.edu>"]
 repository = "https://github.com/kisonho/torchmanager.git"
 packages = [
@@ -11,7 +11,6 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.8"
-shutil = "*"
 torch = "*"
 tqdm = "*"
 
