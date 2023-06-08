@@ -74,6 +74,13 @@ class Trainable(Protocol):
     def train(self, mode: bool = True) -> Self:
         return NotImplemented
 
+
+class Reduction(Enum):
+    NONE = 0
+    MEAN = 1
+    SUM = 2
+
+
 class Resulting(StateDictLoadable, Trainable, Protocol):
     """An object that have result available with reset method"""
     @property

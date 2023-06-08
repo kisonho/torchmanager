@@ -1,7 +1,7 @@
 from torchmanager_core import torch, _raise
 from torchmanager_core.typing import Any, Callable, List, Optional
 
-from ..metrics import Metric, Reduction
+from ..metrics import Metric
 
 
 class Loss(Metric):

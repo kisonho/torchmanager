@@ -1,8 +1,9 @@
 from torchmanager_core import torch, Version
+from torchmanager_core.protocols import Reduction
 from torchmanager_core.typing import Optional, Tuple
 
 from .conf_met import BinaryConfusionMetric
-from .metric import Metric, Reduction
+from .metric import Metric
 
 
 class Accuracy(Metric):

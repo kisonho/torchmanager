@@ -1,7 +1,8 @@
 from torchmanager_core import torch
+from torchmanager_core.protocols import Reduction
 from torchmanager_core.typing import Any, Callable, Optional
 
-from .loss import Loss, Reduction
+from .loss import Loss
 
 
 class _ReductableLoss(Loss):
