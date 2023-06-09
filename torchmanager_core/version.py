@@ -53,7 +53,7 @@ class Version:
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, Version):
-            return self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and self.pre_release == other.pre_release
+            return self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and self.pre_release == other.pre_release and self.pre_release_version == other.pre_release_version
         else:
             other = Version(str(other))
             return self.__eq__(other)
@@ -71,7 +71,7 @@ class Version:
         elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version < other.sub_version:
             return True
         elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and self.pre_release is not None and other.pre_release is not None:
-            return self.pre_release < other.pre_release
+            return self.pre_release < other.pre_release or (self.pre_release == other.pre_release and self.pre_release_version < other.pre_release_version)
         elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and self.pre_release is not None:
             return True
         return False
@@ -89,7 +89,7 @@ class Version:
         elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version > other.sub_version:
             return True
         elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and self.pre_release is not None and other.pre_release is not None:
-            return self.pre_release > other.pre_release
+            return self.pre_release > other.pre_release or (self.pre_release == other.pre_release and self.pre_release_version > other.pre_release_version)
         elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and other.pre_release is not None:
             return True
         return False
