@@ -8,6 +8,7 @@ class Version:
     main_version: int
     minor_version: int
     pre_release: Optional[str]
+    pre_release_version: int
     sub_version: int
 
     def __init__(self, v: Any, /) -> None:
@@ -21,17 +22,18 @@ class Version:
         # split pre-release version
         if 'a' in version_str:
             pre_release_parts = version_str.split('a')
-            self.pre_release = 'a' + pre_release_parts[1]
+            self.pre_release = 'a'
         elif 'b' in version_str:
             pre_release_parts = version_str.split('b')
-            self.pre_release = 'b' + pre_release_parts[1]
+            self.pre_release = 'b'
         elif 'rc' in version_str:
             pre_release_parts = version_str.split('rc')
-            self.pre_release = 'rc' + pre_release_parts[1]
+            self.pre_release = 'rc'
         else:
             pre_release_parts = [version_str]
             self.pre_release = None
         version_str = pre_release_parts[0]
+        self.pre_release_version = int(pre_release_parts[1]) if len(pre_release_parts) > 1 else 1
 
         # split version
         version_parts = version_str.split('.')
