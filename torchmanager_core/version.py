@@ -19,17 +19,19 @@ class Version:
             version_str = version_str[1:]
 
         # split pre-release version
-        pre_release_parts = version_str.split('a')
-        if len(pre_release_parts) > 1:
+        if 'a' in version_str:
+            pre_release_parts = version_str.split('a')
             self.pre_release = 'a' + pre_release_parts[1]
-            version_str = pre_release_parts[0]
-        else:
+        elif 'b' in version_str:
             pre_release_parts = version_str.split('b')
-            if len(pre_release_parts) > 1:
-                self.pre_release = 'b' + pre_release_parts[1]
-                version_str = pre_release_parts[0]
-            else:
-                self.pre_release = "0"
+            self.pre_release = 'b' + pre_release_parts[1]
+        elif 'rc' in version_str:
+            pre_release_parts = version_str.split('rc')
+            self.pre_release = 'rc' + pre_release_parts[1]
+        else:
+            pre_release_parts = [version_str]
+            self.pre_release = None
+        version_str = pre_release_parts[0]
 
         # split version
         version_parts = version_str.split('.')
@@ -55,34 +57,40 @@ class Version:
             return self.__eq__(other)
 
     def __lt__(self, other: Any) -> bool:
-        if isinstance(other, Version):
-            if self.main_version < other.main_version:
-                return True
-            elif self.main_version == other.main_version and self.minor_version < other.minor_version:
-                    return True
-            elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version < other.sub_version:
-                return True
-            elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and self.pre_release is not None and other.pre_release is not None:
-                return self.sub_version < other.sub_version
-            return False
-        else:
+        # convert to version
+        if not isinstance(other, Version):
             other = Version(str(other))
-            return self.__lt__(other)
+
+        # check version
+        if self.main_version < other.main_version:
+            return True
+        elif self.main_version == other.main_version and self.minor_version < other.minor_version:
+                return True
+        elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version < other.sub_version:
+            return True
+        elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and self.pre_release is not None and other.pre_release is not None:
+            return self.pre_release < other.pre_release
+        elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and self.pre_release is not None:
+            return True
+        return False
 
     def __gt__(self, other: Any) -> bool:
-        if isinstance(other, Version):
-            if self.main_version > other.main_version:
-                return True
-            elif self.main_version == other.main_version and self.minor_version > other.minor_version:
-                return True
-            elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version > other.sub_version:
-                return True
-            elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and self.pre_release is not None and other.pre_release is not None:
-                return self.sub_version > other.sub_version
-            return False
-        else:
+        # convert to version
+        if not isinstance(other, Version):
             other = Version(str(other))
-            return self.__gt__(other)
+
+        # check version
+        if self.main_version > other.main_version:
+            return True
+        elif self.main_version == other.main_version and self.minor_version > other.minor_version:
+            return True
+        elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version > other.sub_version:
+            return True
+        elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and self.pre_release is not None and other.pre_release is not None:
+            return self.pre_release > other.pre_release
+        elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and other.pre_release is not None:
+            return True
+        return False
 
     def __le__(self, other: Any) -> bool:
         return self == other or self < other
@@ -92,8 +100,8 @@ class Version:
 
 
 API = Version("v1.1")
-CURRENT = Version("v1.1.3")
-DESCRIPTION: str = "PyTorch Training Manager v1.1.3"
+CURRENT = Version("v1.1.4")
+DESCRIPTION: str = "PyTorch Training Manager v1.1.4"
 
 
 class VersionError(SystemError):
