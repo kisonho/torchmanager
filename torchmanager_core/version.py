@@ -30,10 +30,10 @@ class Version:
             pre_release_parts = version_str.split('rc')
             self.pre_release = 'rc'
         else:
-            pre_release_parts = [version_str]
+            pre_release_parts = [version_str, "0"]
             self.pre_release = None
         version_str = pre_release_parts[0]
-        self.pre_release_version = int(pre_release_parts[1]) if len(pre_release_parts) > 1 else 1
+        self.pre_release_version = int(pre_release_parts[1]) if pre_release_parts[1] != '' else 1
 
         # split version
         version_parts = version_str.split('.')
