@@ -60,7 +60,7 @@ class Checkpoint(Generic[T]):
         if ckpt["save_weights_only"] is True:
             assert model is not None, _raise(TypeError("Model must be given to load this checkpoint because `save_weights_only` was set to be `True`."))
             state_dict: OrderedDict[str, Any] = ckpt["model"]
-            model.load_state_dict(state_dict)
+            model.load_state_dict(state_dict=state_dict)
             ckpt["model"] = model
         else:
             # remove data parallel wrap
@@ -70,7 +70,7 @@ class Checkpoint(Generic[T]):
             # load model structure with checkpoint weights
             if model is not None:
                 saved_model: StateDictLoadable = ckpt["model"]  # type: ignore
-                model.load_state_dict(OrderedDict(saved_model.state_dict()))
+                model.load_state_dict(state_dict=OrderedDict(saved_model.state_dict()))
                 ckpt["model"] = model
         return cls(**ckpt)
 
