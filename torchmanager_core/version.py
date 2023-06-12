@@ -1,13 +1,55 @@
 import functools
 
-from .typing import Any, Optional
+from .typing import Any, Enum, Optional
 from .view import warnings
+
+
+class PreRelease(Enum):
+    ALPHA = 'a'
+    BETA = 'b'
+    RELEASE_CANDIDATE = "rc"
+
+    def __gt__(self, pre_release: Any) -> bool:
+        # convert pre release
+        if not isinstance(pre_release, PreRelease):
+            pre_release = PreRelease(pre_release)
+
+        # check pre release version
+        if self == pre_release:
+            return False
+        elif self == PreRelease.RELEASE_CANDIDATE:
+            return True
+        elif self == PreRelease.BETA and pre_release == PreRelease.ALPHA:
+            return True
+        else:
+            return False
+
+    def __lt__(self, pre_release: Any) -> bool:
+        # convert pre release
+        if not isinstance(pre_release, PreRelease):
+            pre_release = PreRelease(pre_release)
+
+        # check pre release version
+        if self == pre_release:
+            return False
+        elif pre_release == PreRelease.RELEASE_CANDIDATE:
+            return True
+        elif pre_release == PreRelease.BETA and self == PreRelease.ALPHA:
+            return True
+        else:
+            return False
+
+    def __le__(self, other: Any) -> bool:
+        return self == other or self < other
+
+    def __ge__(self, other: Any) -> bool:
+        return self == other or self > other
 
 
 class Version:
     main_version: int
     minor_version: int
-    pre_release: Optional[str]
+    pre_release: Optional[PreRelease]
     pre_release_version: int
     sub_version: int
 
@@ -22,13 +64,13 @@ class Version:
         # split pre-release version
         if 'a' in version_str:
             pre_release_parts = version_str.split('a')
-            self.pre_release = 'a'
+            self.pre_release = PreRelease.ALPHA
         elif 'b' in version_str:
             pre_release_parts = version_str.split('b')
-            self.pre_release = 'b'
+            self.pre_release = PreRelease.BETA
         elif 'rc' in version_str:
             pre_release_parts = version_str.split('rc')
-            self.pre_release = 'rc'
+            self.pre_release = PreRelease.RELEASE_CANDIDATE
         else:
             pre_release_parts = [version_str, "0"]
             self.pre_release = None
@@ -48,7 +90,7 @@ class Version:
         if self.sub_version > 0:
             version_str += f".{self.sub_version}"
         if self.pre_release is not None:
-            version_str += self.pre_release
+            version_str += f"{self.pre_release.value}{self.pre_release_version}"
         return version_str
 
     def __eq__(self, other: Any) -> bool:
