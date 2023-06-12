@@ -1,4 +1,5 @@
-import torch, warnings
+import torch
+import warnings
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, TypeVar, Union
 
 from .protocols import DeviceMovable
@@ -27,6 +28,7 @@ except:
 
 Module = TypeVar('Module', bound=torch.nn.Module)
 
+
 def data_parallel(raw_model: Module, /, devices: List[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type = torch.nn.parallel.DataParallel) -> Tuple[Union[Module, torch.nn.parallel.DataParallel], bool]:
     """
     Make a `torch.nn.Module` data parallel
@@ -48,9 +50,12 @@ def data_parallel(raw_model: Module, /, devices: List[torch.device] = GPUS, *, o
         warnings.warn(f"CUDA is not available, unable to use multi-GPUs.", ResourceWarning)
         return raw_model, False
 
+
 def empty_cache() -> None:
     """Empty CUDA cache"""
-    if GPU is not NotImplemented: torch.cuda.empty_cache()
+    if GPU is not NotImplemented:
+        torch.cuda.empty_cache()
+
 
 def search(specified: Optional[Union[torch.device, List[torch.device]]] = None) -> Tuple[torch.device, torch.device, List[torch.device]]:
     """
@@ -75,15 +80,19 @@ def search(specified: Optional[Union[torch.device, List[torch.device]]] = None) 
 
         # check for each device
         for d in specified:
-            if d.type != specified[0].type: raise SystemError("All devices in the specified list must have the same device type.")
-            if d.index is None: raise SystemError("All devices in the specified list must have a device index.")
-    else: raise SystemError("Specified device list must not be empty")
+            if d.type != specified[0].type:
+                raise SystemError("All devices in the specified list must have the same device type.")
+            if d.index is None:
+                raise SystemError("All devices in the specified list must have a device index.")
+    else:
+        raise SystemError("Specified device list must not be empty")
     return CPU, device, specified
+
 
 def move_to_device(target: Union[DeviceMovable,  Dict[str, Union[DeviceMovable,  Any]], List[Union[DeviceMovable,  Any]]], /, device: torch.device, *, recursive: bool = False) -> Union[DeviceMovable,  Dict[str, Union[DeviceMovable,  Any]], List[Union[DeviceMovable,  Any]]]:
     """
     Recurrently move a target variable to device if elements perform to `DeviceMovable` protocol
-    
+
     - Parameters:
         - target: Either a target in `DeviceMovable`, a `dict` of targets in `DeviceMovable`, or a `list` of targets in `DeviceMovable`, targets in a `list` or `dict` that does not perform to `DeviceMovable` protocol will be returned without changing
         - device: A `torch.device` of target device
@@ -97,6 +106,7 @@ def move_to_device(target: Union[DeviceMovable,  Dict[str, Union[DeviceMovable, 
     elif isinstance(target, Iterable):
         target = [move_to_device(t, device) if isinstance(t, DeviceMovable) or recursive else t for t in target]
     return target
+
 
 def set_default(d: torch.device) -> None:
     if d.index is not None and d.type == "cuda":

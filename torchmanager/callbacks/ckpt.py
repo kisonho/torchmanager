@@ -1,8 +1,8 @@
 from torchmanager_core import os, torch, _raise
+from torchmanager_core.checkpoint import Checkpoint as Ckpt
 from torchmanager_core.protocols import ModelContainer, MonitorType, StateDictLoadable
 from torchmanager_core.typing import Any, Dict, Generic, Optional, TypeVar
 
-from ..train import Checkpoint as Ckpt
 from .callback import Callback
 
 T = TypeVar('T', bound=StateDictLoadable)

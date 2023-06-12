@@ -1,10 +1,10 @@
 from torchmanager_core import devices, errors, torch, Version, deprecated, API_VERSION, VERSION as CURRENT_VERSION
+from torchmanager_core.checkpoint import Checkpoint
 from torchmanager_core.protocols import Resulting, VersionConvertible
 from torchmanager_core.typing import Any, Collection, Dict, Generic, List, Module, Optional, OrderedDict, Self, Tuple, Union
 
 from .losses import Loss, MultiLosses, ParallelLoss
 from .metrics import Metric
-from .train import Checkpoint
 
 
 class BaseManager(Generic[Module]):

@@ -1,7 +1,9 @@
+from torchmanager_core import deprecated
 from torchmanager_core.protocols import LrSteping
 from torchmanager_core.typing import Dict
 
 
+@deprecated("v1.3", "v1.4")
 def update_lr(lr_scheduler: LrSteping) -> Dict[str, float]:
     """
     Update lr scheduler and returns the current learning rate as a summary
