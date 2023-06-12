@@ -1,5 +1,5 @@
 from torchmanager_core import devices, torch, Version, deprecated, _raise, API_VERSION, VERSION as CURRENT_VERSION
-from torchmanager_core.protocols import VersionConvertible
+from torchmanager_core.protocols import Resulting, VersionConvertible
 from torchmanager_core.typing import Any, Collection, Dict, Generic, List, Module, Optional, OrderedDict, Self, Tuple, Union
 
 from .losses import Loss, MultiLosses, ParallelLoss
@@ -43,18 +43,22 @@ class BaseManager(Generic[Module]):
         - raw_model: A non-paralleled target `torch.nn.Module` model
     """
     # properties
-    loss_fn: Optional[Union[Loss, ParallelLoss]]
-    metric_fns: Dict[str, Metric]
+    loss_fn: Optional[Resulting]
+    """The optional main loss function in `Resulting`"""
+    metric_fns: Dict[str, Resulting]
+    """A `dict` of the metric functions with names as keys in `str` and metric functions as values in `torch.metrics.Metric`"""
     model: Union[Module, torch.nn.DataParallel]
     optimizer: Optional[torch.optim.Optimizer]
     version: Version
 
     @property
     def compiled(self) -> bool:
+        """The `bool` flag of if this manager has been compiled"""
         return True if self.loss_fn is not None and self.optimizer is not None else False
 
     @property
-    def raw_loss_fn(self) -> Optional[Loss]:
+    def raw_loss_fn(self) -> Optional[Resulting]:
+        """The `torchmanager.losses.Loss` controlled by this manager without `torch.nn.DataParallel` wrap"""
         if self.loss_fn is None:
             return self.loss_fn
         elif isinstance(self.loss_fn, ParallelLoss):
@@ -67,7 +71,8 @@ class BaseManager(Generic[Module]):
 
     @property
     def raw_model(self) -> Module:
-        return self.model.module if isinstance(self.model, torch.nn.parallel.DataParallel) else self.model  # type: ignore
+        """The `Module` controlled by this manager without `torch.nn.DataParallel` wrap"""
+        return self.model.module if isinstance(self.model, torch.nn.DataParallel) else self.model  # type: ignore
 
     def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss]]] = None, metrics: Dict[str, Metric] = {}) -> None:
         """
@@ -122,6 +127,27 @@ class BaseManager(Generic[Module]):
         """
         self._compile(optimizer, loss_fn, metrics)
 
+    def convert(self, from_version: Version) -> None:
+        """
+        Convert from a version to current version
+
+        - Parameters:
+            - from_version: A `torchmanager.version.Version` to convert from
+        """
+        # check manager version
+        if from_version < API_VERSION:
+            # convert loss version
+            if isinstance(self.raw_loss_fn, VersionConvertible):
+                self.raw_loss_fn.convert(from_version)
+        
+            # convert metrics version
+            for m in self.metric_fns.items():
+                if isinstance(m, VersionConvertible):
+                    m.convert(from_version)
+
+            # set version
+            self.version = API_VERSION
+
     def data_parallel(self, target_devices: List[torch.device]) -> bool:
         """
         Data parallel all available models
@@ -168,18 +194,8 @@ class BaseManager(Generic[Module]):
         if not hasattr(manager, "version"):
             manager.version = Version("v1.0")
 
-        # check manager version
-        if manager.version < API_VERSION:
-            if isinstance(manager.raw_loss_fn, VersionConvertible):
-                manager.raw_loss_fn.convert(manager.version)
-        
-            # convert metrics version
-            for m in manager.metric_fns.items():
-                if isinstance(m, VersionConvertible):
-                    m.convert(manager.version)
-
-        # set to current version
-        manager.version = CURRENT_VERSION
+        # convert to current version
+        manager.convert(manager.version)
         return manager
 
     def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> None:
@@ -200,11 +216,11 @@ class BaseManager(Generic[Module]):
             self.optimizer.load_state_dict(optimizer)
         if loss_fn is not None:
             assert self.loss_fn is not None, _raise(ValueError("The manager has not been compiled with 'loss_fn' given."))
-            self.loss_fn.load_state_dict(loss_fn)
+            self.loss_fn.load_state_dict(state_dict=loss_fn)
         assert metrics is not None, _raise(ValueError("The given dictionary must have 'metrics' element not to be None."))
         for k, m in metrics.items():
             assert k in self.metric_fns, _raise(KeyError(f"The manager does not have a metric named '{k}'."))
-            self.metric_fns[k].load_state_dict(m)
+            self.metric_fns[k].load_state_dict(state_dict=m)
 
     def reset(self, cpu: torch.device = devices.CPU) -> None:
         """

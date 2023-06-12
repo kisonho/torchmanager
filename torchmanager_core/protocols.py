@@ -1,6 +1,6 @@
 import abc, torch, sys
 from enum import Enum
-from typing import Any, Dict, List, Optional, OrderedDict, Protocol, runtime_checkable
+from typing import Any, Callable, Dict, List, Optional, OrderedDict, Protocol, runtime_checkable
 from typing_extensions import Self
 
 from .devices.protocols import DeviceMovable
@@ -81,8 +81,18 @@ class Reduction(Enum):
     SUM = 2
 
 
-class Resulting(StateDictLoadable, Trainable, Protocol):
+class Resulting(DeviceMovable, StateDictLoadable, Trainable, Protocol):
     """An object that have result available with reset method"""
+    @property
+    @abc.abstractmethod
+    def _metric_fn(self) -> Optional[Callable[[Any, Any], torch.Tensor]]:
+        return NotImplemented
+    
+    @_metric_fn.setter
+    @abc.abstractmethod
+    def _metric_fn(self, fn: Optional[Callable[[Any, Any], torch.Tensor]]) -> None:
+        pass
+
     @property
     @abc.abstractmethod
     def _target(self) -> Optional[str]:
@@ -121,6 +131,12 @@ class VersionConvertible(Protocol):
 
     @abc.abstractmethod
     def convert(self, from_version: Version) -> None:
+        """
+        Convert from a version to current version
+
+        - Parameters:
+            - from_version: A `torchmanager.version.Version` to convert from
+        """
         pass
 
 
