@@ -3,6 +3,7 @@ from tqdm import tqdm
 
 from .protocols import VerboseType
 
+logging.getLogger().handlers.clear()
 logger = logging.getLogger('torchmanager')
 
 def set_log_path(log_path: str) -> logging.Formatter:

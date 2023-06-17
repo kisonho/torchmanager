@@ -1,5 +1,6 @@
 from torchmanager_core import torch, _raise
-from torchmanager_core.typing import Any, Callable, Enum, List, Optional
+from torchmanager_core.protocols import Reduction
+from torchmanager_core.typing import Any, Callable, List, Optional
 
 
 class Metric(torch.nn.Module):
