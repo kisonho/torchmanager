@@ -30,11 +30,16 @@ class EarlyStop(Callback):
 
     def on_epoch_end(self, epoch: int, summary: Dict[str, float] = ..., val_summary: Optional[Dict[str, float]] = None) -> None:
         # load monitoring value
-        if val_summary is not None: summary = val_summary
+        summary = val_summary if val_summary is not None else summary
         monitoring_value = summary[self.monitor]
 
         # compare with recorded metrics
-        max_value = max(self.__metrics)
-        if monitoring_value < max_value and len(self._metrics) >= self.steps: raise errors.StopTraining(epoch)
-        elif len(self._metrics) >= self.steps: self._metrics.pop()
-        self._metrics.insert(0, monitoring_value)
+        min_value = min(self._metrics)
+        max_value = max(self._metrics)
+        if self.monitor_type == MonitorType.MAX and monitoring_value < max_value and len(self._metrics) >= self.steps:
+            raise errors.StopTraining(epoch)
+        elif self.monitor_type == MonitorType.MIN and monitoring_value > min_value and len(self._metrics) >= self.steps:
+            raise errors.StopTraining(epoch)
+        elif len(self._metrics) >= self.steps:
+            _ = self._metrics.pop(0)
+        self._metrics.append(monitoring_value)
