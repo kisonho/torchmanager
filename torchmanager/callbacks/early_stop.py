@@ -34,12 +34,13 @@ class EarlyStop(Callback):
         monitoring_value = summary[self.monitor]
 
         # compare with recorded metrics
-        min_value = min(self._metrics)
-        max_value = max(self._metrics)
-        if self.monitor_type == MonitorType.MAX and monitoring_value < max_value and len(self._metrics) >= self.steps:
+        value = self._metrics[0]
+        if self.monitor_type == MonitorType.MAX and monitoring_value <= value and len(self._metrics) >= self.steps:
             raise errors.StopTraining(epoch)
-        elif self.monitor_type == MonitorType.MIN and monitoring_value > min_value and len(self._metrics) >= self.steps:
+        elif self.monitor_type == MonitorType.MAX and monitoring_value > value:
+            self._metrics.clear()
+        elif self.monitor_type == MonitorType.MIN and monitoring_value >= value and len(self._metrics) >= self.steps:
             raise errors.StopTraining(epoch)
-        elif len(self._metrics) >= self.steps:
-            _ = self._metrics.pop(0)
+        elif self.monitor_type == MonitorType.MIN and monitoring_value < value:
+            self._metrics.clear()
         self._metrics.append(monitoring_value)
