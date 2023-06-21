@@ -7,6 +7,7 @@ from .callback import FrequencyCallback
 Scheduler = TypeVar("Scheduler", bound=torch.optim.lr_scheduler._LRScheduler)
 Writer = TypeVar("Writer", bound=SummaryWriteble)
 
+
 class LrSchedueler(FrequencyCallback, Generic[Scheduler]):
     """
     The callback to step learning rate scheduler
@@ -48,7 +49,8 @@ class LrSchedueler(FrequencyCallback, Generic[Scheduler]):
         if len(lr_list) > 1:
             for i, lr in enumerate(lr_list):
                 lr_summary[f'{self._name}_{i}'] = lr
-        else: lr_summary[self._name] = lr_list[0]
+        else:
+            lr_summary[self._name] = lr_list[0]
 
         # write results to Tensorboard
         if self._writer is not None:

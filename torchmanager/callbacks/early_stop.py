@@ -3,6 +3,7 @@ from torchmanager_core.typing import Dict, List, Optional
 
 from .ckpt import Callback, MonitorType
 
+
 class EarlyStop(Callback):
     '''
     The early stop callback that raises `StopTraining` error during the training if monitored metric not improved for several steps

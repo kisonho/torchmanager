@@ -9,6 +9,7 @@ from .tensorboard import TensorBoard
 
 T = TypeVar('T', bound=StateDictLoadable)
 
+
 class Experiment(Callback, Generic[T]):
     """
     The tensorboard callback that wraps last and best checkpoints in `checkpoints` folder by `last.model` and `best_*.model` with tensorboard logs in `data` folder together into a wrapped *.exp file
@@ -25,7 +26,7 @@ class Experiment(Callback, Generic[T]):
     last_ckpt: LastCheckpoint[T]
     tensorboard: TensorBoard
 
-    def __init__(self, experiment: str, model: T, monitors: Union[Dict[str, MonitorType], List[str]]={}, show_verbose: bool = True) -> None:
+    def __init__(self, experiment: str, model: T, monitors: Union[Dict[str, MonitorType], List[str]] = {}, show_verbose: bool = True) -> None:
         """
         Constructor
 
@@ -37,12 +38,13 @@ class Experiment(Callback, Generic[T]):
         """
         # call super constructor
         experiment = os.path.normpath(experiment)
-        if not experiment.endswith(".exp"): experiment += ".exp"
+        if not experiment.endswith(".exp"):
+            experiment += ".exp"
         experiment_dir = os.path.join("experiments", experiment)
         os.makedirs(experiment_dir, exist_ok=True)
         log_dir = os.path.join(experiment_dir, "data")
         ckpt_path = os.path.join(experiment_dir, "checkpoints")
-        
+
         # initial checkpoints
         self.best_ckpts = []
         last_ckpt_path = os.path.join(ckpt_path, "last.model")

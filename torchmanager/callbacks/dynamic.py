@@ -6,6 +6,7 @@ from .callback import FrequencyCallback
 
 W = TypeVar('W', bound=Weighted)
 
+
 class DynamicWeight(FrequencyCallback, abc.ABC, Generic[W]):
     '''
     An abstract dynamic weight callback that set weight dynamically
@@ -58,10 +59,11 @@ class DynamicWeight(FrequencyCallback, abc.ABC, Generic[W]):
         # update
         super().on_epoch_end(epoch, *args, **kwargs)
 
+
 class LambdaDynamicWeight(DynamicWeight[W], Generic[W]):
     '''
     A dynamic weight callback that set weight dynamically with lambda function
-    
+
     * extends: `DynamicWeight`
 
     Targeting to any object that performs to `.protocol.Weighted` protocol:
