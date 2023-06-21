@@ -270,12 +270,12 @@ class BaseManager(Generic[Module]):
         ckpt = Checkpoint(self)
         return ckpt
 
-    def unpack_data(self, data: Collection) -> Tuple[Any, Any]:
+    def unpack_data(self, data: Collection[Any]) -> Tuple[Any, Any]:
         """
         Unpacks data to input and target
 
         - Parameters:
-            - data: `Any` kind of data object
+            - data: A `Collection` of `Any` kind of data objects
         - Returns: A `tuple` of `Any` kind of input and `Any` kind of target
         """
         if len(data) >= 2:
