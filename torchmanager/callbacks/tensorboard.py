@@ -4,6 +4,7 @@ from torchmanager_core.typing import Dict, Optional, Set, Tuple
 from torchmanager_core.protocols import Frequency
 
 
+
 class TensorBoard(FrequencyCallback):
     """
     The callback to record summary to tensorboard for each epoch
@@ -60,6 +61,7 @@ class TensorBoard(FrequencyCallback):
     def step(self, summary: Dict[str, float], val_summary: Optional[Dict[str, float]] = None) -> Tuple[Set[str], Dict[str, float], Optional[Dict[str, float]]]:
         # fetch keys
         keys = list(summary.keys())
-        if val_summary is not None: keys += list(val_summary.keys())
+        if val_summary is not None:
+            keys += list(val_summary.keys())
         keys = set(keys)
         return keys, summary, val_summary

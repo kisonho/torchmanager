@@ -7,6 +7,7 @@ from .callback import Callback
 
 T = TypeVar('T', bound=StateDictLoadable)
 
+
 class _Checkpoint(Callback, Generic[T]):
     """
     The callback to save the last checkpoint during training
@@ -47,12 +48,13 @@ class _Checkpoint(Callback, Generic[T]):
     def on_epoch_end(self, epoch: int, summary: Dict[str, float] = ..., val_summary: Optional[Dict[str, float]] = ...) -> None:
         self.checkpoint.save(epoch, self.ckpt_path)
 
+
 class LastCheckpoint(_Checkpoint[T]):
     """
     Last checkpoint with frequency control support
 
     * extends: `_Checkpoint`
-    
+
     - Properties:
         - freq: An `int` of checkpoint epoch frequency
     """
@@ -61,7 +63,7 @@ class LastCheckpoint(_Checkpoint[T]):
     @property
     def freq(self) -> int:
         return self.__freq
-    
+
     @freq.setter
     def freq(self, f: int) -> None:
         assert f > 0, _raise(ValueError(f"Frequency must be a positive number, got {f}. "))
@@ -72,7 +74,9 @@ class LastCheckpoint(_Checkpoint[T]):
         self.freq = freq
 
     def on_epoch_end(self, epoch: int, summary: Dict[str, float] = ..., val_summary: Optional[Dict[str, float]] = ...) -> None:
-        if epoch % self.freq == 0: super().on_epoch_end(epoch, summary, val_summary)
+        if epoch % self.freq == 0:
+            super().on_epoch_end(epoch, summary, val_summary)
+
 
 class BestCheckpoint(_Checkpoint[T]):
     """
@@ -91,7 +95,7 @@ class BestCheckpoint(_Checkpoint[T]):
     monitor: str
     monitor_type: MonitorType
 
-    def __init__(self, monitor: str, model: T, ckpt_path: str, load_best: bool = False, monitor_type: MonitorType=MonitorType.MAX, **kwargs: Any) -> None:
+    def __init__(self, monitor: str, model: T, ckpt_path: str, load_best: bool = False, monitor_type: MonitorType = MonitorType.MAX, **kwargs: Any) -> None:
         """
         Constructor
 
@@ -126,6 +130,9 @@ class BestCheckpoint(_Checkpoint[T]):
             # load to model
             if isinstance(best_ckpt.model, ModelContainer):
                 ckpt_model = best_ckpt.model.model
-            else: ckpt_model = best_ckpt.model
-            try: model.load_state_dict(ckpt_model.state_dict())
-            except: raise TypeError(f"Reload best checkpoint to model failed: supposed to have {type(model)} in checkpoint, got {type(ckpt_model)}.")
+            else:
+                ckpt_model = best_ckpt.model
+            try:
+                model.load_state_dict(ckpt_model.state_dict())
+            except:
+                raise TypeError(f"Reload best checkpoint to model failed: supposed to have {type(model)} in checkpoint, got {type(ckpt_model)}.")

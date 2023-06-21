@@ -2,6 +2,7 @@ from torchmanager_core import abc, torch
 from torchmanager_core.protocols import Frequency
 from torchmanager_core.typing import Any, Dict, Optional
 
+
 class Callback:
     """An empty basic training callback"""
 
@@ -134,7 +135,7 @@ class FrequencyCallback(Callback, abc.ABC):
     def step(self, *args: Any, **kwargs: Any) -> Any:
         """
         Abstract method to step the callback
-        
+
         - Parameters:
             - summary: A `dict` of training summary with name in `str` and value in `float`
             - val_summary: An optional `dict` of validation summary with name in `str` and value in `float`
