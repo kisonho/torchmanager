@@ -137,10 +137,11 @@ class BaseManager(Generic[Module]):
         # check manager version
         if from_version < API_VERSION:
             # convert loss version
-            self.raw_loss_fn.convert(from_version)
+            if self.raw_loss_fn is not None:
+                self.raw_loss_fn.convert(from_version)
         
             # convert metrics version
-            for m in self.metric_fns.items():
+            for m in self.metric_fns.values():
                 m.convert(from_version)
 
             # set version
