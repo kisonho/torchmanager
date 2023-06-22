@@ -1,6 +1,6 @@
 from torchmanager_core import devices, errors, torch, Version, deprecated, API_VERSION, VERSION as CURRENT_VERSION
 from torchmanager_core.checkpoint import Checkpoint
-from torchmanager_core.protocols import Resulting, VersionConvertible
+from torchmanager_core.protocols import Resulting
 from torchmanager_core.typing import Any, Collection, Dict, Generic, List, Module, Optional, OrderedDict, Self, Tuple, Union
 
 from .losses import Loss, MultiLosses, ParallelLoss
@@ -137,13 +137,11 @@ class BaseManager(Generic[Module]):
         # check manager version
         if from_version < API_VERSION:
             # convert loss version
-            if isinstance(self.raw_loss_fn, VersionConvertible):
-                self.raw_loss_fn.convert(from_version)
+            self.raw_loss_fn.convert(from_version)
         
             # convert metrics version
             for m in self.metric_fns.items():
-                if isinstance(m, VersionConvertible):
-                    m.convert(from_version)
+                m.convert(from_version)
 
             # set version
             self.version = API_VERSION

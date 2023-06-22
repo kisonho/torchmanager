@@ -1,4 +1,4 @@
-from torchmanager_core import torch, _raise
+from torchmanager_core import torch, Version, _raise
 from torchmanager_core.protocols import Reduction
 from torchmanager_core.typing import Any, Callable, List, Optional
 
@@ -57,6 +57,9 @@ class Metric(torch.nn.Module):
         m: torch.Tensor = super().__call__(input, target)
         self._results.append(m.unsqueeze(0).cpu().detach())
         return m
+    
+    def convert(self, from_version: Version) -> None:
+        pass
 
     def forward(self, input: Any, target: Any) -> torch.Tensor:
         """

@@ -115,6 +115,10 @@ class Resulting(DeviceMovable, StateDictLoadable, Trainable, Protocol):
         return NotImplemented
 
     @abc.abstractmethod
+    def convert(self, from_version: Version) -> None:
+        pass
+
+    @abc.abstractmethod
     def reset(self) -> None:
         pass
 
@@ -124,21 +128,6 @@ class SummaryWriteble(Protocol):
 
     @abc.abstractmethod
     def add_scalars(self, main_tag: str, tag_scalar_dict: Any, global_step: Optional[int] = None) -> None:
-        pass
-
-
-@runtime_checkable
-class VersionConvertible(Protocol):
-    """The protocol that can convert from previous version"""
-
-    @abc.abstractmethod
-    def convert(self, from_version: Version) -> None:
-        """
-        Convert from a version to current version
-
-        - Parameters:
-            - from_version: A `torchmanager.version.Version` to convert from
-        """
         pass
 
 
