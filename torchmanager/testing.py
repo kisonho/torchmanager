@@ -102,7 +102,8 @@ class Manager(BaseManager[Module]):
         # move model
         try:
             # multi gpus support
-            use_multi_gpus = self.data_parallel(target_devices)
+            if use_multi_gpus:
+                use_multi_gpus = self.data_parallel(target_devices)
 
             # initialize predictions
             self.model.eval()
@@ -172,7 +173,8 @@ class Manager(BaseManager[Module]):
 
         try:
             # move to device
-            use_multi_gpus = self.data_parallel(target_devices)
+            if use_multi_gpus:
+                use_multi_gpus = self.data_parallel(target_devices)
             self.to(device)
             self.model.eval()
 

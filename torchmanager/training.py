@@ -190,7 +190,8 @@ class Manager(_Manager[Module]):
 
         try:
             # move to device
-            use_multi_gpus = self.data_parallel(target_devices)
+            if use_multi_gpus:
+                use_multi_gpus = self.data_parallel(target_devices)
             self.to(device)
 
             # epoch loop
