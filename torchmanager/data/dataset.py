@@ -1,6 +1,6 @@
 from torch.utils.data import Dataset as _Dataset, DataLoader
 from torchmanager_core import abc, devices, math, os, torch, _raise
-from torchmanager_core.typing import Any, Callable, Iterator, Sequence, TypeVar
+from torchmanager_core.typing import Any, Callable, Iterator, Optional, Sequence, TypeVar
 
 T = TypeVar("T")
 
@@ -38,6 +38,7 @@ class Dataset(_Dataset[T], abc.ABC):
     __batch_size: int
     __device: torch.device
     drop_last: bool
+    num_workers: int
     shuffle: bool
 
     @property
@@ -68,7 +69,7 @@ class Dataset(_Dataset[T], abc.ABC):
         else:
             return math.ceil(self.unbatched_len / self.batch_size)
 
-    def __init__(self, batch_size: int, /, *, device: torch.device = devices.CPU, drop_last: bool = False, shuffle: bool = False) -> None:
+    def __init__(self, batch_size: int, /, *, device: torch.device = devices.CPU, drop_last: bool = False, num_workers: Optional[int] = None, shuffle: bool = False) -> None:
         """
         Constructor
 
@@ -76,6 +77,7 @@ class Dataset(_Dataset[T], abc.ABC):
             - batch_size: An `int` of batch size for the current dataset
             - device: A `torch.device` for the data to be pinned during iteration
             - drop_last: A `bool` flag of if drop the last data that not enought for the batch size
+            - num_workers: An optional `int` of the number of cpus to load the data
             - shuffle: A `bool` flag of if shuffling the data
         """
         super().__init__()
@@ -83,6 +85,13 @@ class Dataset(_Dataset[T], abc.ABC):
         self.batch_size = batch_size
         self.drop_last = drop_last
         self.shuffle = shuffle
+
+        # initialize num workers
+        if num_workers is None:
+            cpu_count = os.cpu_count()
+            self.num_workers = 0 if cpu_count is None else cpu_count
+        else:
+            self.num_workers = self.num_workers
 
     def __contains__(self, value: Any) -> bool:
         for i in range(len(self)):
@@ -96,16 +105,11 @@ class Dataset(_Dataset[T], abc.ABC):
         return NotImplemented
 
     def __iter__(self) -> Iterator[T]:
-        # initialize devices
-        cpu_count = os.cpu_count()
-        if cpu_count is None:
-            cpu_count = 0
-
         # initialize loader
         if self.device != devices.CPU:
-            data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=cpu_count, pin_memory=True, pin_memory_device=str(self.device))
+            data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=self.num_workers, pin_memory=True, pin_memory_device=str(self.device))
         else:
-            data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=cpu_count)
+            data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=self.num_workers)
 
         # yield data
         for data in data_loader:
@@ -158,11 +162,11 @@ def batched(fn: Callable[..., _Dataset]):
     - Returns: A wrapped function that accepts a loading function which returns `torch.utils.data.Dataset` and returns a loading function which returns `DataLoader`
     """
     # wrap function
-    def wrapped_fn(*args: Any, batch_size: int = 1, device: torch.device = devices.CPU, drop_last: bool = False, shuffle: bool = False, **kwargs: Any) -> DataLoader:
+    def wrapped_fn(*args: Any, batch_size: int = 1, device: torch.device = devices.CPU, drop_last: bool = False, num_workers: Optional[int] = None, shuffle: bool = False, **kwargs: Any) -> DataLoader:
         # initialize devices
-        cpu_count = os.cpu_count()
-        if cpu_count is None:
-            cpu_count = 0
+        if num_workers is None:
+            cpu_count = os.cpu_count()
+            num_workers = 0 if cpu_count is None else cpu_count
         _, device, targeted_devices = devices.search(device)
         if device == devices.CPU:
             pin_memory = False
@@ -173,6 +177,6 @@ def batched(fn: Callable[..., _Dataset]):
         # load dataset
         loaded_dataset = fn(*args, **kwargs)
         assert not isinstance(loaded_dataset, Dataset), _raise(RuntimeError("The loaded dataset is a `torchmanager.data.Dataset` which has already been wrapped with batch loader during iteration."))
-        data_loader = DataLoader(loaded_dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last, pin_memory=pin_memory, num_workers=cpu_count, pin_memory_device=f"{targeted_devices[0].type}:{targeted_devices.index}")
+        data_loader = DataLoader(loaded_dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last, num_workers=num_workers, pin_memory=pin_memory, pin_memory_device=f"{targeted_devices[0].type}:{targeted_devices.index}")
         return data_loader
     return wrapped_fn
