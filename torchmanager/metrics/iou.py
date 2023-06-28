@@ -39,6 +39,8 @@ class MeanIoU(Metric):
         - Parameters:
             - dim: An `int` of class dimension
             - smooth: A `float` of smooth value to avoid zero devision
+            - threshold: A `float` of min mIoU threshold
+            - target: A `str` of target name in `input` and `target` during direct calling
         """
         super().__init__(target=target)
         assert dim > 0, _raise(ValueError(f"The dimension must be a positive number, got {dim}."))
@@ -48,7 +50,7 @@ class MeanIoU(Metric):
         self._threshold = threshold
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        input = input.argmax(self._dim)
+        input = input.argmax(self._dim) if input.shape[self._dim] > 1 else input > 0.5
         intersection = (input & target).float().sum()
         union = (input | target).float().sum()
         iou = (intersection + self._smooth) / (union + self._smooth)
