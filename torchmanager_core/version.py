@@ -144,7 +144,7 @@ class Version:
 
 
 API = Version("v1.2")
-CURRENT = Version("v1.2rc4")
+CURRENT = Version("v1.2")
 DESCRIPTION: str = "PyTorch Training Manager {CURRENT}"
 
 
