@@ -1,5 +1,5 @@
-from torchmanager_core import argparse, abc, os, shutil, torch, view
-from torchmanager_core.typing import Any, Union
+from torchmanager_core import argparse, abc, os, shutil, torch, view, _raise
+from torchmanager_core.typing import Any, Optional, Union
 from torchmanager_core import DESCRIPTION
 
 
@@ -17,10 +17,11 @@ class Configs(argparse.Namespace, abc.ABC):
     - Method to implement:
         - show_settings: Printout current configurations, `torchmanager_core.view.logger` is recommended.
     """
+    comments: Optional[str]
     experiment: str
     replace_experiment: bool
 
-    def __init__(self, experiment: str = "test.exp", replace_experiment: bool = False, **kwargs: Any) -> None:
+    def __init__(self, *, comments: Optional[str] = None, experiment: str = "test.exp", replace_experiment: bool = False, **kwargs: Any) -> None:
         """
         Constructor
 
@@ -29,6 +30,7 @@ class Configs(argparse.Namespace, abc.ABC):
             - replace_experiment: A `bool` flag of if replace the old experiment folder if exists
         """
         super().__init__(**kwargs)
+        self.comments = comments
         self.experiment = experiment
         self.replace_experiment = replace_experiment
 
@@ -37,7 +39,7 @@ class Configs(argparse.Namespace, abc.ABC):
         self.experiment = self.experiment if self.experiment.endswith(".exp") else f"{self.experiment}.exp"
 
     @classmethod
-    def from_arguments(cls, *arguments: str):
+    def from_arguments(cls, *arguments: str, show_summary: bool = True):
         """
         Get properties from argument parser or given arguments
 
@@ -55,6 +57,7 @@ class Configs(argparse.Namespace, abc.ABC):
             configs = parser.parse_args(namespace=cls())
 
         # initialize logging
+        assert isinstance(configs, Configs), _raise(TypeError("The namespace is not a valid configs."))
         log_dir = os.path.join("experiments", configs.experiment)
         if os.path.exists(log_dir) and configs.replace_experiment:
             shutil.rmtree(log_dir)
@@ -67,12 +70,16 @@ class Configs(argparse.Namespace, abc.ABC):
         configs.format_arguments()
 
         # show configs summarize
-        view.logger.info("-----------Settings------------")
-        view.logger.info(f"Experiment name: {configs.experiment}")
-        configs.show_settings()
-        view.logger.info("----------Environments----------")
-        configs.show_environments()
-        view.logger.info("--------------------------------")
+        if show_summary:
+            view.logger.info("------------Settings------------")
+            view.logger.info(f"Experiment name: {configs.experiment}")
+            configs.show_settings()
+            view.logger.info("----------Environments----------")
+            configs.show_environments()
+            if configs.comments is not None:
+                view.logger.info("------------Comments------------")
+                view.logger.info(f"{configs.comments}")
+            view.logger.info("--------------------------------")
         return configs
 
     @staticmethod
@@ -87,6 +94,7 @@ class Configs(argparse.Namespace, abc.ABC):
         - Returns: An `argparse.ArgumentParser` or `argparse._ArgumentGroup` with arguments setup
         """
         parser.add_argument("-exp", "--experiment", type=str, default="test.exp", help="The name of experiment")
+        parser.add_argument("--comments", type=str, default=None, help="The comments of this experiment.")
         parser.add_argument("--replace_experiment", action="store_true", default=False, help="The flag to replace given experiment if exists.")
         return parser
 
