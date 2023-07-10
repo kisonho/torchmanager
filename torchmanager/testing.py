@@ -50,7 +50,7 @@ class Manager(BaseManager[Module]):
                 raise runtime_error from metric_error
         return summary
 
-    def forward(self, input: Any, target: Optional[Any] = None) -> Tuple[Any, Optional[torch.Tensor]]:
+    def forward(self, input: Any, target: Optional[Any] = None, /) -> Tuple[Any, Optional[torch.Tensor]]:
         """
         Forward pass function
 

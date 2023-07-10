@@ -130,7 +130,7 @@ class Manager(_Manager[Module]):
                 progress_bar.close()
         return self.summary
 
-    def backward(self, loss: torch.Tensor) -> None:
+    def backward(self, loss: torch.Tensor, /) -> None:
         """
         Backward function to calculate the gradients
         
