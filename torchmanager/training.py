@@ -2,7 +2,7 @@ from torch.utils.data import DataLoader
 from torchmanager_core import devices, errors, math, torch, view, _raise
 from torchmanager_core.checkpoint import Checkpoint
 from torchmanager_core.protocols import Resulting
-from torchmanager_core.typing import Any, Callable, Collection, Dict, List, Module, Optional, Self, Union
+from torchmanager_core.typing import Any, Callable, Collection, Module, Optional, Self, Union
 
 from .callbacks import Callback
 from .data import Dataset
@@ -51,11 +51,11 @@ class Manager(_Manager[Module]):
         assert self.optimizer is not None, errors._raise(NotImplementedError("The manager is not compiled properly, `optimizer` is missing."))
         return self.optimizer
 
-    def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss]]] = None, metrics: Dict[str, Metric] = {}) -> None:
+    def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, dict[str, Loss]]] = None, metrics: dict[str, Metric] = {}) -> None:
         super().__init__(model, optimizer, loss_fn, metrics)
         self.__current_epoch = 0
 
-    def _train(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, iterations: Optional[int] = None, *, device: torch.device = devices.CPU, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, callbacks_list: List[Callback] = []) -> Dict[str, float]:
+    def _train(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, iterations: Optional[int] = None, *, device: torch.device = devices.CPU, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, callbacks_list: list[Callback] = []) -> dict[str, float]:
         """
         The single training step for an epoch
 
@@ -165,7 +165,7 @@ class Manager(_Manager[Module]):
         """
         setattr(self, "backward", fn)
 
-    def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, epochs: Optional[int] = None, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any], Collection]] = None, callbacks_list: List[Callback] = [], *, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, device: Optional[Union[torch.device, List[torch.device]]] = None, use_multi_gpus: bool = False, **kwargs) -> Module:
+    def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, epochs: Optional[int] = None, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any], Collection]] = None, callbacks_list: list[Callback] = [], *, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, **kwargs) -> Module:
         """
         Training algorithm
 
@@ -249,7 +249,7 @@ class Manager(_Manager[Module]):
 
                 # print summary info
                 val_message = f"Epoch {self.current_epoch + 1}/{epochs}: "
-                summary.update({f"val_{name}": value for name, value in val_summary.items()})
+                summary |= {f"val_{name}": value for name, value in val_summary.items()}
                 for i, (name, value) in enumerate(summary.items()):
                     if i > 0:
                         val_message += ", "
@@ -270,7 +270,7 @@ class Manager(_Manager[Module]):
             self.reset(cpu)
         return self.raw_model
 
-    def train_step(self, x_train: Any, y_train: Any) -> Dict[str, float]:
+    def train_step(self, x_train: Any, y_train: Any) -> dict[str, float]:
         """
         A single training step
 

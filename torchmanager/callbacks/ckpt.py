@@ -1,7 +1,7 @@
 from torchmanager_core import os, torch, _raise
 from torchmanager_core.checkpoint import Checkpoint as Ckpt
 from torchmanager_core.protocols import ModelContainer, MonitorType, StateDictLoadable
-from torchmanager_core.typing import Any, Dict, Generic, Optional, TypeVar
+from torchmanager_core.typing import Any, Generic, Optional, TypeVar
 
 from .callback import Callback
 
@@ -45,7 +45,7 @@ class _Checkpoint(Callback, Generic[T]):
         self.__checkpoint = Ckpt(model, **kwargs)
         self.ckpt_path = os.path.normpath(ckpt_path)
 
-    def on_epoch_end(self, epoch: int, summary: Dict[str, float] = ..., val_summary: Optional[Dict[str, float]] = ...) -> None:
+    def on_epoch_end(self, epoch: int, summary: dict[str, float] = ..., val_summary: Optional[dict[str, float]] = ...) -> None:
         self.checkpoint.save(epoch, self.ckpt_path)
 
 
@@ -73,7 +73,7 @@ class LastCheckpoint(_Checkpoint[T]):
         super().__init__(model, ckpt_path, **kwargs)
         self.freq = freq
 
-    def on_epoch_end(self, epoch: int, summary: Dict[str, float] = ..., val_summary: Optional[Dict[str, float]] = ...) -> None:
+    def on_epoch_end(self, epoch: int, summary: dict[str, float] = ..., val_summary: Optional[dict[str, float]] = ...) -> None:
         if epoch % self.freq == 0:
             super().on_epoch_end(epoch, summary, val_summary)
 
@@ -109,7 +109,7 @@ class BestCheckpoint(_Checkpoint[T]):
         self.monitor = monitor
         self.monitor_type = monitor_type
 
-    def on_epoch_end(self, epoch: int, summary: Dict[str, float] = ..., val_summary: Optional[Dict[str, float]] = ...) -> None:
+    def on_epoch_end(self, epoch: int, summary: dict[str, float] = ..., val_summary: Optional[dict[str, float]] = ...) -> None:
         # get score
         score = val_summary[self.monitor] if val_summary is not None else summary[self.monitor]
 

@@ -1,6 +1,6 @@
 import os, torch
 from torchmanager_core.protocols import StateDictLoadable
-from torchmanager_core.typing import Any, Dict, Generic, List, Optional, OrderedDict, TypeVar
+from torchmanager_core.typing import Any, Generic, Optional, OrderedDict, TypeVar
 
 T = TypeVar("T", bound=StateDictLoadable)
 
@@ -20,12 +20,12 @@ class Checkpoint(Generic[T]):
 
     last_epoch: int
     loss_fn: Optional[StateDictLoadable]
-    metrics: Dict[str, StateDictLoadable]
+    metrics: dict[str, StateDictLoadable]
     model: T
     optimizer: Optional[torch.optim.Optimizer]
     save_weights_only: bool
 
-    def __init__(self, model: T, last_epoch: int = 0, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[StateDictLoadable] = None, metrics: Optional[Dict[str, StateDictLoadable]] = None, save_weights_only: bool = False) -> None:
+    def __init__(self, model: T, last_epoch: int = 0, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[StateDictLoadable] = None, metrics: Optional[dict[str, StateDictLoadable]] = None, save_weights_only: bool = False) -> None:
         """
         Constructor
 
@@ -54,7 +54,7 @@ class Checkpoint(Generic[T]):
             - model: Any object to be loaded
         """
         # load checkpint dictionary
-        ckpt: Dict[str, Any] = torch.load(ckpt_path, map_location=map_location)
+        ckpt: dict[str, Any] = torch.load(ckpt_path, map_location=map_location)
 
         # load model
         if model is not None and ckpt["save_weights_only"] is True:
@@ -96,7 +96,7 @@ class Checkpoint(Generic[T]):
         torch.save(ckpt, ckpt_path)
 
 
-def list_checkpoints(experiment_dir: str) -> List[str]:
+def list_checkpoints(experiment_dir: str) -> list[str]:
     """
     List all checkpoints in the given experiment folder
 

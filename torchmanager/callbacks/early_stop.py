@@ -1,5 +1,5 @@
 from torchmanager_core import errors, sys
-from torchmanager_core.typing import Dict, List, Optional
+from torchmanager_core.typing import Optional
 
 from .ckpt import Callback, MonitorType
 
@@ -13,13 +13,13 @@ class EarlyStop(Callback):
         - monitor_type: A `MonitorType` of either `MIN` of `MAX` mode for the best model
         - steps: An `int` of steps to monitor
     '''
-    __metrics: List[float]
+    __metrics: list[float]
     monitor: str
     monitor_type: MonitorType
     steps: int
 
     @property
-    def _metrics(self) -> List[float]:
+    def _metrics(self) -> list[float]:
         return self.__metrics
 
     def __init__(self, monitor: str, monitor_type: MonitorType = MonitorType.MAX, steps: int = 10) -> None:
@@ -29,7 +29,7 @@ class EarlyStop(Callback):
         self.monitor_type = monitor_type
         self.steps = steps
 
-    def on_epoch_end(self, epoch: int, summary: Dict[str, float] = ..., val_summary: Optional[Dict[str, float]] = None) -> None:
+    def on_epoch_end(self, epoch: int, summary: dict[str, float] = ..., val_summary: Optional[dict[str, float]] = None) -> None:
         # load monitoring value
         summary = val_summary if val_summary is not None else summary
         monitoring_value = summary[self.monitor]

@@ -1,6 +1,6 @@
 from torchmanager.callbacks import FrequencyCallback
 from torchmanager_core import tensorboard, torch
-from torchmanager_core.typing import Dict, Optional, Set, Tuple
+from torchmanager_core.typing import Optional, Set
 from torchmanager_core.protocols import Frequency
 
 
@@ -35,7 +35,7 @@ class TensorBoard(FrequencyCallback):
         self.__writer = tensorboard.writer.SummaryWriter(log_dir)
         assert self.freq == Frequency.EPOCH or self.freq == Frequency.BATCH, "Record to tensorboard at start of batch or epoch is not supported."
 
-    def add_graph(self, model: torch.nn.Module, input_shape: Optional[Tuple[int, ...]] = None) -> None:
+    def add_graph(self, model: torch.nn.Module, input_shape: Optional[tuple[int, ...]] = None) -> None:
         """
         Add graph to TensorBoard
 
@@ -46,19 +46,19 @@ class TensorBoard(FrequencyCallback):
         inputs = torch.randn(input_shape) if input_shape is not None else None
         self.writer.add_graph(model, input_to_model=inputs)
 
-    def _update(self, result: Tuple[Set[str], Dict[str, float], Optional[Dict[str, float]]]) -> None:
+    def _update(self, result: tuple[Set[str], dict[str, float], Optional[dict[str, float]]]) -> None:
         keys, summary, val_summary = result
 
         # write results to Tensorboard
         for key in keys:
-            r: Dict[str, float] = {}
+            r: dict[str, float] = {}
             if key in summary:
                 r["train"] = summary[key]
             if val_summary is not None and key in val_summary:
                 r["val"] = val_summary[key]
             self.writer.add_scalars(key, r, self.current_step + 1)
 
-    def step(self, summary: Dict[str, float], val_summary: Optional[Dict[str, float]] = None) -> Tuple[Set[str], Dict[str, float], Optional[Dict[str, float]]]:
+    def step(self, summary: dict[str, float], val_summary: Optional[dict[str, float]] = None) -> tuple[Set[str], dict[str, float], Optional[dict[str, float]]]:
         # fetch keys
         keys = list(summary.keys())
         if val_summary is not None:

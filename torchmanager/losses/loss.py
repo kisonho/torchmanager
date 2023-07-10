@@ -1,5 +1,5 @@
 from torchmanager_core import torch, _raise
-from torchmanager_core.typing import Any, Callable, List, Optional
+from torchmanager_core.typing import Any, Callable, Optional
 
 from ..metrics import Metric
 
@@ -84,7 +84,7 @@ class MultiLosses(Loss):
     def losses(self) -> torch.nn.ModuleList:
         return self.__losses
 
-    def __init__(self, losses: List[Loss], target: Optional[str] = None, weight: float = 1) -> None:
+    def __init__(self, losses: list[Loss], target: Optional[str] = None, weight: float = 1) -> None:
         """
         Constructor
 
@@ -131,7 +131,7 @@ class ParallelLoss(Loss):
     _metric_fn: torch.nn.DataParallel
     module: Loss
 
-    def __init__(self, module: Loss, device_ids: Optional[List[int]] = None, output_device: Optional[torch.device] = None, dim: int = 0) -> None:
+    def __init__(self, module: Loss, device_ids: Optional[list[int]] = None, output_device: Optional[torch.device] = None, dim: int = 0) -> None:
         super().__init__(torch.nn.DataParallel(module, device_ids, output_device, dim=dim))
         self.module = module
 

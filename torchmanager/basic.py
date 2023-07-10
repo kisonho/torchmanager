@@ -1,7 +1,7 @@
 from torchmanager_core import devices, errors, torch, Version, deprecated, API_VERSION, VERSION as CURRENT_VERSION
 from torchmanager_core.checkpoint import Checkpoint
 from torchmanager_core.protocols import Resulting
-from torchmanager_core.typing import Any, Collection, Dict, Generic, List, Module, Optional, OrderedDict, Self, Tuple, Union
+from torchmanager_core.typing import Any, Collection, Generic, Module, Optional, OrderedDict, Self, Union
 
 from .losses import Loss, MultiLosses, ParallelLoss
 from .metrics import Metric
@@ -45,7 +45,7 @@ class BaseManager(Generic[Module]):
     # properties
     loss_fn: Optional[Resulting]
     """The optional main loss function in `Resulting`"""
-    metric_fns: Dict[str, Resulting]
+    metric_fns: dict[str, Resulting]
     """A `dict` of the metric functions with names as keys in `str` and metric functions as values in `torch.metrics.Metric`"""
     model: Union[Module, torch.nn.DataParallel]
     optimizer: Optional[torch.optim.Optimizer]
@@ -74,7 +74,7 @@ class BaseManager(Generic[Module]):
         """The `Module` controlled by this manager without `torch.nn.DataParallel` wrap"""
         return self.model.module if isinstance(self.model, torch.nn.DataParallel) else self.model  # type: ignore
 
-    def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss]]] = None, metrics: Dict[str, Metric] = {}) -> None:
+    def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, dict[str, Loss]]] = None, metrics: dict[str, Metric] = {}) -> None:
         """
         Constructor
 
@@ -92,7 +92,7 @@ class BaseManager(Generic[Module]):
         # compile
         self._compile(optimizer, loss_fn, metrics)
 
-    def _compile(self, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, Dict[str, Loss]]] = None, metrics: Dict[str, Metric] = {}) -> None:
+    def _compile(self, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, dict[str, Loss]]] = None, metrics: dict[str, Metric] = {}) -> None:
         """
         Compiles the manager
 
@@ -103,7 +103,7 @@ class BaseManager(Generic[Module]):
         """
         # initialize loss
         if isinstance(loss_fn, dict):
-            loss_fn_mapping: Dict[str, Loss] = {f"{name}_loss": fn for name, fn in loss_fn.items()}
+            loss_fn_mapping: dict[str, Loss] = {f"{name}_loss": fn for name, fn in loss_fn.items()}
             self.metric_fns.update(loss_fn_mapping)
             loss_fn = MultiLosses([l for l in loss_fn_mapping.values()])
         self.loss_fn = loss_fn
@@ -116,7 +116,7 @@ class BaseManager(Generic[Module]):
         self.optimizer = optimizer
 
     @deprecated('v1.3', 'v1.4')
-    def compile(self, optimizer: torch.optim.Optimizer, loss_fn: Union[Loss, Dict[str, Loss]], metrics: Dict[str, Metric] = {}) -> None:
+    def compile(self, optimizer: torch.optim.Optimizer, loss_fn: Union[Loss, dict[str, Loss]], metrics: dict[str, Metric] = {}) -> None:
         """
         Recompiles the manager with optimizer loss function and metrics
 
@@ -147,7 +147,7 @@ class BaseManager(Generic[Module]):
             # set version
             self.version = API_VERSION
 
-    def data_parallel(self, target_devices: List[torch.device]) -> bool:
+    def data_parallel(self, target_devices: list[torch.device]) -> bool:
         """
         Data parallel all available models
 
@@ -210,9 +210,9 @@ class BaseManager(Generic[Module]):
         assert "loss_fn" in state_dict, errors._raise(KeyError("The given dictionary does not have 'loss_fn' element."))
         assert "metrics" in state_dict, errors._raise(KeyError("The given dictionary does not have 'metrics' element."))
         model: OrderedDict[str, Any] = state_dict["model"]
-        optimizer: Optional[Dict[str, Any]] = state_dict["optimizer"]
+        optimizer: Optional[dict[str, Any]] = state_dict["optimizer"]
         loss_fn: Optional[OrderedDict[str, Any]] = state_dict["loss_fn"]
-        metrics: Dict[str, OrderedDict[str, Any]] = state_dict["metrics"]
+        metrics: dict[str, OrderedDict[str, Any]] = state_dict["metrics"]
 
         # load state dict to current model, optimizer, loss_fn, and metrics
         self.model.load_state_dict(model, strict=strict)  # type: ignore
@@ -269,7 +269,7 @@ class BaseManager(Generic[Module]):
         ckpt = Checkpoint(self)
         return ckpt
 
-    def unpack_data(self, data: Collection[Any]) -> Tuple[Any, Any]:
+    def unpack_data(self, data: Collection[Any]) -> tuple[Any, Any]:
         """
         Unpacks data to input and target
 

@@ -1,6 +1,6 @@
 from torchmanager_core import torch
 from torchmanager_core.protocols import Frequency, SummaryWriteble
-from torchmanager_core.typing import Any, Dict, Generic, Optional, TypeVar
+from torchmanager_core.typing import Any, Generic, Optional, TypeVar
 
 from .callback import FrequencyCallback
 
@@ -42,7 +42,7 @@ class LrSchedueler(FrequencyCallback, Generic[Scheduler]):
     def _update(self, result: Any) -> None:
         pass
 
-    def on_epoch_end(self, epoch: int, summary: Dict[str, float], val_summary: Optional[Dict[str, Any]] = None) -> None:
+    def on_epoch_end(self, epoch: int, summary: dict[str, float], val_summary: Optional[dict[str, Any]] = None) -> None:
         # get lr summary
         lr_summary = {}
         lr_list = self._scheduler.get_last_lr()
@@ -56,7 +56,7 @@ class LrSchedueler(FrequencyCallback, Generic[Scheduler]):
         if self._writer is not None:
             # record summary
             for key in lr_summary.keys():
-                result: Dict[str, float] = {}
+                result: dict[str, float] = {}
                 result["train"] = lr_summary[key]
                 self._writer.add_scalars(key, result, epoch)
 

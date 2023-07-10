@@ -1,7 +1,7 @@
 from torchmanager.callbacks import Callback
 from torchmanager.callbacks import BestCheckpoint, LastCheckpoint
 from torchmanager_core import os, view
-from torchmanager_core.typing import Any, Dict, Generic, List, TypeVar, Union
+from torchmanager_core.typing import Any, Generic, TypeVar, Union
 from torchmanager_core.protocols import MonitorType, StateDictLoadable
 
 from .tensorboard import TensorBoard
@@ -21,11 +21,11 @@ class Experiment(Callback, Generic[T]):
         - last_ckpt: A `.ckpt.LastCheckpoint` callback that records the last checkpoint
         - tensorboard: A `.ckpt.TensorBoard` callback that records data to tensorboard
     """
-    best_ckpts: List[BestCheckpoint[T]]
+    best_ckpts: list[BestCheckpoint[T]]
     last_ckpt: LastCheckpoint[T]
     tensorboard: TensorBoard
 
-    def __init__(self, experiment: str, model: T, monitors: Union[Dict[str, MonitorType], List[str]] = {}, show_verbose: bool = True) -> None:
+    def __init__(self, experiment: str, model: T, monitors: Union[dict[str, MonitorType], list[str]] = {}, show_verbose: bool = True) -> None:
         """
         Constructor
 

@@ -1,12 +1,12 @@
 from torchmanager_core import abc, torch
 from torchmanager_core.protocols import Frequency
-from torchmanager_core.typing import Any, Dict, Optional
+from torchmanager_core.typing import Any, Optional
 
 
 class Callback:
     """An empty basic training callback"""
 
-    def on_batch_end(self, batch: int, summary: Dict[str, float] = {}) -> None:
+    def on_batch_end(self, batch: int, summary: dict[str, float] = {}) -> None:
         """
         The callback when batch ends
 
@@ -25,7 +25,7 @@ class Callback:
         """
         pass
 
-    def on_epoch_end(self, epoch: int, summary: Dict[str, float] = {}, val_summary: Optional[Dict[str, float]] = None) -> None:
+    def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: Optional[dict[str, float]] = None) -> None:
         """
         The callback when batch ends
 
@@ -109,7 +109,7 @@ class FrequencyCallback(Callback, abc.ABC):
         """
         pass
 
-    def on_batch_end(self, batch: int, summary: Dict[str, float] = {}) -> None:
+    def on_batch_end(self, batch: int, summary: dict[str, float] = {}) -> None:
         if self.freq == Frequency.BATCH:
             result = self.step(summary)
             self._update(result)
@@ -119,7 +119,7 @@ class FrequencyCallback(Callback, abc.ABC):
         if self.freq == Frequency.EPOCH or self.freq == Frequency.EPOCH_START:
             self.current_step = initial_epoch
 
-    def on_epoch_end(self, epoch: int, summary: Dict[str, float] = {}, val_summary: Optional[Dict[str, float]] = None) -> None:
+    def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: Optional[dict[str, float]] = None) -> None:
         if self.freq == Frequency.EPOCH:
             result = self.step(summary, val_summary)
             self._update(result)

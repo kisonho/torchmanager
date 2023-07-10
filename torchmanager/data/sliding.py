@@ -1,8 +1,7 @@
 from itertools import product
 from torchmanager_core import torch, _raise
-from torchmanager_core.typing import List, Tuple
 
-def sliding_window(image: torch.Tensor, /, window_size: Tuple[int, ...], stride: Tuple[int, ...]) -> torch.Tensor:
+def sliding_window(image: torch.Tensor, /, window_size: tuple[int, ...], stride: tuple[int, ...]) -> torch.Tensor:
     """
     Extract sliding windows from a multi-dimensional `torch.Tensor`.
 
@@ -25,9 +24,9 @@ def sliding_window(image: torch.Tensor, /, window_size: Tuple[int, ...], stride:
     """
     # initialize
     assert len(window_size) == len(stride), _raise(ValueError(f"Window size dimension ({len(window_size)}) and stride dimension ({stride}) must be the same."))
-    stride_dims: List[int] = []
-    windows: List[torch.Tensor] = []
-    window_dims: List[int] = []
+    stride_dims: list[int] = []
+    windows: list[torch.Tensor] = []
+    window_dims: list[int] = []
 
     # Calculate number of windows in each dimension
     for dim_size, window_dim, stride_dim in zip(image.shape[1:], window_size, stride):

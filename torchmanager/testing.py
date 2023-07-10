@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader
 from torchmanager_core import devices, errors, torch, view
 from torchmanager_core.protocols import Resulting
-from torchmanager_core.typing import Any, Callable, Collection, Dict, List, Module, Optional, Tuple, Union
+from torchmanager_core.typing import Any, Callable, Collection, Module, Optional, Union
 
 from .basic import BaseManager
 from .data import Dataset
@@ -25,13 +25,13 @@ class Manager(BaseManager[Module]):
     model: Union[Module, torch.nn.parallel.DataParallel]
 
     @property
-    def compiled_metrics(self) -> Dict[str, Resulting]:
+    def compiled_metrics(self) -> dict[str, Resulting]:
         return {name: m for name, m in self.metric_fns.items() if "loss" not in name}
 
     @property
-    def summary(self) -> Dict[str, float]:
+    def summary(self) -> dict[str, float]:
         # initialize
-        summary: Dict[str, float] = {}
+        summary: dict[str, float] = {}
 
         # summarize loss
         if self.loss_fn is not None:
@@ -50,7 +50,7 @@ class Manager(BaseManager[Module]):
                 raise runtime_error from metric_error
         return summary
 
-    def forward(self, x_train: Any, y_test: Optional[Any] = None) -> Tuple[Any, Optional[torch.Tensor]]:
+    def forward(self, x_train: Any, y_test: Optional[Any] = None) -> tuple[Any, Optional[torch.Tensor]]:
         """
         Forward pass function
 
@@ -72,7 +72,7 @@ class Manager(BaseManager[Module]):
             loss = None
         return y, loss
 
-    def forward_fn(self, fn: Callable[[Any, Optional[Any]], Tuple[Any, Optional[torch.Tensor]]], /) -> None:
+    def forward_fn(self, fn: Callable[[Any, Optional[Any]], tuple[Any, Optional[torch.Tensor]]], /) -> None:
         """
         The wrapper function to override `forward` method
 
@@ -82,7 +82,7 @@ class Manager(BaseManager[Module]):
         >>> manager = Manager(...) # define a manager
 
         >>> @manager.forward_fn
-        >>> def forward(input: Any, target: Optional[Any]) -> Tuple[Any, Optional[torch.Tensor]]: # the forward function to override
+        >>> def forward(input: Any, target: Optional[Any]) -> tuple[Any, Optional[torch.Tensor]]: # the forward function to override
         >>>     y = manager.model(input)
         >>>     loss = manager.compiled_loss(y, target)
         >>>     return y, loss
@@ -97,7 +97,7 @@ class Manager(BaseManager[Module]):
         setattr(self, "forward", fn)
 
     @torch.no_grad()
-    def predict(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection[Any]], /, *, device: Optional[Union[torch.device, List[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> List[Any]:
+    def predict(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection[Any]], /, *, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> list[Any]:
         '''
         Predict the whole dataset
 
@@ -131,7 +131,7 @@ class Manager(BaseManager[Module]):
 
             # initialize predictions
             self.model.eval()
-            predictions: List[Any] = []
+            predictions: list[Any] = []
             self.to(device)
 
             # loop the dataset
@@ -162,7 +162,7 @@ class Manager(BaseManager[Module]):
             self.reset(cpu)
 
     @torch.no_grad()
-    def test(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection[Any]],  /, *,device: Optional[Union[torch.device, List[torch.device]]] = None, empty_cache: bool = True, use_multi_gpus: bool = False, show_verbose: bool = False) -> Dict[str, float]:
+    def test(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection[Any]],  /, *,device: Optional[Union[torch.device, list[torch.device]]] = None, empty_cache: bool = True, use_multi_gpus: bool = False, show_verbose: bool = False) -> dict[str, float]:
         """
         Test target model
 
@@ -236,7 +236,7 @@ class Manager(BaseManager[Module]):
             if empty_cache:
                 self.reset(cpu)
 
-    def test_step(self, x_test: Any, y_test: Any) -> Dict[str, float]:
+    def test_step(self, x_test: Any, y_test: Any) -> dict[str, float]:
         """
         A single testing step
 

@@ -1,6 +1,6 @@
 from torchmanager_core import torch, Version, _raise
 from torchmanager_core.protocols import Reduction
-from torchmanager_core.typing import Any, Callable, List, Optional
+from torchmanager_core.typing import Any, Callable, Optional
 
 
 class Metric(torch.nn.Module):
@@ -16,7 +16,7 @@ class Metric(torch.nn.Module):
         - results: An optional `torch.Tensor` of all metric results
     """
     _metric_fn: Optional[Callable[[Any, Any], torch.Tensor]]
-    _results: List[torch.Tensor]
+    _results: list[torch.Tensor]
     _target: Optional[str]
 
     @property
