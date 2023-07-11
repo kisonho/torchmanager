@@ -62,7 +62,9 @@ class Metric(torch.nn.Module):
         return m
     
     def convert(self, from_version: Version) -> None:
-        pass
+        if from_version < "v1.3":
+            self._result_sum = torch.tensor(0, dtype=torch.float)
+            self._step = 0
 
     def forward(self, input: Any, target: Any) -> torch.Tensor:
         """
