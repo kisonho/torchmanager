@@ -8,6 +8,7 @@ packages = [
     { include = "torchmanager" },
     { include = "torchmanager_core" },
 ]
+readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.8"

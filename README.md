@@ -9,8 +9,8 @@
 * tensorboard (Optional)
 
 ## Installation
-* PyPi: `pip install torchmanager-nightly`
-* Conda: `conda install -c kisonho torchmanager-nightly`
+* PyPi: `pip install torchmanager`
+* Conda: `conda install -c kisonho torchmanager`
 
 ## The Manager
 1. Start with configurations:
@@ -23,6 +23,10 @@ class Configs(_Configs):
     lr: float
 
     ...
+
+    def get_arguments(parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup] = argparse.ArgumentParser()) -> Union[argparse.ArgumentParser, argparse._ArgumentGroup]:
+        '''Add arguments to argument parser'''
+        ...
 
     def show_settings(self) -> None:
         ...

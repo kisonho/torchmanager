@@ -130,16 +130,14 @@ class Manager(_Manager[Module]):
                 progress_bar.close()
         return self.summary
 
-    def backward(self, loss: torch.Tensor) -> None:
+    def backward(self, loss: torch.Tensor, /) -> None:
         """
         Backward function to calculate the gradients
         
         - Parameters:
             - loss: A `torch.Tensor` of loss value
         """
-        self.compiled_optimizer.zero_grad()
         loss.backward()
-        self.compiled_optimizer.step()
 
     def backward_fn(self, fn: Callable[[torch.Tensor], None], /) -> None:
         """
@@ -289,7 +287,9 @@ class Manager(_Manager[Module]):
                 fn(y, y_train)
 
         # backward pass
+        self.compiled_optimizer.zero_grad()
         self.backward(loss)
+        self.compiled_optimizer.step()
         return self.summary
 
     def to_checkpoint(self) -> Checkpoint[Self]:

@@ -89,9 +89,21 @@ class BaseManager(Generic[Module]):
         self.model = model
         self.version = CURRENT_VERSION
 
-        # compile
-        self._compile(optimizer, loss_fn, metrics)
+        # initialize loss
+        if isinstance(loss_fn, dict):
+            loss_fn_mapping: dict[str, Loss] = {f"{name}_loss": fn for name, fn in loss_fn.items()}
+            self.metric_fns.update(loss_fn_mapping)
+            loss_fn = MultiLosses([l for l in loss_fn_mapping.values()])
+        self.loss_fn = loss_fn
 
+        # initialize metrics
+        for name, fn in metrics.items():
+            self.metric_fns[name] = fn
+
+        # initialize optimizer
+        self.optimizer = optimizer
+
+    @deprecated('v1.3', 'v1.4')
     def _compile(self, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, dict[str, Loss]]] = None, metrics: dict[str, Metric] = {}) -> None:
         """
         Compiles the manager

@@ -1,10 +1,12 @@
-from torchmanager_core import torch
+from torchmanager_core import torch, Version
 from torchmanager_core.protocols import Frequency, SummaryWriteble
 from torchmanager_core.typing import Any, Generic, Optional, TypeVar
 
 from .callback import FrequencyCallback
 
-Scheduler = TypeVar("Scheduler", bound=torch.optim.lr_scheduler._LRScheduler)
+_LrScheduler = torch.optim.lr_scheduler._LRScheduler if Version(torch.version) < "2.0" else torch.optim.lr_scheduler.LRScheduler
+
+Scheduler = TypeVar("Scheduler", bound=_LrScheduler)
 Writer = TypeVar("Writer", bound=SummaryWriteble)
 
 

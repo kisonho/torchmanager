@@ -50,7 +50,7 @@ class Manager(BaseManager[Module]):
                 raise runtime_error from metric_error
         return summary
 
-    def forward(self, x_train: Any, y_test: Optional[Any] = None) -> tuple[Any, Optional[torch.Tensor]]:
+    def forward(self, input: Any, target: Optional[Any] = None, /) -> tuple[Any, Optional[torch.Tensor]]:
         """
         Forward pass function
 
@@ -59,12 +59,12 @@ class Manager(BaseManager[Module]):
         - Returns: `Any` kind of model output
         """
         # forward model
-        y = self.model(x_train)
+        y = self.model(input)
 
         # forward loss
-        if self.loss_fn is not None and y_test is not None:
+        if self.loss_fn is not None and target is not None:
             try:
-                loss = self.loss_fn(y, y_test)
+                loss = self.loss_fn(y, target)
             except Exception as loss_error:
                 runtime_error = errors.LossError()
                 raise loss_error from runtime_error

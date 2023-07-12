@@ -54,34 +54,37 @@ class Version:
     sub_version: int
 
     def __init__(self, v: Any, /) -> None:
-        # convert to string
-        version_str = str(v)
+        try:
+            # convert to string
+            version_str = str(v)
 
-        # format version
-        if version_str.startswith('v'):
-            version_str = version_str[1:]
+            # format version
+            if version_str.startswith('v'):
+                version_str = version_str[1:]
 
-        # split pre-release version
-        if 'a' in version_str:
-            pre_release_parts = version_str.split('a')
-            self.pre_release = PreRelease.ALPHA
-        elif 'b' in version_str:
-            pre_release_parts = version_str.split('b')
-            self.pre_release = PreRelease.BETA
-        elif 'rc' in version_str:
-            pre_release_parts = version_str.split('rc')
-            self.pre_release = PreRelease.RELEASE_CANDIDATE
-        else:
-            pre_release_parts = [version_str, "0"]
-            self.pre_release = None
-        version_str = pre_release_parts[0]
-        self.pre_release_version = int(pre_release_parts[1]) if pre_release_parts[1] != '' else 1
+            # split pre-release version
+            if 'a' in version_str:
+                pre_release_parts = version_str.split('a')
+                self.pre_release = PreRelease.ALPHA
+            elif 'b' in version_str:
+                pre_release_parts = version_str.split('b')
+                self.pre_release = PreRelease.BETA
+            elif 'rc' in version_str:
+                pre_release_parts = version_str.split('rc')
+                self.pre_release = PreRelease.RELEASE_CANDIDATE
+            else:
+                pre_release_parts = [version_str, "0"]
+                self.pre_release = None
+            version_str = pre_release_parts[0]
+            self.pre_release_version = int(pre_release_parts[1]) if pre_release_parts[1] != '' else 1
 
-        # split version
-        version_parts = version_str.split('.')
-        self.main_version = int(version_parts[0])
-        self.minor_version = int(version_parts[1])
-        self.sub_version = int(version_parts[2]) if len(version_parts) > 2 else 0
+            # split version
+            version_parts = version_str.split('.')
+            self.main_version = int(version_parts[0])
+            self.minor_version = int(version_parts[1])
+            self.sub_version = int(version_parts[2]) if len(version_parts) > 2 else 0
+        except Exception as e:
+            raise ValueError(f"The given version '{v}' is not in valid version format.") from e
 
     def __repr__(self) -> str:
         version_str = f"v{self.main_version}"
