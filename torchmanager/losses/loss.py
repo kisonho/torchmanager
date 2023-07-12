@@ -55,6 +55,7 @@ class Loss(Metric):
     def __call__(self, input: Any, target: Any) -> torch.Tensor:
         m: torch.Tensor = super().__call__(input, target) * self.weight
         self._results[-1] *= self.weight
+        assert m.numel() == 1, _raise(TypeError(f"The returned loss must be a scalar tensor, got shape {m.shape}"))
         return m
 
     def forward(self, input: Any, target: Any) -> torch.Tensor:
