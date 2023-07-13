@@ -1,5 +1,4 @@
-from torchmanager_core import devices, errors, torch, Version, deprecated, API_VERSION, VERSION as CURRENT_VERSION
-from torchmanager_core.checkpoint import Checkpoint
+from torchmanager_core import checkpoint, devices, errors, torch, Version, deprecated, API_VERSION, VERSION as CURRENT_VERSION
 from torchmanager_core.protocols import Resulting
 from torchmanager_core.typing import Any, Collection, Generic, Module, Optional, OrderedDict, Self, Union
 
@@ -178,18 +177,22 @@ class BaseManager(Generic[Module]):
         return use_multi_gpus
 
     @classmethod
-    def from_checkpoint(cls, ckpt: Union[Checkpoint[Any], str], map_location: Optional[torch.device] = None):
+    def from_checkpoint(cls, ckpt: Union[checkpoint.Checkpoint[Any], str], experiment: Optional[str] = None, *, map_location: Optional[torch.device] = None):
         """
         Method to load a manager from a saved `Checkpoint`. The manager will not be compiled with a loss function and its metrics.
 
         - Parameters:
             - ckpt: Either a `Checkpoint` of `Any` object or a `str` of checkpoint path
+            - experiment: A `str` of the experiment name for the checkpoint
             - map_location: An optional `torch.device` to load the checkpoint
         - Returns: A loaded `Manager`
         """
         # load checkpoint
-        if not isinstance(ckpt, Checkpoint):
-            ckpt = Checkpoint.from_saved(ckpt, map_location=map_location)
+        if not isinstance(ckpt, checkpoint.Checkpoint) and experiment is not None:
+            experiment = f"{experiment}.exp" if experiment.endswith(".exp") else experiment
+            ckpt = checkpoint.load(experiment, ckpt)
+        elif not isinstance(ckpt, checkpoint.Checkpoint):
+            ckpt = checkpoint.Checkpoint.from_saved(ckpt, map_location=map_location)
 
         # recover model to manager
         if isinstance(ckpt.model, torch.nn.Module):
@@ -272,13 +275,13 @@ class BaseManager(Generic[Module]):
         for k, m in self.metric_fns.items():
             self.metric_fns[k] = m.to(device)
 
-    def to_checkpoint(self) -> Checkpoint[Self]:
+    def to_checkpoint(self) -> checkpoint.Checkpoint[Self]:
         """
         Convert the current manager to a checkpoint
 
         - Returns: A `Checkpoint` with its model as the current manager
         """
-        ckpt = Checkpoint(self)
+        ckpt = checkpoint.Checkpoint(self)
         return ckpt
 
     def unpack_data(self, data: Collection[Any]) -> tuple[Any, Any]:
