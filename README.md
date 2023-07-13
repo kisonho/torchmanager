@@ -96,7 +96,7 @@ manager.test(testing_dataset)
 torch.save(model, "model.pth")
 ```
 
-## Custom your training loop
+## Custom your training loop by overriding
 1. Create your own manager class by extending the `Manager` class:
 ```
 ...
@@ -112,4 +112,34 @@ class CustomManager(Manager):
     
     def train_step(x_train: torch.Tensor, y_train: torch.Tensor) -> Dict[str, float]:
         ...
+```
+
+3. Compile customized manager
+```
+model = ...
+optimizer = ...
+loss_fn = ...
+metrics = ...
+manager = CustomManager(model, optimizer, loss_fn=loss_fn, metrics=metrics)
+```
+
+## Custom your training loop by wrapper function
+1. Compile the manager
+```
+model = ...
+optimizer = ...
+loss_fn = ...
+metrics = ...
+manager = torchmanager.Manager(model, optimizer, loss_fn=loss_fn, metrics=metrics)
+```
+
+2. Add wrapper functions
+```
+@manager.forward_fn
+def forward_wrapper(input: Any, target: Optional[Any]) -> tuple[Any, Optional[torch.Tensor]]:
+    ...
+
+@manager.backward_fn
+def backward_wrapper(loss: torch.Tensor) -> None:
+    ...
 ```
