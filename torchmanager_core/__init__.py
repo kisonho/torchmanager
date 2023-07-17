@@ -2,7 +2,7 @@ import abc, argparse, gc, math, os, platform, shutil, sys, torch
 from torch.nn import functional
 from torch.utils import data
 
-from . import checkpoint, devices, errors, random, view
+from . import backward, checkpoint, devices, errors, random, view
 from .errors import _raise
 from .version import Version, deprecated, API as API_VERSION, CURRENT as VERSION, DESCRIPTION
 
