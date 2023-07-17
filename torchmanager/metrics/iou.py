@@ -50,7 +50,7 @@ class MeanIoU(Metric):
         self._threshold = threshold
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        input = input.argmax(self._dim) if input.shape[self._dim] > 1 else (input > 0).int()
+        input = input.argmax(self._dim) if input.shape[self._dim] > 1 else input > 0.5
         intersection = (input & target).float().sum()
         union = (input | target).float().sum()
         iou = (intersection + self._smooth) / (union + self._smooth)
