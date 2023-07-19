@@ -1,6 +1,6 @@
 from torchmanager_core import torch, Version
 from torchmanager_core.protocols import Reduction
-from torchmanager_core.typing import Optional, Tuple
+from torchmanager_core.typing import Optional
 
 from .conf_met import BinaryConfusionMetric
 from .metric import Metric

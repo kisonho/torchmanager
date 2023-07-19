@@ -12,7 +12,7 @@ class BinaryConfusionMetric(Metric, abc.ABC):
     * Abstract class
 
     - Methods to implement:
-        - forward_metric: The main method that accepts TP, FP, and FN as `torch.Tensor` and returns the final metric as `torch.Tensor`
+        - forward_metric: The main method that accepts TP, TN, FP, and FN as `torch.Tensor` and returns the final metric as `torch.Tensor`
     """
     _dim: int
     _eps: float
