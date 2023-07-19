@@ -137,7 +137,7 @@ class PartialDice(Dice):
     """
     class_idx: int
 
-    def __init__(self, c: int, /, dim: int = -1, *, eps: float = 1e-7, target:Optional[str] = None):
+    def __init__(self, c: int, /, dim: int = 1, *, eps: float = 1e-7, target:Optional[str] = None):
         """
         Constructor
 
@@ -151,8 +151,12 @@ class PartialDice(Dice):
         self.class_idx = c
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        target = target == self.class_idx
-        return super().forward(input, target)
+        input = input.argmax(self._dim)
+        input_mask = input == self.class_idx
+        target_mask = target == self.class_idx
+        intersection = input_mask * target_mask
+        dice = (2 * intersection.sum() + self._eps) / (input_mask.sum() + target_mask.sum() + self._eps)
+        return dice.mean()
 
 
 class Precision(BinaryConfusionMetric):
