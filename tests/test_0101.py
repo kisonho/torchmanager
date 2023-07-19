@@ -1,9 +1,20 @@
-from torchmanager import callbacks
+import torch
+from torchmanager import callbacks, losses
 from torchmanager_core import errors, Version
 from unittest import TestCase
 
 
 class Test0101(TestCase):
+    def test_dice_loss(self) -> None:
+        # initialize
+        loss_fn = losses.Dice()
+        y = torch.randn((4, 4, 224, 224))
+        y_test = torch.randn_like(y).argmax(1)
+
+        # calculate dice loss
+        loss = loss_fn(y, y_test)
+        self.assertGreater(float(loss), 0, "Loss must be a positive value, got {loss}.")
+
     def test_early_stopping(self) -> None:
         # initialize
         n = 0

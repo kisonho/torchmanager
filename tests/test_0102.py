@@ -9,13 +9,17 @@ class Test0102(TestCase):
 
         # initialize
         dice_score_fn = metrics.Dice()
+        partial_dice_score_fn = metrics.PartialDice(2)
         y = torch.randn((4, 4, 224, 224))
-        y_test = torch.randn_like(y)
+        y_test = torch.randn_like(y).argmax(1)
 
         # test dice score
         dice = dice_score_fn(y, y_test)
+        partial_dice = partial_dice_score_fn(y, y_test)
         self.assertGreaterEqual(float(dice), 0, f"Dice value must be non-negative, got {dice}.")
         self.assertLessEqual(float(dice), 1, f"Dice value must be less or equal to 1, got {dice}.")
+        self.assertGreaterEqual(float(partial_dice), 0, f"Dice value must be non-negative, got {partial_dice}.")
+        self.assertLessEqual(float(partial_dice), 1, f"Dice value must be less or equal to 1, got {partial_dice}.")
 
     def test_random(self) -> None:
         from torchmanager_core.random import freeze_seed, unfreeze_seed

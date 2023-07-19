@@ -75,7 +75,8 @@ class CategoricalAccuracy(SparseCategoricalAccuracy):
 class Dice(BinaryConfusionMetric):
     """The dice score metrics"""
     def forward_metric(self, tp: torch.Tensor, tn: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
-        return 2 * tp / (2 * tp + fp + fn + self._eps)
+        dice = 2 * tp / (2 * tp + fp + fn + self._eps)
+        return dice.mean()
 
 
 class F1(BinaryConfusionMetric):
@@ -88,8 +89,7 @@ class F1(BinaryConfusionMetric):
 
         # calculate F1
         f1 = 2 * precision * recall / (precision + recall + self._eps)
-        f1 = torch.mean(f1)
-        return f1
+        return f1.mean()
 
 
 class MAE(Metric):
@@ -137,7 +137,7 @@ class PartialDice(Dice):
     """
     class_idx: int
 
-    def __init__(self, c: int, /, dim: int = -1, *, eps: float = 1e-7, target:Optional[str] = None):
+    def __init__(self, c: int, /, dim: int = 1, *, eps: float = 1e-7, target:Optional[str] = None):
         """
         Constructor
 
@@ -151,19 +151,25 @@ class PartialDice(Dice):
         self.class_idx = c
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        target = target == self.class_idx
-        return super().forward(input, target)
+        input = input.argmax(self._dim)
+        input_mask = input == self.class_idx
+        target_mask = target == self.class_idx
+        intersection = input_mask * target_mask
+        dice = (2 * intersection.sum() + self._eps) / (input_mask.sum() + target_mask.sum() + self._eps)
+        return dice.mean()
 
 
 class Precision(BinaryConfusionMetric):
     """The Precision metrics"""
 
     def forward_metric(self, tp: torch.Tensor, tn: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
-        return tp / (tp + fp + self._eps)
+        precision = tp / (tp + fp + self._eps)
+        return precision.mean()
 
 
 class Recall(BinaryConfusionMetric):
     """The Recall metrics"""
 
     def forward_metric(self, tp: torch.Tensor, tn: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
-        return tp / (tp + fn + self._eps)
+        recall = tp / (tp + fn + self._eps)
+        return recall.mean()
