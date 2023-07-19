@@ -1,6 +1,6 @@
 from torchmanager_core import torch, Version
 from torchmanager_core.protocols import Reduction
-from torchmanager_core.typing import Optional
+from torchmanager_core.typing import Optional, Tuple
 
 from .conf_met import BinaryConfusionMetric
 from .metric import Metric
@@ -72,10 +72,16 @@ class CategoricalAccuracy(SparseCategoricalAccuracy):
         return super().forward(input, target)
 
 
+class Dice(BinaryConfusionMetric):
+    """The dice score metrics"""
+    def forward_metric(self, tp: torch.Tensor, tn: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
+        return 2 * tp / (2 * tp + fp + fn + self._eps)
+
+
 class F1(BinaryConfusionMetric):
     """The F1 metrics"""
 
-    def forward(self, tp: torch.Tensor, tn: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
+    def forward_metric(self, tp: torch.Tensor, tn: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
         # calculate precision and recall
         precision = tp / (tp + fp + self._eps)
         recall = tp / (tp + fn + self._eps)
@@ -120,6 +126,33 @@ class MAE(Metric):
             return error.sum()
         else:
             return error
+
+
+class PartialDice(Dice):
+    """
+    The partial dice score for a specific class index
+
+    - Properties:
+        - class_idx: An `int` of the target class index
+    """
+    class_idx: int
+
+    def __init__(self, c: int, /, dim: int = -1, *, eps: float = 1e-7, target:Optional[str] = None):
+        """
+        Constructor
+
+        - Parameters:
+            - c: The target class index in `int`
+            - dim: The class channel dimmension index in `int`
+            - eps: A `float` of the small number to avoid zero divide
+            - target: A `str` of target name in `input` and `target` during direct calling
+        """
+        super().__init__(dim, eps=eps, target=target)
+        self.class_idx = c
+
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        target = target == self.class_idx
+        return super().forward(input, target)
 
 
 class Precision(BinaryConfusionMetric):
