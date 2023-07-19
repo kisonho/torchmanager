@@ -75,7 +75,8 @@ class CategoricalAccuracy(SparseCategoricalAccuracy):
 class Dice(BinaryConfusionMetric):
     """The dice score metrics"""
     def forward_metric(self, tp: torch.Tensor, tn: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
-        return 2 * tp / (2 * tp + fp + fn + self._eps)
+        dice = 2 * tp / (2 * tp + fp + fn + self._eps)
+        return dice.mean()
 
 
 class F1(BinaryConfusionMetric):
@@ -88,8 +89,7 @@ class F1(BinaryConfusionMetric):
 
         # calculate F1
         f1 = 2 * precision * recall / (precision + recall + self._eps)
-        f1 = torch.mean(f1)
-        return f1
+        return f1.mean()
 
 
 class MAE(Metric):
@@ -159,11 +159,13 @@ class Precision(BinaryConfusionMetric):
     """The Precision metrics"""
 
     def forward_metric(self, tp: torch.Tensor, tn: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
-        return tp / (tp + fp + self._eps)
+        precision = tp / (tp + fp + self._eps)
+        return precision.mean()
 
 
 class Recall(BinaryConfusionMetric):
     """The Recall metrics"""
 
     def forward_metric(self, tp: torch.Tensor, tn: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
-        return tp / (tp + fn + self._eps)
+        recall = tp / (tp + fn + self._eps)
+        return recall.mean()

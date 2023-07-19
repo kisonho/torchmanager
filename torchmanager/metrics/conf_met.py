@@ -1,3 +1,4 @@
+from torch.nn import functional as F
 from torchmanager_core import abc, torch, deprecated, _raise
 from torchmanager_core.typing import Any, Optional, Tuple
 
@@ -32,7 +33,9 @@ class BinaryConfusionMetric(Metric, abc.ABC):
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # argmax input
-        input = input.argmax(dim=self._dim)
+        num_classes = input.shape[self._dim]
+        input = F.one_hot(input.argmax(dim=self._dim), num_classes)
+        target = F.one_hot(target, num_classes)
 
         # calculate TP, FP, and FN
         tp, tn, fp, fn = self.forward_conf_met(input, target)
