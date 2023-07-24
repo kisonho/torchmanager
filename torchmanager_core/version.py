@@ -76,7 +76,7 @@ class Version:
                 pre_release_parts = [version_str, "0"]
                 self.pre_release = None
             version_str = pre_release_parts[0]
-            self.pre_release_version = int(pre_release_parts[1]) if pre_release_parts[1] != '' else 1
+            self.pre_release_version = int(pre_release_parts[1]) if pre_release_parts[1] != '' else 0
 
             # split version
             version_parts = version_str.split('.')
@@ -93,7 +93,8 @@ class Version:
         if self.sub_version > 0:
             version_str += f".{self.sub_version}"
         if self.pre_release is not None:
-            version_str += f"{self.pre_release.value}{self.pre_release_version}"
+            pre_release_version = self.pre_release_version if self.pre_release_version > 0 else ""
+            version_str += f"{self.pre_release.value}{pre_release_version}"
         return version_str
 
     def __eq__(self, other: Any) -> bool:
