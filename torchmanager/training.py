@@ -189,6 +189,8 @@ class Manager(_Manager[Module]):
             assert iterations > 0, errors._raise(ValueError(f"The iterations must be a positive integer, got {iterations}."))
             assert epochs is None, errors._raise(ValueError(f"The epochs must be given as `None` when iterations is given, got {epochs}."))
             epochs = math.ceil(iterations / dataset_len)
+        if use_multi_gpus:
+            view.warnings.warn("The `use_multi_gpus` flag will be deprecated from v1.3 and will be removed from v1.4, multiple GPUs will be automatically used when `device` is given as a list or `None` is given when multiple GPUs are found.", PendingDeprecationWarning)
 
         # initialize initial epoch
         if initial_epoch is not None:
@@ -202,7 +204,9 @@ class Manager(_Manager[Module]):
 
         # find available device
         cpu, device, target_devices = devices.search(device)
-        if device == cpu and len(target_devices) < 2:
+        if device.type == devices.GPU.type and len(target_devices) > 1:
+            use_multi_gpus = True
+        elif use_multi_gpus:
             use_multi_gpus = False
         devices.set_default(target_devices[0])
 
