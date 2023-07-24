@@ -18,7 +18,13 @@ class Metric(torch.nn.Module):
     _metric_fn: Optional[Callable[[Any, Any], torch.Tensor]]
     _results: list[torch.Tensor]
     _target: Optional[str]
-    result: torch.Tensor
+
+    @property
+    def result(self) -> torch.Tensor:
+        if len(self._results) > 0:
+            return torch.concat(self._results).mean()
+        else:
+            return torch.tensor(torch.nan)
 
     @property
     def results(self) -> Optional[torch.Tensor]:
@@ -37,7 +43,6 @@ class Metric(torch.nn.Module):
         """
         super().__init__()
         self._metric_fn = metric_fn
-        self.result = torch.tensor(0, dtype=torch.float)
         self._results = []
         self._target = target
 
@@ -50,14 +55,11 @@ class Metric(torch.nn.Module):
 
         # call
         m: torch.Tensor = super().__call__(input, target)
-        self.result *= len(self._results)
         self._results.append(m.unsqueeze(0).cpu().detach())
-        self.result = (self.result + self._results[-1]) / len(self.result)
         return m
     
     def convert(self, from_version: Version) -> None:
-        if from_version < "v1.3":
-            self.result = torch.tensor(0, dtype=torch.float)
+        pass
 
     def forward(self, input: Any, target: Any) -> torch.Tensor:
         """
@@ -76,7 +78,6 @@ class Metric(torch.nn.Module):
 
     def reset(self) -> None:
         """Reset the current results list"""
-        self.result *= 0
         self._results.clear()
 
 
