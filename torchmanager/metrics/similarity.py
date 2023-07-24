@@ -35,20 +35,20 @@ class SSIM(Metric):
         window = window.unsqueeze(1)
         window = window.mm(window.t()).float().unsqueeze(0).unsqueeze(0)
         window = window.expand(channels, 1, window_size, window_size).contiguous()
-        self.window = window
+        self.window = torch.nn.Parameter(window, requires_grad=False)
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # calculate mean
-        mu1 = F.conv2d(input, self.window.to(input.device), padding=self.window_size // 2, groups=input.shape[1])
-        mu2 = F.conv2d(target, self.window.to(target.device), padding=self.window_size // 2, groups=target.shape[1])
+        mu1 = F.conv2d(input, self.window, padding=self.window_size // 2, groups=input.shape[1])
+        mu2 = F.conv2d(target, self.window, padding=self.window_size // 2, groups=target.shape[1])
         mu1_sq = mu1.pow(2)
         mu2_sq = mu2.pow(2)
         mu1_mu2 = mu1 * mu2
 
         # calculate sigma
-        sigma1_sq = F.conv2d(input * input, self.window.to(input.device), padding=self.window_size // 2, stride=1, groups=input.shape[1]) - mu1_sq
-        sigma2_sq = F.conv2d(target * target, self.window.to(target.device), padding=self.window_size // 2, stride=1, groups=target.shape[1]) - mu2_sq
-        sigma12 = F.conv2d(input * target, self.window.to(input.device), padding=self.window_size // 2, stride=1, groups=input.shape[1]) - mu1_mu2
+        sigma1_sq = F.conv2d(input * input, self.window, padding=self.window_size // 2, stride=1, groups=input.shape[1]) - mu1_sq
+        sigma2_sq = F.conv2d(target * target, self.window, padding=self.window_size // 2, stride=1, groups=target.shape[1]) - mu2_sq
+        sigma12 = F.conv2d(input * target, self.window, padding=self.window_size // 2, stride=1, groups=input.shape[1]) - mu1_mu2
 
         # calculate ssim
         C1 = (0.01 * 255) ** 2

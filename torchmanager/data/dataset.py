@@ -1,6 +1,6 @@
 from torch.utils.data import Dataset as _Dataset, DataLoader
-from torchmanager_core import abc, devices, math, os, torch, _raise
-from torchmanager_core.typing import Any, Callable, Iterator, Optional, Sequence, TypeVar
+from torchmanager_core import abc, devices, errors, math, os, torch, _raise
+from torchmanager_core.typing import Any, Callable, Iterable, Iterator, Optional, Sequence, TypeVar
 
 T = TypeVar("T")
 
@@ -134,6 +134,50 @@ class Dataset(_Dataset[T], abc.ABC):
             return data[0], data[1]  # type: ignore # suppose for supervised
         else:
             return NotImplemented  # unknown type of dataset
+
+
+class PreprocessedDataset(Dataset, abc.ABC):
+    """
+    A data with preprocessing method
+
+    * extends: `Dataset`
+    * Abstract class
+
+    - Properties:
+        - transforms: An `Iterable` of `Callable` preprocessing function that returns `Any` kind of preprocessed object.
+
+    - Methods to implement:
+        - transforms: A property method that returns a `Callable` preprocessing function
+        - load: The method to load an item by index without preprocessing
+    """
+
+    @property
+    @abc.abstractmethod
+    def transforms(self) -> Iterable[Callable[..., Any]]:
+        return NotImplemented
+
+    def __getitem__(self, index: Any) -> Any:
+        # load data
+        data = self.load(index)
+
+        # preprocess transforms
+        for fn in self.transforms:
+            try:
+                data = fn(data)
+            except Exception as e:
+                raise errors.TransformError(fn, data) from e
+        return data
+
+    @abc.abstractmethod
+    def load(self, index: Any) -> Any:
+        """
+        The method to load an item by index without preprocessing
+
+        - Parameters:
+            - index: `Any` kind of index object
+        - Returns: `Any` kind of non-preprocessed object
+        """
+        return NotImplemented
 
 
 def batched(fn: Callable[..., _Dataset]):
