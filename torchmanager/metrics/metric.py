@@ -52,7 +52,7 @@ class Metric(torch.nn.Module):
         m: torch.Tensor = super().__call__(input, target)
         self.result *= len(self._results)
         self._results.append(m.unsqueeze(0).cpu().detach())
-        self.result = (self.result + self._results[-1]) / len(self._results)
+        self.result = (self.result + self._results[-1]) / len(self.result)
         return m
     
     def convert(self, from_version: Version) -> None:

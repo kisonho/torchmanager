@@ -24,7 +24,6 @@ class Test0102(TestCase):
     def test_random(self) -> None:
         from torchmanager_core.random import freeze_seed, unfreeze_seed
 
-        # freeze seed
         seed = 1
         freeze_seed(1)
         random_num_1 = torch.randint(0, 1, [1])
@@ -32,7 +31,6 @@ class Test0102(TestCase):
         random_num_2 = torch.randint(0, 1, [1])
         self.assertEqual(int(random_num_1), int(random_num_2))
 
-        # unfreeze seed
         random_seed = unfreeze_seed()
         self.assertNotEqual(seed, random_seed, f"Seed not unfrozon: current_seed={seed}")
 
