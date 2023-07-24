@@ -190,7 +190,7 @@ class Manager(_Manager[Module]):
             assert epochs is None, errors._raise(ValueError(f"The epochs must be given as `None` when iterations is given, got {epochs}."))
             epochs = math.ceil(iterations / dataset_len)
         if use_multi_gpus:
-            view.warnings.warn("The `use_multi_gpus` flag will be deprecated from v1.3 and will be removed from v1.4, multiple GPUs will be automatically used when `device` is given as a list or `None` is given when multiple GPUs are found.", PendingDeprecationWarning)
+            view.warnings.warn("The `use_multi_gpus` flag has been deprecated and will be removed from v1.4, multiple GPUs will be automatically used when `device` is given as a list or `None` is given when multiple GPUs are found.", DeprecationWarning)
 
         # initialize initial epoch
         if initial_epoch is not None:
