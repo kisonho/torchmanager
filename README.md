@@ -9,8 +9,8 @@
 * tensorboard (Optional)
 
 ## Installation
-* PyPi: `pip install torchmanager`
-* Conda: `conda install -c kisonho torchmanager`
+* PyPi: `pip install torchmanager-nightly`
+* Conda: `conda install -c kisonho torchmanager-nightly`
 
 ## The Manager
 1. Start with configurations:
