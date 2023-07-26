@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "torchmanager-nightly"
+name = "torchmanager"
 version = "1.2rc5"
 description = "PyTorch Training Manager v1.2rc5"
 authors = ["Qisheng He <Qisheng.He@wayne.edu>"]
