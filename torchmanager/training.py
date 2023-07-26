@@ -178,10 +178,7 @@ class Manager(_Manager[Module]):
 
         # find available device
         cpu, device, target_devices = devices.search(device)
-        if device.type == devices.GPU.type and len(target_devices) > 1 and use_multi_gpus:
-            use_multi_gpus = True
-        elif use_multi_gpus:
-            view.warnings.warn("Less than two GPU is available or specified but `use_multi_gpus` flag is set to `True`.", ResourceWarning)
+        if device.type != devices.GPU.type or len(target_devices) < 2:
             use_multi_gpus = False
         devices.set_default(target_devices[0])
 
