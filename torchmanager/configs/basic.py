@@ -39,7 +39,7 @@ class Configs(argparse.Namespace, abc.ABC):
         self.experiment = self.experiment if self.experiment.endswith(".exp") else f"{self.experiment}.exp"
 
     @classmethod
-    def from_arguments(cls, *arguments: str, show_summary: bool = True):
+    def from_arguments(cls, *arguments: str, parser: argparse.ArgumentParser = argparse.ArgumentParser(), show_summary: bool = True):
         """
         Get properties from argument parser or given arguments
 
@@ -47,14 +47,15 @@ class Configs(argparse.Namespace, abc.ABC):
 
         - Parameters:
             - arguments: Positional parameters as a `list` of arguments in `str`
+            - parser: 
         - Returns: A formatted configuration object
         """
-        parser = cls.get_arguments()
-        assert isinstance(parser, argparse.ArgumentParser), "Get arguments should be finished by returning an `ArgumentParser` instead of an `_ArgumentGroup`."
+        fetched_parser = cls.get_arguments(parser=parser)
+        assert isinstance(fetched_parser, argparse.ArgumentParser), "Get arguments should be finished by returning an `ArgumentParser` instead of an `_ArgumentGroup`."
         if len(arguments) > 0:
-            configs = parser.parse_args(arguments, namespace=cls())
+            configs = fetched_parser.parse_args(arguments, namespace=cls())
         else:
-            configs = parser.parse_args(namespace=cls())
+            configs = fetched_parser.parse_args(namespace=cls())
 
         # initialize logging
         assert isinstance(configs, Configs), _raise(TypeError("The namespace is not a valid configs."))
