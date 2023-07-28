@@ -1,4 +1,4 @@
-from torchmanager_core import os, torch, _raise
+from torchmanager_core import os, torch, view, _raise
 from torchmanager_core.checkpoint import Checkpoint as Ckpt
 from torchmanager_core.protocols import ModelContainer, MonitorType, StateDictLoadable
 from torchmanager_core.typing import Any, Generic, Optional, TypeVar
@@ -94,8 +94,9 @@ class BestCheckpoint(_Checkpoint[T]):
     load_best: bool
     monitor: str
     monitor_type: MonitorType
+    show_verbose: bool
 
-    def __init__(self, monitor: str, model: T, ckpt_path: str, load_best: bool = False, monitor_type: MonitorType = MonitorType.MAX, **kwargs: Any) -> None:
+    def __init__(self, monitor: str, model: T, ckpt_path: str, load_best: bool = False, monitor_type: MonitorType = MonitorType.MAX, show_verbose: bool = False, **kwargs: Any) -> None:
         """
         Constructor
 
@@ -108,16 +109,23 @@ class BestCheckpoint(_Checkpoint[T]):
         self.load_best = load_best
         self.monitor = monitor
         self.monitor_type = monitor_type
+        self.show_verbose = show_verbose
 
     def on_epoch_end(self, epoch: int, summary: dict[str, float] = ..., val_summary: Optional[dict[str, float]] = ...) -> None:
         # get score
         score = val_summary[self.monitor] if val_summary is not None else summary[self.monitor]
+        max_score_found = score >= self.best_score and self.monitor_type == MonitorType.MAX
+        min_score_found = score <= self.best_score and self.monitor_type == MonitorType.MIN
+
+        # log checkpoint
+        if self.show_verbose and (max_score_found or min_score_found):
+            view.logger.info(f"Best checkpoint for {self.monitor} recorded: {score}")
 
         # save when best
-        if score >= self.best_score and self.monitor_type == MonitorType.MAX:
+        if max_score_found:
             self.best_score = score
             super().on_epoch_end(epoch, summary, val_summary)
-        elif score <= self.best_score and self.monitor_type == MonitorType.MIN:
+        elif min_score_found:
             self.best_score = score
             super().on_epoch_end(epoch, summary, val_summary)
 
