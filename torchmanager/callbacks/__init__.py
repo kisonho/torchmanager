@@ -2,6 +2,7 @@ from .callback import Callback, FrequencyCallback
 from .ckpt import BestCheckpoint, LastCheckpoint, MonitorType
 from .dynamic import DynamicWeight, LambdaDynamicWeight
 from .early_stop import EarlyStop
+from .functional import LambdaCallback, on_batch_end, on_batch_start, on_epoch_end, on_epoch_start
 from .lr import LrSchedueler
 from torchmanager_core.protocols import Frequency
 Checkpoint = LastCheckpoint

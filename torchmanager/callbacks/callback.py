@@ -115,6 +115,12 @@ class FrequencyCallback(Callback, abc.ABC):
             self._update(result)
             self.current_step += 1
 
+    def on_batch_start(self, batch: int) -> None:
+        if self.freq == Frequency.BATCH_START:
+            result = self.step()
+            self._update(result)
+            self.current_step += 1
+
     def on_train_start(self, initial_epoch: int = 0) -> None:
         if self.freq == Frequency.EPOCH or self.freq == Frequency.EPOCH_START:
             self.current_step = initial_epoch
