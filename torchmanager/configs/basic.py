@@ -21,19 +21,6 @@ class Configs(argparse.Namespace, abc.ABC):
     experiment: str
     replace_experiment: bool
 
-    def __init__(self, *, comments: Optional[str] = None, experiment: str = "test.exp", replace_experiment: bool = False, **kwargs: Any) -> None:
-        """
-        Constructor
-
-        - Parameters:
-            - experiment: A `str` of experiment name
-            - replace_experiment: A `bool` flag of if replace the old experiment folder if exists
-        """
-        super().__init__(**kwargs)
-        self.comments = comments
-        self.experiment = experiment
-        self.replace_experiment = replace_experiment
-
     def format_arguments(self) -> None:
         """Format and check current properties"""
         self.experiment = self.experiment if self.experiment.endswith(".exp") else f"{self.experiment}.exp"
@@ -70,6 +57,9 @@ class Configs(argparse.Namespace, abc.ABC):
         view.set_log_path(log_path=log_path)
         configs.format_arguments()
 
+        # save configs
+        configs.save()
+
         # show configs summarize
         if show_summary:
             view.logger.info("------------Settings------------")
@@ -82,6 +72,21 @@ class Configs(argparse.Namespace, abc.ABC):
                 view.logger.info(f"{configs.comments}")
             view.logger.info("--------------------------------")
         return configs
+
+    @classmethod
+    def from_experiment(cls, exp: str, /):
+        """
+        Load a `Configs` directly from an experiment
+
+        - Parameters:
+            - exp: A `str` of experiment path or name
+        """
+        exp = os.path.normpath(f"{exp}.exp") if not exp.endswith(".exp") else os.path.normpath(exp)
+        cfg_file = os.path.basename(exp).replace(".exp", ".cfg")
+        cfg_path = os.path.join(exp, cfg_file)
+        cfg = torch.load(cfg_path)
+        assert isinstance(cfg, Configs), _raise(TypeError(f"Saved object at path {cfg_path} is not a valid `Configs`."))
+        return cfg
 
     @staticmethod
     def get_arguments(parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup] = argparse.ArgumentParser()) -> Union[argparse.ArgumentParser, argparse._ArgumentGroup]:
@@ -98,6 +103,13 @@ class Configs(argparse.Namespace, abc.ABC):
         parser.add_argument("--comments", type=str, default=None, help="The comments of this experiment.")
         parser.add_argument("--replace_experiment", action="store_true", default=False, help="The flag to replace given experiment if exists.")
         return parser
+
+    def save(self) -> None:
+        """Save this configuration to experiment folder"""
+        cfg_file = os.path.basename(self.experiment.replace(".exp", ".cfg"))
+        log_dir = os.path.join("experiments", self.experiment)
+        cfg_path = os.path.join(log_dir, cfg_file)
+        torch.save(self, cfg_path)
 
     def show_environments(self, description: str = DESCRIPTION) -> None:
         """
