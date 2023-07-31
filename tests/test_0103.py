@@ -4,7 +4,7 @@ from typing import Optional
 from unittest import TestCase
 
 
-class Test0101(TestCase):
+class Test0103(TestCase):
     backward_fn_called: bool
     callback_fn_called: bool
     forward_fn_called: bool
@@ -85,24 +85,28 @@ class Test0101(TestCase):
         self.callback_fn_called = False
         on_batch_end_callback.on_batch_end(0)
         self.assertTrue(self.callback_fn_called, "On batch end function not called")
+        self.assertIsInstance(on_batch_end_callback, LambdaCallback, "On batch end function is not a `LambdaCallback`.")
 
         self.callback_fn_called = False
         on_batch_start_callback.on_batch_start(0)
         self.assertTrue(self.callback_fn_called, "On batch start function not called")
+        self.assertIsInstance(on_batch_start_callback, LambdaCallback, "On batch start function is not a `LambdaCallback`.")
 
         self.callback_fn_called = False
         on_epoch_end_callback.on_epoch_end(0)
         self.assertTrue(self.callback_fn_called, "On epoch end function not called")
+        self.assertIsInstance(on_epoch_end_callback, LambdaCallback, "On epoch end function is not a `LambdaCallback`.")
 
         self.callback_fn_called = False
         on_epoch_start_callback.on_epoch_start(0)
         self.assertTrue(self.callback_fn_called, "On epoch start function not called")
-
-    def test_version(self) -> None:
-        self.assertGreaterEqual(API_VERSION, "1.3")
+        self.assertIsInstance(on_epoch_start_callback, LambdaCallback, "On epoch start function is not a `LambdaCallback`.")
 
     def test_py_version(self) -> None:
         import platform
 
         py_version = Version(platform.python_version())
         self.assertGreaterEqual(py_version, "3.9")
+
+    def test_version(self) -> None:
+        self.assertGreaterEqual(API_VERSION, "1.3")
