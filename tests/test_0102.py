@@ -34,6 +34,16 @@ class Test0102(TestCase):
         random_seed = unfreeze_seed()
         self.assertNotEqual(seed, random_seed, f"Seed not unfrozon: current_seed={seed}")
 
+    def test_sliding_window(self) -> None:
+        from torchmanager import data
+
+        # initialize
+        x = torch.randn((3, 256, 256))
+
+        # sliding window
+        x_slides = data.sliding_window(x, (64, 64), (32, 32))
+        self.assertEqual(x_slides.shape, (49, 3, 64, 64))
+
     def test_version(self) -> None:
         self.assertGreaterEqual(API_VERSION, "1.2")
 
