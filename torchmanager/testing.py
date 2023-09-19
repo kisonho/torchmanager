@@ -86,7 +86,7 @@ class Manager(BaseManager[Module]):
         '''
         # find available device
         cpu, device, target_devices = devices.search(device)
-        if device.type != "cuda" or len(target_devices) < 2:
+        if device == cpu or len(target_devices) < 2:
             use_multi_gpus = False
         devices.set_default(target_devices[0])
 
@@ -152,7 +152,7 @@ class Manager(BaseManager[Module]):
         """
         # find available device
         cpu, device, target_devices = devices.search(device)
-        if device.type != "cuda" or len(target_devices) < 2:
+        if device == cpu or len(target_devices) < 2:
             use_multi_gpus = False
         devices.set_default(target_devices[0])
 
