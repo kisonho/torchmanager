@@ -1,63 +1,10 @@
 import torch, torchmanager, torchmanager_core
 from torchmanager_core import Version, API_VERSION
-from typing import Optional
 from unittest import TestCase
 
 
 class Test0103(TestCase):
-    backward_fn_called: bool
     callback_fn_called: bool
-    forward_fn_called: bool
-
-    def test_backward_wrapper(self) -> None:
-        # compile manager
-        model = torch.nn.Linear(100, 100)
-        manager = torchmanager.Manager(model)
-        x = torch.randn((64, 100))
-        y, _ = manager.forward(x, None)
-        assert isinstance(y, torch.Tensor)
-
-        # wrapper function
-        @manager.backward_fn
-        def mse_backward(loss: torch.Tensor) -> None:
-            self.backward_fn_called = True
-            manager.current_epoch += 1
-            loss -= x
-            loss = loss.abs().mean()
-            loss.backward()
-
-        # backward
-        self.backward_fn_called = False
-        manager.backward(y)
-        self.assertEqual(manager.current_epoch, 1)
-        self.assertTrue(self.backward_fn_called, "Backward function not called")
-
-    def test_forward_wrapper(self) -> None:
-        # compile manager
-        model = torch.nn.Linear(100, 3)
-        manager = torchmanager.Manager(model)
-        x = torch.randn((64, 100))
-        y, _ = manager.forward(x, None)
-        self.assertEqual(y.shape, torch.Size([64, 3]))
-
-        # wrapper function
-        @manager.forward_fn
-        def softmax_forward(input: torch.Tensor, target: Optional[torch.Tensor], /) -> tuple[torch.Tensor, Optional[torch.Tensor]]:
-            self.forward_fn_called = True
-            y: torch.Tensor = manager.model(input)
-            y = y.softmax(dim=1)
-            if manager.loss_fn is not None and target is not None:
-                loss = manager.compiled_losses(y, target)
-            else:
-                loss = None
-            return y.argmax(dim=1), loss
-
-        # forward
-        self.forward_fn_called = False
-        y, _ = manager.forward(x, None)
-        assert isinstance(y, torch.Tensor)
-        self.assertEqual(y.shape, torch.Size([64]))
-        self.assertTrue(self.forward_fn_called, "Forward function not called")
 
     def test_functional_callbacks(self) -> None:
         from torchmanager.callbacks import LambdaCallback, on_epoch_start, on_batch_end, on_batch_start, on_epoch_end
@@ -110,3 +57,32 @@ class Test0103(TestCase):
 
     def test_version(self) -> None:
         self.assertGreaterEqual(API_VERSION, "1.3")
+
+    def test_wrapped_fn(self) -> None:
+        from torchmanager.losses import loss, loss_fn
+        from torchmanager.metrics import metric, metric_fn
+        from torchmanager_core.protocols import WrappedFn
+
+        # check loss wrapper
+        @loss
+        def some_loss(input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+            return torch.mean(input - target)
+        self.assertIsInstance(some_loss, WrappedFn, "Wrapped function is not a `WrappedFn`.")
+
+        # check loss_fn wrapper
+        @loss_fn(target="target", weight=1)
+        def some_loss_fn(input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+            return torch.mean(input - target)
+        self.assertIsInstance(some_loss_fn, WrappedFn, "Wrapped function is not a `WrappedFn`.")
+
+        # check metric wrapper
+        @metric
+        def some_metric(input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+            return torch.mean(input - target)
+        self.assertIsInstance(some_metric, WrappedFn, "Wrapped function is not a `WrappedFn`.")
+
+        # check metric_fn wrapper
+        @metric_fn(target="target")
+        def some_metric_fn(input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+            return torch.mean(input - target)
+        self.assertIsInstance(some_metric_fn, WrappedFn, "Wrapped function is not a `WrappedFn`.")

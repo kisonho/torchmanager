@@ -72,30 +72,6 @@ class Manager(BaseManager[Module]):
             loss = None
         return y, loss
 
-    def forward_fn(self, fn: Callable[[Any, Optional[Any]], tuple[Any, Optional[torch.Tensor]]], /) -> None:
-        """
-        The wrapper function to override `forward` method
-
-        * Example:
-
-        ```
-        >>> manager = Manager(...) # define a manager
-
-        >>> @manager.forward_fn
-        >>> def forward(input: Any, target: Optional[Any]) -> tuple[Any, Optional[torch.Tensor]]: # the forward function to override
-        >>>     y = manager.model(input)
-        >>>     loss = manager.compiled_loss(y, target)
-        >>>     return y, loss
-
-        >>> ...
-        >>> manager.fit(...)
-        ```
-
-        - Parameters:
-            - fn: A forward function that accepts `Any` type of `x` and optional `Any` type of `y` and returns a `tuple` of `Any` kind of model output and an optional `torch.Tensor` loss
-        """
-        setattr(self, "forward", fn)
-
     @torch.no_grad()
     def predict(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection[Any]], /, *, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> list[Any]:
         '''

@@ -139,30 +139,6 @@ class Manager(_Manager[Module]):
         """
         loss.backward()
 
-    def backward_fn(self, fn: Callable[[torch.Tensor], None], /) -> None:
-        """
-        The wrapper function to override `backward` method
-
-        * Example:
-
-        ```
-        >>> manager = Manager(...) # define a manager
-
-        >>> @manager.backward_fn
-        >>> def backward(loss: torch.Tensor) -> None: # the backward function to override
-        >>>     manager.optimizer.zero_grad()
-        >>>     loss.backward()
-        >>>     manager.optimizer.step()
-
-        >>> ...
-        >>> manager.fit(...)
-        ```
-
-        - Parameters:
-            - fn: A backward function that accepts a loss `torch.Tensor`
-        """
-        setattr(self, "backward", fn)
-
     def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, epochs: Optional[int] = None, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any], Collection]] = None, callbacks_list: list[Callback] = [], *, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, **kwargs) -> Module:
         """
         Training algorithm
