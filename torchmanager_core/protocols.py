@@ -45,13 +45,6 @@ class LrSteping(Protocol):
         pass
 
 
-@runtime_checkable
-class ModelContainer(Protocol):
-    """A container protocol that contains a property `model` as `torch.nn.module`"""
-
-    model: torch.nn.Module
-
-
 class StateDictLoadable(Protocol):
     """An object that can load state dict"""
 
@@ -62,6 +55,16 @@ class StateDictLoadable(Protocol):
     @abc.abstractmethod
     def state_dict(self, *, prefix: str = "", keep_vars: bool = False) -> dict[str, Any]:
         return NotImplemented
+
+
+@runtime_checkable
+class ModelContainer(Protocol):
+    """A container protocol that contains a property `model` as `torch.nn.module`"""
+
+    model: torch.nn.Module
+    optimizer: Optional[torch.optim.Optimizer]
+    loss_fn: Optional[StateDictLoadable]
+    metric_fns: dict[str, StateDictLoadable]
 
 
 class Trainable(Protocol):
@@ -85,25 +88,6 @@ class Resulting(DeviceMovable, StateDictLoadable, Trainable, Protocol):
     """An object that have result available with reset method"""
     _metric_fn: Optional[Callable[[Any, Any], torch.Tensor]]
     _target: Optional[str]
-    # @property
-    # @abc.abstractmethod
-    # def _metric_fn(self) -> Optional[Callable[[Any, Any], torch.Tensor]]:
-    #     return NotImplemented
-    
-    # @_metric_fn.setter
-    # @abc.abstractmethod
-    # def _metric_fn(self, fn: Optional[Callable[[Any, Any], torch.Tensor]]) -> None:
-    #     pass
-
-    # @property
-    # @abc.abstractmethod
-    # def _target(self) -> Optional[str]:
-    #     return NotImplemented
-
-    # @_target.setter
-    # @abc.abstractmethod
-    # def _target(self, t: Optional[str]) -> None:
-        # pass
 
     @property
     @abc.abstractmethod
@@ -129,6 +113,14 @@ class SummaryWriteble(Protocol):
     @abc.abstractmethod
     def add_scalars(self, main_tag: str, tag_scalar_dict: Any, global_step: Optional[int] = None) -> None:
         pass
+
+
+@runtime_checkable
+class WrappedFn(Protocol):
+    @property
+    @abc.abstractmethod
+    def wrapped_metric_fn(self) -> Callable[[Any, Any], torch.Tensor]:
+        return NotImplemented
 
 
 class Weighted(Protocol):

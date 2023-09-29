@@ -81,7 +81,20 @@ class Metric(torch.nn.Module):
         self._results.clear()
 
 
-def metric(fn: Callable[[Any, Any], torch.Tensor]) -> Metric:
+class _WrappedMetric(Metric):
+    @property
+    def wrapped_metric_fn(self) -> Callable[[Any, Any], torch.Tensor]:
+        assert self._metric_fn is not None, _raise(AttributeError("Metric function is not given."))
+        return self._metric_fn
+
+    def __init__(self, metric_fn: Callable[[Any, Any], torch.Tensor], target: Optional[str] = None) -> None:
+        super().__init__(metric_fn, target)
+
+    def forward(self, input: Any, target: Any) -> torch.Tensor:
+        return self.wrapped_metric_fn(input, target)
+
+
+def metric(fn: Callable[[Any, Any], torch.Tensor]) -> _WrappedMetric:
     """
     The metric wrapping function that wrap a function into a metric
 
@@ -92,10 +105,10 @@ def metric(fn: Callable[[Any, Any], torch.Tensor]) -> Metric:
     ...    return ...
     >>> manager = (..., metric_fns={'out': some_metric_fn})
     """
-    return Metric(fn)
+    return _WrappedMetric(fn)
 
 
-def metric_fn(target: Optional[str] = None) -> Callable[[Callable[[Any, Any], torch.Tensor]], Metric]:
+def metric_fn(target: Optional[str] = None) -> Callable[[Callable[[Any, Any], torch.Tensor]], _WrappedMetric]:
     """
     The loss wrapping function that wrap a function with target and weight given into a loss
 
@@ -106,6 +119,6 @@ def metric_fn(target: Optional[str] = None) -> Callable[[Callable[[Any, Any], to
     ...    return ...
     >>> manager = (..., metric_fns={'out': some_metric_fn})
     """
-    def wrapped_fn(fn_to_wrap: Callable[[Any, Any], torch.Tensor]) -> Metric:
-        return Metric(fn_to_wrap, target=target)
+    def wrapped_fn(fn_to_wrap: Callable[[Any, Any], torch.Tensor]) -> _WrappedMetric:
+        return _WrappedMetric(fn_to_wrap, target=target)
     return wrapped_fn

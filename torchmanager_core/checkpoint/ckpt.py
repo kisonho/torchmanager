@@ -1,5 +1,6 @@
 import os, torch
-from torchmanager_core.protocols import StateDictLoadable
+from torchmanager_core import view
+from torchmanager_core.protocols import ModelContainer, StateDictLoadable, WrappedFn
 from torchmanager_core.typing import Any, Generic, Optional, OrderedDict, TypeVar
 
 T = TypeVar("T", bound=StateDictLoadable)
@@ -38,11 +39,38 @@ class Checkpoint(Generic[T]):
         """
         super().__init__()
         self.last_epoch = last_epoch
-        self.loss_fn = loss_fn
-        self.metrics = metrics if metrics is not None else {}
+        self.metrics = {}
         self.model = model
         self.optimizer = optimizer
         self.save_weights_only = save_weights_only
+
+        # check if model is a container
+        if isinstance(model, ModelContainer):
+            # check if loss function is wrapped
+            if isinstance(model.loss_fn, WrappedFn):
+                view.warnings.warn("Loss function is wrapped and is not supported by checkpoint, use `losses.Loss` instead.")
+            
+            # check if metrics is wrapped
+            for name, metric in model.metric_fns.items():
+                if isinstance(metric, WrappedFn):
+                    view.warnings.warn(f"Metric {name} is wrapped and is not supported by checkpoint, use `metrics.Metric` instead.")
+
+        # check if loss function is wrapped
+        if isinstance(loss_fn, WrappedFn):
+            view.warnings.warn("Loss function is wrapped and is not supported by checkpoint, use `losses.Loss` instead.")
+            self.loss_fn = None
+        else:
+            self.loss_fn = loss_fn
+
+        # check if metrics is given
+        if metrics is not None:
+            # check if metrics is wrapped
+            for name, metric in self.metrics.items():
+                if isinstance(metric, WrappedFn):
+                    view.warnings.warn(f"Metric {name} is wrapped and is not supported by checkpoint, use `metrics.Metric` instead.")
+                    continue
+                else:
+                    self.metrics[name] = metric
 
     @classmethod
     def from_saved(cls, ckpt_path: str, map_location: Optional[torch.device] = None, model: Optional[StateDictLoadable] = None):
@@ -83,17 +111,55 @@ class Checkpoint(Generic[T]):
             - epoch: The `int` index of current epoch to save
             - ckpt_path: The `str` of checkpoint path to save
         """
+        # initialize
         self.last_epoch = epoch
         ckpt = self.__dict__
+
+        # check if save weights only
         if self.save_weights_only is True:
             model = self.model.module if isinstance(self.model, torch.nn.parallel.DataParallel) else self.model
             ckpt["model"] = model.state_dict()
         elif isinstance(ckpt["model"], torch.nn.parallel.DataParallel):
             ckpt["model"] = ckpt["model"].module
+
+        # check if model is a container
+        if isinstance(ckpt["model"], ModelContainer):
+            # initialize loss
+            loss_fn = ckpt["model"].loss_fn
+
+            # check if loss in container is wrapped
+            if isinstance(loss_fn, WrappedFn):
+                view.warnings.warn("Loss function is wrapped and is not supported by checkpoint, use `losses.Loss` instead.")
+                ckpt["model"].loss_fn = None
+
+            # initialize metrics
+            full_metrics = ckpt["model"].metric_fns
+            supported_metrics: dict[str, StateDictLoadable] = {}
+
+            # check if full metrics contains wrapped function
+            for name, metric in full_metrics.items():
+                if isinstance(metric, WrappedFn):
+                    view.warnings.warn(f"Metric {name} is wrapped and is not supported by checkpoint, use `metrics.Metric` instead.")
+                    continue
+                else:
+                    supported_metrics[name] = metric
+
+            # change metrics in container to supported metrics
+            ckpt["model"].metric_fns = supported_metrics
+        else:
+            loss_fn = ckpt["loss_fn"]
+            full_metrics = ckpt["metrics"]
+
+        # save
         ckpt_path = os.path.normpath(ckpt_path)
         ckpt_dir = os.path.dirname(ckpt_path)
         os.makedirs(ckpt_dir, exist_ok=True)
         torch.save(ckpt, ckpt_path)
+
+        # recover loss and metrics in container
+        if isinstance(ckpt["model"], ModelContainer):
+            ckpt["model"].loss_fn = loss_fn
+            ckpt["model"].metric_fns = full_metrics
 
 
 def list_checkpoints(experiment_dir: str) -> list[str]:

@@ -146,7 +146,20 @@ class ParallelLoss(Loss):
         super().reset()
 
 
-def loss(fn: Callable[[Any, Any], torch.Tensor]) -> Loss:
+class _WrappedLoss(Loss):
+    @property
+    def wrapped_metric_fn(self) -> Callable[[Any, Any], torch.Tensor]:
+        assert self._metric_fn is not None, _raise(AttributeError("Metric function is not given."))
+        return self._metric_fn
+
+    def __init__(self, loss_fn: Callable[[Any, Any], torch.Tensor], target: Optional[str] = None, weight: float = 1) -> None:
+        super().__init__(loss_fn, target, weight)
+
+    def forward(self, input: Any, target: Any) -> torch.Tensor:
+        return self.wrapped_metric_fn(input, target)
+
+
+def loss(fn: Callable[[Any, Any], torch.Tensor]) -> _WrappedLoss:
     """
     The loss wrapping function that wrap a function into a loss
 
@@ -157,10 +170,10 @@ def loss(fn: Callable[[Any, Any], torch.Tensor]) -> Loss:
     ...    return ...
     >>> manager = (..., loss_fn=some_loss_fn)
     """
-    return Loss(fn)
+    return _WrappedLoss(fn)
 
 
-def loss_fn(target: Optional[str] = None, weight: float = 1) -> Callable[[Callable[[Any, Any], torch.Tensor]], Loss]:
+def loss_fn(target: Optional[str] = None, weight: float = 1) -> Callable[[Callable[[Any, Any], torch.Tensor]], _WrappedLoss]:
     """
     The loss wrapping function that wrap a function with target and weight given into a loss
 
@@ -172,7 +185,7 @@ def loss_fn(target: Optional[str] = None, weight: float = 1) -> Callable[[Callab
     >>> manager = (..., loss_fn=some_loss_fn)
     """
 
-    def wrapped_loss_fn(fn_to_wrap: Callable[[Any, Any], torch.Tensor]) -> Loss:
-        return Loss(fn_to_wrap, target=target, weight=weight)
+    def wrapped_loss_fn(fn_to_wrap: Callable[[Any, Any], torch.Tensor]) -> _WrappedLoss:
+        return _WrappedLoss(fn_to_wrap, target=target, weight=weight)
 
     return wrapped_loss_fn
