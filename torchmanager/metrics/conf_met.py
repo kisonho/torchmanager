@@ -34,7 +34,8 @@ class BinaryConfusionMetric(Metric, abc.ABC):
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # argmax input
         num_classes = input.shape[self._dim]
-        input = F.one_hot(input.argmax(dim=self._dim), num_classes)
+        input = input.argmax(dim=self._dim) if input.shape[self._dim] > 1 else input > 0.5
+        input = F.one_hot(input, num_classes)
         target = F.one_hot(target, num_classes)
 
         # calculate TP, FP, and FN

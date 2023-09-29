@@ -202,7 +202,7 @@ class Manager(_Manager[Module]):
 
         # find available device
         cpu, device, target_devices = devices.search(device)
-        if device.type != devices.GPU.type or len(target_devices) < 2:
+        if device.type == cpu or len(target_devices) < 2:
             use_multi_gpus = False
         devices.set_default(target_devices[0])
 
@@ -233,7 +233,7 @@ class Manager(_Manager[Module]):
                     iterations -= batch_iterations
 
                 # validate
-                val_summary = self.test(val_dataset, device=device, use_multi_gpus=use_multi_gpus, empty_cache=False) if val_dataset is not None else {}
+                val_summary = self.test(val_dataset, device=device, use_multi_gpus=use_multi_gpus, empty_cache=False) if val_dataset is not None else None
 
                 # on epoch end
                 for c in callbacks_list:
@@ -247,7 +247,8 @@ class Manager(_Manager[Module]):
 
                 # print summary info
                 val_message = f"Epoch {self.current_epoch + 1}/{epochs}: "
-                summary |= {f"val_{name}": value for name, value in val_summary.items()}
+                if val_summary is not None:
+                    summary |= {f"val_{name}": value for name, value in val_summary.items()}
                 for i, (name, value) in enumerate(summary.items()):
                     if i > 0:
                         val_message += ", "
