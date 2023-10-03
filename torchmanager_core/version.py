@@ -73,7 +73,7 @@ class Version:
                 pre_release_parts = version_str.split('rc')
                 self.pre_release = PreRelease.RELEASE_CANDIDATE
             else:
-                pre_release_parts = [version_str, "0"]
+                pre_release_parts = [version_str, ""]
                 self.pre_release = None
             version_str = pre_release_parts[0]
             self.pre_release_version = int(pre_release_parts[1]) if pre_release_parts[1] != '' else 0

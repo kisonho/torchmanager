@@ -73,7 +73,7 @@ class Manager(BaseManager[Module]):
         return y, loss
 
     @torch.no_grad()
-    def predict(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection[Any]], /, *, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False) -> list[Any]:
+    def predict(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection[Any]], /, *, device: Optional[Union[torch.device, list[torch.device]]] = None, empty_cache: bool = True, use_multi_gpus: bool = False, show_verbose: bool = False) -> list[Any]:
         '''
         Predict the whole dataset
 
@@ -135,7 +135,8 @@ class Manager(BaseManager[Module]):
                 progress_bar.close()
 
             # empty cache
-            self.reset(cpu)
+            if empty_cache:
+                self.reset(cpu)
 
     @torch.no_grad()
     def test(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection[Any]],  /, *,device: Optional[Union[torch.device, list[torch.device]]] = None, empty_cache: bool = True, use_multi_gpus: bool = False, show_verbose: bool = False) -> dict[str, float]:

@@ -4,7 +4,12 @@ from torchmanager_core.typing import Any, Generic, Optional, TypeVar
 
 from .callback import FrequencyCallback
 
-_LrScheduler = torch.optim.lr_scheduler._LRScheduler if Version(torch.__version__) < "2.0" else torch.optim.lr_scheduler.LRScheduler
+try:
+    from torch.optim.lr_scheduler import LRScheduler
+except ImportError:
+    from torch.optim.lr_scheduler import _LRScheduler as LRScheduler
+_LrScheduler = LRScheduler
+
 
 Scheduler = TypeVar("Scheduler", bound=_LrScheduler)
 Writer = TypeVar("Writer", bound=SummaryWriteble)
