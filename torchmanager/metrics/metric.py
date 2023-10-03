@@ -1,6 +1,7 @@
 from torchmanager_core import torch, Version, _raise
 from torchmanager_core.protocols import Reduction
 from torchmanager_core.typing import Any, Callable, Optional
+from torchmanager_core.view import warnings
 
 
 class Metric(torch.nn.Module):

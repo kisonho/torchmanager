@@ -111,8 +111,10 @@ class Checkpoint(Generic[T]):
             - epoch: The `int` index of current epoch to save
             - ckpt_path: The `str` of checkpoint path to save
         """
-        # initialize
+        # set last epoch
         self.last_epoch = epoch
+
+        # initialize checkpoint dictionary
         ckpt = self.__dict__
 
         # check if save weights only
