@@ -35,8 +35,11 @@ class BinaryConfusionMetric(Metric, abc.ABC):
         # argmax input
         num_classes = input.shape[self._dim]
         input = input.argmax(dim=self._dim) if input.shape[self._dim] > 1 else input > 0.5
-        input = F.one_hot(input, num_classes)
-        target = F.one_hot(target, num_classes)
+
+        # check if multi classes
+        if num_classes > 2:
+            input = F.one_hot(input, num_classes)
+            target = F.one_hot(target, num_classes)
 
         # calculate TP, FP, and FN
         tp, tn, fp, fn = self.forward_conf_met(input, target)
