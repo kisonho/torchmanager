@@ -228,6 +228,7 @@ class BaseManager(Generic[Module]):
         - Returns: A `tuple` of `Any` kind of input and `Any` kind of target
         """
         if len(data) >= 2:
-            return tuple(data)
+            data = tuple(data)
+            return data[0], data[1]
         else:
             return NotImplemented
