@@ -139,13 +139,16 @@ class BaseManager(Generic[Module]):
         """
         self._compile(optimizer, loss_fn, metrics)
 
-    def convert(self, from_version: Version) -> None:
+    def convert(self) -> None:
         """
         Convert from a version to current version
 
         - Parameters:
             - from_version: A `torchmanager.version.Version` to convert from
         """
+        # get from version
+        from_version = self.version
+
         # check manager version
         if from_version < API_VERSION:
             # convert loss version
@@ -212,7 +215,7 @@ class BaseManager(Generic[Module]):
             manager.version = Version("v1.0")
 
         # convert to current version
-        manager.convert(manager.version)
+        manager.convert()
         return manager
 
     def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> None:
