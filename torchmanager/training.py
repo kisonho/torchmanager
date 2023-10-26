@@ -139,7 +139,7 @@ class Manager(_Manager[Module]):
         """
         loss.backward()
 
-    def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, epochs: Optional[int] = None, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any], Collection]] = None, callbacks_list: List[Callback] = [], *, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, device: Optional[Union[torch.device, List[torch.device]]] = None, use_multi_gpus: bool = False, **kwargs) -> Module:
+    def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, epochs: Optional[int] = None, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any], Collection]] = None, callbacks_list: List[Callback] = [], *, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, return_summary: bool = False, device: Optional[Union[torch.device, List[torch.device]]] = None, use_multi_gpus: bool = False, **kwargs) -> Union[Module, tuple[Module, Dict[str, float]]]:
         """
         Training algorithm
 
@@ -149,10 +149,12 @@ class Manager(_Manager[Module]):
             - val_dataset: An optional validation `Any`
             - callbacks_list: A `list` of callbacks in `Callback`
             - iterations: An optional `int` number of training iterations (`epochs` must be not given)
+            - initial_epoch: An optional `int` number of initial epoch
+            - return_summary: A `bool` flag of if returning the summary along with the trained model
             - device: An optional `torch.device` to test on if not using multi-GPUs or an optional default `torch.device` for testing otherwise
             - use_multi_gpus: A `bool` flag of if using multi gpus
             - **kwargs: Additional keyword arguments that will be passed to `train` method.
-        - Returns: A trained `torch.nn.Module`
+        - Returns: A trained `torch.nn.Module` or a `tuple` of the trained `torch.nn.Module` and a summary of `dict` with keys as `str` and values as `float`
         """
         # arguments checking
         dataset_len = training_dataset.batched_len if isinstance(training_dataset, Dataset) else len(training_dataset)
@@ -182,7 +184,10 @@ class Manager(_Manager[Module]):
             use_multi_gpus = False
         devices.set_default(target_devices[0])
 
-        # initialize training
+        # initialize summary
+        summary: Dict[str, float] = {}
+
+        # on train start
         for c in callbacks_list:
             c.on_train_start(initial_epoch)
 
@@ -243,7 +248,7 @@ class Manager(_Manager[Module]):
             raise runtime_error from error
         finally:
             self.reset(cpu)
-        return self.raw_model
+        return (self.raw_model, summary) if return_summary else self.raw_model
 
     def train_step(self, x_train: Any, y_train: Any) -> Dict[str, float]:
         """
