@@ -90,13 +90,15 @@ class Manager(BaseManager[Module]):
             use_multi_gpus = False
         devices.set_default(target_devices[0])
 
-        # initialize
+        # initialize dataset length
         if len(dataset) == 0:
             return []
         elif isinstance(dataset, Dataset):
             dataset_len = dataset.batched_len
         else:
             dataset_len = len(dataset)
+
+        # initialize progress bar
         progress_bar = view.tqdm(total=dataset_len) if show_verbose else None
 
         # move model
@@ -157,13 +159,15 @@ class Manager(BaseManager[Module]):
             use_multi_gpus = False
         devices.set_default(target_devices[0])
 
-        # initialize progress bar
+        # initialize dataset length
         if len(dataset) == 0:
             return {}
         elif isinstance(dataset, Dataset):
             dataset_len = dataset.batched_len
         else:
             dataset_len = len(dataset)
+
+        # initialize progress bar
         progress_bar = view.tqdm(total=dataset_len) if show_verbose else None
 
         # reset loss function and metrics

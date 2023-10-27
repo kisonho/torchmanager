@@ -4,7 +4,7 @@ from torchmanager_core.checkpoint import Checkpoint
 from torchmanager_core.protocols import Resulting
 from torchmanager_core.typing import Any, Collection, Module, Optional, Self, Union
 
-from .callbacks import Callback
+from .callbacks import Callback, MultiCallbacks, ProgressBar
 from .data import Dataset
 from .losses import Loss
 from .metrics import Metric
@@ -55,7 +55,7 @@ class Manager(_Manager[Module]):
         super().__init__(model, optimizer, loss_fn, metrics)
         self.__current_epoch = 0
 
-    def _train(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, iterations: Optional[int] = None, *, device: torch.device = devices.CPU, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, callbacks_list: list[Callback] = []) -> dict[str, float]:
+    def _train(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, iterations: Optional[int] = None, *, device: torch.device = devices.CPU, use_multi_gpus: bool = False, callbacks_list: list[Callback] = [], **kwargs: Any) -> dict[str, float]:
         """
         The single training step for an epoch
 
@@ -64,8 +64,6 @@ class Manager(_Manager[Module]):
             - iterations: An optional `int` of total training iterations, must be smaller than the size of dataset
             - device: A `torch.device` where the data is moved to, should be same as the model
             - use_multi_gpus: A `bool` flag of if using multi gpus
-            - show_verbose: A `bool` flag of if showing progress bar
-            - verbose_type: A `view.VerboseType` that controls the display of verbose
             - callbacks_list: A `list` of callbacks in `Callback`
         - Returns: A summary of `dict` with keys as `str` and values as `float`
         """
@@ -80,54 +78,33 @@ class Manager(_Manager[Module]):
         for m in self.metric_fns.values():
             m.reset()
 
-        # initialize progress bar
+        # initialize iterations
         dataset_len = dataset.batched_len if isinstance(dataset, Dataset) else len(dataset)
         iterations = dataset_len if iterations is None else iterations
-        progress_bar = view.tqdm(total=iterations) if show_verbose else None
 
-        try:
-            # batch loop
-            for batch, data in enumerate(dataset):
-                # on batch start
-                for c in callbacks_list:
-                    c.on_batch_start(batch)
+        # initialize callbacks
+        callbacks = MultiCallbacks(*callbacks_list)
 
-                # move x_train and y_train to device
-                x_train, y_train = self.unpack_data(data)
-                if use_multi_gpus is not True:
-                    x_train = devices.move_to_device(x_train, device)
-                y_train = devices.move_to_device(y_train, device)
+        # batch loop
+        for batch, data in enumerate(dataset):
+            # on batch start
+            callbacks.on_batch_start(batch)
 
-                # train for one step
-                summary = self.train_step(x_train, y_train)
+            # move x_train and y_train to device
+            x_train, y_train = self.unpack_data(data)
+            if use_multi_gpus is not True:
+                x_train = devices.move_to_device(x_train, device)
+            y_train = devices.move_to_device(y_train, device)
 
-                # on batch start
-                for c in callbacks_list:
-                    c.on_batch_end(batch, summary=summary)
+            # train for one step
+            summary = self.train_step(x_train, y_train)
 
-                # implement progress bar
-                if progress_bar is not None:
-                    # initialize progress summary
-                    if verbose_type == view.VerboseType.LOSS:
-                        progress_summary = {name: s for name, s in summary.items() if "loss" in name}
-                    elif verbose_type == view.VerboseType.METRICS:
-                        progress_summary = {name: s for name, s in summary.items() if "loss" not in name}
-                    elif verbose_type == view.VerboseType.ALL:
-                        progress_summary = summary
-                    else:
-                        raise TypeError(f"Verbose type {verbose_type} is not supported.")
+            # on batch end
+            callbacks.on_batch_end(batch, summary=summary)
 
-                    # update progress bar
-                    progress_bar.set_postfix(progress_summary)
-                    progress_bar.update()
-
-                # check for iterations
-                if batch + 1 >= iterations:
-                    break
-        finally:
-            # end epoch training
-            if progress_bar is not None:
-                progress_bar.close()
+            # check for iterations
+            if batch + 1 >= iterations:
+                break
         return self.summary
 
     def backward(self, loss: torch.Tensor, /) -> None:
@@ -139,7 +116,7 @@ class Manager(_Manager[Module]):
         """
         loss.backward()
 
-    def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, epochs: Optional[int] = None, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any], Collection]] = None, callbacks_list: list[Callback] = [], *, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, return_summary: bool = False, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, **kwargs) -> Union[Module, tuple[Module, dict[str, float]]]:
+    def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, epochs: Optional[int] = None, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any], Collection]] = None, callbacks_list: list[Callback] = [], *, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, return_summary: bool = False, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, **kwargs) -> Union[Module, tuple[Module, dict[str, float]]]:
         """
         Training algorithm
 
@@ -153,12 +130,16 @@ class Manager(_Manager[Module]):
             - return_summary: A `bool` flag of if returning the summary along with the trained model
             - device: An optional `torch.device` to test on if not using multi-GPUs or an optional default `torch.device` for testing otherwise
             - use_multi_gpus: A `bool` flag of if using multi gpus
+            - show_verbose: A `bool` flag to show the progress bar during training
+            - verbose_type: A `VerboseType` of the summary to show
             - **kwargs: Additional keyword arguments that will be passed to `train` method.
         - Returns: A trained `torch.nn.Module` or a `tuple` of the trained `torch.nn.Module` and a summary of `dict` with keys as `str` and values as `float`
         """
         # arguments checking
         dataset_len = training_dataset.batched_len if isinstance(training_dataset, Dataset) else len(training_dataset)
         assert self.compiled is True, errors._raise(ValueError("Manager has not yet been compiled. Either loss_fn or optimizer, or both, are not given."))
+
+        # check for epochs and iterations
         if epochs is not None:
             assert epochs > 0, errors._raise(ValueError(f"The epochs must be a positive integer, got {epochs}."))
             assert iterations is None, errors._raise(ValueError(f"The iterations must be given as `None` when epochs is given, got {iterations}."))
@@ -178,6 +159,13 @@ class Manager(_Manager[Module]):
         else:
             initial_epoch = self.current_epoch
 
+        # wrap callbacks list to multi callbacks
+        callbacks = MultiCallbacks(*callbacks_list)
+
+        # add progress bar to callbacks
+        if show_verbose:
+            callbacks.append(ProgressBar(dataset_len, verbose_type=verbose_type))
+
         # find available device
         cpu, device, target_devices = devices.search(device)
         if device.type == cpu or len(target_devices) < 2:
@@ -188,8 +176,7 @@ class Manager(_Manager[Module]):
         summary: dict[str, float] = {}
 
         # on train start
-        for c in callbacks_list:
-            c.on_train_start(initial_epoch)
+        callbacks.on_train_start(initial_epoch)
 
         try:
             # move to device
@@ -199,14 +186,23 @@ class Manager(_Manager[Module]):
 
             # epoch loop
             for self.current_epoch in range(initial_epoch, epochs):
-                # initialize epoch
-                view.logger.info(f"Training epoch {self.current_epoch + 1}/{epochs}")
-                for c in callbacks_list:
-                    c.on_epoch_start(self.current_epoch)
+                # calculate batch iterations
                 if iterations is not None:
                     batch_iterations = iterations if dataset_len < iterations else iterations
                 else:
                     batch_iterations = None
+
+                # calculate iterations per epoch
+                iterations_per_epoch = dataset_len if batch_iterations is None else batch_iterations
+
+                # set iterations per epoch in progress bar
+                for callback in callbacks_list:
+                    if isinstance(callback, ProgressBar):
+                        callback.iterations_per_epoch = iterations_per_epoch
+
+                # initialize epoch
+                view.logger.info(f"Training epoch {self.current_epoch + 1}/{epochs}")
+                callbacks.on_epoch_start(self.current_epoch)
 
                 # train for one epoch
                 summary = self._train(training_dataset, iterations=batch_iterations, device=device, use_multi_gpus=use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
@@ -217,14 +213,12 @@ class Manager(_Manager[Module]):
                 val_summary = self.test(val_dataset, device=device, use_multi_gpus=use_multi_gpus, empty_cache=False) if val_dataset is not None else None
 
                 # on epoch end
-                for c in callbacks_list:
-                    try:
-                        c.on_epoch_end(self.current_epoch, summary=summary, val_summary=val_summary)
-                    except errors.StopTraining:
-                        # on train end
-                        for c in callbacks_list:
-                            c.on_train_end(self.raw_model)
-                        return self.raw_model
+                try:
+                    callbacks.on_epoch_end(self.current_epoch, summary=summary, val_summary=val_summary)
+                except errors.StopTraining:
+                    # on train end
+                    callbacks.on_train_end(self.raw_model)
+                    return self.raw_model
 
                 # print summary info
                 val_message = f"Epoch {self.current_epoch + 1}/{epochs}: "
@@ -235,10 +229,6 @@ class Manager(_Manager[Module]):
                         val_message += ", "
                     val_message += f"{name}={value:.4f}"
                 view.logger.info(val_message)
-
-            # on train end
-            for c in callbacks_list:
-                c.on_train_end(self.raw_model)
         except KeyboardInterrupt:
             view.logger.info("Training interrupted.")
             pass
@@ -247,6 +237,14 @@ class Manager(_Manager[Module]):
             runtime_error = errors.StopTraining(self.current_epoch, "Training failed.")
             raise runtime_error from error
         finally:
+            # on train end
+            callbacks.on_train_end(self.raw_model)
+
+            # remove added progress bar
+            if show_verbose:
+                callbacks.pop()
+
+            # reset model
             self.reset(cpu)
         return (self.raw_model, summary) if return_summary else self.raw_model
 

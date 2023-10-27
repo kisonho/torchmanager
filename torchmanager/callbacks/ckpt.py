@@ -45,7 +45,7 @@ class _Checkpoint(Callback, Generic[T]):
         self.__checkpoint = Ckpt(model, **kwargs)
         self.ckpt_path = os.path.normpath(ckpt_path)
 
-    def on_epoch_end(self, epoch: int, summary: dict[str, float] = ..., val_summary: Optional[dict[str, float]] = ...) -> None:
+    def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: Optional[dict[str, float]] = None) -> None:
         self.checkpoint.save(epoch, self.ckpt_path)
 
 
@@ -73,7 +73,7 @@ class LastCheckpoint(_Checkpoint[T]):
         super().__init__(model, ckpt_path, **kwargs)
         self.freq = freq
 
-    def on_epoch_end(self, epoch: int, summary: dict[str, float] = ..., val_summary: Optional[dict[str, float]] = ...) -> None:
+    def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: Optional[dict[str, float]] = None) -> None:
         if epoch % self.freq == 0:
             super().on_epoch_end(epoch, summary, val_summary)
 
@@ -90,11 +90,15 @@ class BestCheckpoint(_Checkpoint[T]):
         - monitor_type: A `MonitorType` of the monitor
     """
     # properties
-    best_score: float
+    best_summary: dict[str, float]
     load_best: bool
     monitor: str
     monitor_type: MonitorType
     show_verbose: bool
+
+    @property
+    def best_score(self) -> float:
+        return self.best_summary[f"val_{self.monitor}"] if f"val_{self.monitor}" in self.best_summary else self.best_summary[self.monitor]
 
     def __init__(self, monitor: str, model: T, ckpt_path: str, load_best: bool = False, monitor_type: MonitorType = MonitorType.MAX, show_verbose: bool = False, **kwargs: Any) -> None:
         """
@@ -105,15 +109,22 @@ class BestCheckpoint(_Checkpoint[T]):
             - monitor_type: A `MonitorType` of either `MIN` of `MAX` mode for the best model
         """
         super().__init__(model, ckpt_path, **kwargs)
-        self.best_score = monitor_type.init_score
+        self.best_summary = {monitor: monitor_type.init_score}
         self.load_best = load_best
         self.monitor = monitor
         self.monitor_type = monitor_type
         self.show_verbose = show_verbose
 
-    def on_epoch_end(self, epoch: int, summary: dict[str, float] = ..., val_summary: Optional[dict[str, float]] = ...) -> None:
+    def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: Optional[dict[str, float]] = None) -> None:
         # get score
-        score = val_summary[self.monitor] if val_summary is not None else summary[self.monitor]
+        if val_summary is not None:
+            score = val_summary[self.monitor]
+            val_summary = {f"val_{k}": v for k, v in val_summary.items()}
+            summary.update(val_summary)
+        else: 
+            score = summary[self.monitor]
+
+        # check max or min found
         max_score_found = score >= self.best_score and self.monitor_type == MonitorType.MAX
         min_score_found = score <= self.best_score and self.monitor_type == MonitorType.MIN
 
@@ -123,10 +134,10 @@ class BestCheckpoint(_Checkpoint[T]):
 
         # save when best
         if max_score_found:
-            self.best_score = score
+            self.best_summary = summary
             super().on_epoch_end(epoch, summary, val_summary)
         elif min_score_found:
-            self.best_score = score
+            self.best_summary = summary
             super().on_epoch_end(epoch, summary, val_summary)
 
     def on_train_end(self, model: torch.nn.Module) -> None:
@@ -135,12 +146,14 @@ class BestCheckpoint(_Checkpoint[T]):
             # load checkpoint
             best_ckpt: Ckpt[StateDictLoadable] = Ckpt.from_saved(self.ckpt_path)
 
-            # load to model
+            # load checkpoint
             if isinstance(best_ckpt.model, ModelContainer):
-                ckpt_model = best_ckpt.model.model
+                ckpt = best_ckpt.model.model
             else:
-                ckpt_model = best_ckpt.model
+                ckpt = best_ckpt.model
+
+            # load state dict
             try:
-                model.load_state_dict(ckpt_model.state_dict())
+                model.load_state_dict(ckpt.state_dict())
             except:
-                raise TypeError(f"Reload best checkpoint to model failed: supposed to have {type(model)} in checkpoint, got {type(ckpt_model)}.")
+                raise TypeError(f"Reload best checkpoint to model failed: supposed to have {type(model)} in checkpoint, got {type(ckpt)}.")
