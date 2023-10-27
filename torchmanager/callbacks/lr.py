@@ -1,4 +1,3 @@
-from torchmanager_core import torch, Version
 from torchmanager_core.protocols import Frequency, SummaryWriteble
 from torchmanager_core.typing import Any, Generic, Optional, TypeVar
 
