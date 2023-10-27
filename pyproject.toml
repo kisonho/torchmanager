@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "torchmanager-nightly"
-version = "1.3a3"
-description = "PyTorch Training Manager v1.3 (Alpha 3)"
+version = "1.3a4"
+description = "PyTorch Training Manager v1.3 (Alpha 4)"
 authors = ["Qisheng He <Qisheng.He@wayne.edu>"]
 repository = "https://github.com/kisonho/torchmanager.git"
 packages = [
