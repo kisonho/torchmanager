@@ -45,7 +45,7 @@ class _Checkpoint(Callback, Generic[T]):
         self.__checkpoint = Ckpt(model, **kwargs)
         self.ckpt_path = os.path.normpath(ckpt_path)
 
-    def on_epoch_end(self, epoch: int, summary: Dict[str, float] = ..., val_summary: Optional[Dict[str, float]] = ...) -> None:
+    def on_epoch_end(self, epoch: int, summary: Dict[str, float] = {}, val_summary: Optional[Dict[str, float]] = None) -> None:
         self.checkpoint.save(epoch, self.ckpt_path)
 
 
@@ -73,7 +73,7 @@ class LastCheckpoint(_Checkpoint[T]):
         super().__init__(model, ckpt_path, **kwargs)
         self.freq = freq
 
-    def on_epoch_end(self, epoch: int, summary: Dict[str, float] = ..., val_summary: Optional[Dict[str, float]] = ...) -> None:
+    def on_epoch_end(self, epoch: int, summary: Dict[str, float] = {}, val_summary: Optional[Dict[str, float]] = None) -> None:
         if epoch % self.freq == 0:
             super().on_epoch_end(epoch, summary, val_summary)
 
@@ -109,7 +109,7 @@ class BestCheckpoint(_Checkpoint[T]):
         self.monitor = monitor
         self.monitor_type = monitor_type
 
-    def on_epoch_end(self, epoch: int, summary: Dict[str, float] = ..., val_summary: Optional[Dict[str, float]] = ...) -> None:
+    def on_epoch_end(self, epoch: int, summary: Dict[str, float] = {}, val_summary: Optional[Dict[str, float]] = None) -> None:
         # get score
         score = val_summary[self.monitor] if val_summary is not None else summary[self.monitor]
 
