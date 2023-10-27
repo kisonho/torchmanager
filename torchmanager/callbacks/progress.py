@@ -39,7 +39,7 @@ class ProgressBar(Callback):
             self.progress_bar.close()
             self.progress_bar = None
 
-    def on_batch_end(self, batch: int, summary: dict[str, float] = ...) -> None:# initialize progress summary
+    def on_batch_end(self, batch: int, summary: dict[str, float] = {}) -> None:# initialize progress summary
         # switch verbose type
         if self.verbose_type == view.VerboseType.LOSS:
             progress_summary = {name: s for name, s in summary.items() if "loss" in name}
