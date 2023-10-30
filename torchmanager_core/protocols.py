@@ -85,29 +85,15 @@ class Resulting(DeviceMovable, StateDictLoadable, Trainable, Protocol):
     """An object that have result available with reset method"""
     _metric_fn: Optional[Callable[[Any, Any], torch.Tensor]]
     _target: Optional[str]
-    # @property
-    # @abc.abstractmethod
-    # def _metric_fn(self) -> Optional[Callable[[Any, Any], torch.Tensor]]:
-    #     return NotImplemented
-    
-    # @_metric_fn.setter
-    # @abc.abstractmethod
-    # def _metric_fn(self, fn: Optional[Callable[[Any, Any], torch.Tensor]]) -> None:
-    #     pass
-
-    # @property
-    # @abc.abstractmethod
-    # def _target(self) -> Optional[str]:
-    #     return NotImplemented
-
-    # @_target.setter
-    # @abc.abstractmethod
-    # def _target(self, t: Optional[str]) -> None:
-        # pass
 
     @property
     @abc.abstractmethod
     def result(self) -> torch.Tensor:
+        return NotImplemented
+
+    @property
+    @abc.abstractmethod
+    def results(self) -> Optional[torch.Tensor]:
         return NotImplemented
 
     @abc.abstractmethod
