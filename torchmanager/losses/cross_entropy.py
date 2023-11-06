@@ -147,6 +147,6 @@ class KLDiv(Loss):
             
         # check nan
         if self.replace_nan:
-            loss = loss.nan_to_num(0)
+            loss = loss.nan_to_num(0, posinf=0)
 
         return loss
