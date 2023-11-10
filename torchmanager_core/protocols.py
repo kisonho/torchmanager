@@ -94,6 +94,11 @@ class Resulting(DeviceMovable, StateDictLoadable, Trainable, Protocol):
     def result(self) -> torch.Tensor:
         return NotImplemented
 
+    @property
+    @abc.abstractmethod
+    def results(self) -> Optional[torch.Tensor]:
+        return NotImplemented
+
     @abc.abstractmethod
     def __call__(self, input: Any, target: Any) -> torch.Tensor:
         return NotImplemented
