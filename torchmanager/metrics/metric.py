@@ -57,7 +57,7 @@ class Metric(torch.nn.Module):
         m: torch.Tensor = super().__call__(input, target)
         self._results.append(m.unsqueeze(0).cpu().detach())
         return m
-    
+
     def convert(self, from_version: Version) -> None:
         pass
 
