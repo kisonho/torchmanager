@@ -21,19 +21,6 @@ class Configs(argparse.Namespace, abc.ABC):
     experiment: str
     replace_experiment: bool
 
-    def __init__(self, *, comments: Optional[str] = None, experiment: str = "test.exp", replace_experiment: bool = False, **kwargs: Any) -> None:
-        """
-        Constructor
-
-        - Parameters:
-            - experiment: A `str` of experiment name
-            - replace_experiment: A `bool` flag of if replace the old experiment folder if exists
-        """
-        super().__init__(**kwargs)
-        self.comments = comments
-        self.experiment = experiment
-        self.replace_experiment = replace_experiment
-
     def format_arguments(self) -> None:
         """Format and check current properties"""
         self.experiment = self.experiment if self.experiment.endswith(".exp") else f"{self.experiment}.exp"
@@ -59,10 +46,14 @@ class Configs(argparse.Namespace, abc.ABC):
         # initialize logging
         assert isinstance(configs, Configs), _raise(TypeError("The namespace is not a valid configs."))
         log_dir = os.path.join("experiments", configs.experiment)
+
+        # check if experiment exists
         if os.path.exists(log_dir) and configs.replace_experiment:
             shutil.rmtree(log_dir)
         elif os.path.exists(log_dir) and not configs.replace_experiment:
             raise IOError(f"Path '{log_dir}' has already existed.")
+
+        # set log path
         os.makedirs(log_dir, exist_ok=True)
         log_file = os.path.basename(configs.experiment.replace(".exp", ".log"))
         log_path = os.path.join(log_dir, log_file)
