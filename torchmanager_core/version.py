@@ -147,8 +147,8 @@ class Version:
         return self == other or self > other
 
 
-API = Version("v1.2")
-CURRENT = Version("v1.2")
+API = Version("v1.2.1")
+CURRENT = Version("v1.2.1")
 DESCRIPTION: str = f"PyTorch Training Manager {CURRENT}"
 
 
