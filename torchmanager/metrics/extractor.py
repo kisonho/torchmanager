@@ -34,8 +34,19 @@ class FeatureMetric(Metric, Generic[Module]):
         self.feature_extractor = feature_extractor
 
     def __call__(self, input: Any, target: Any) -> torch.Tensor:
+        # unpack input and target
+        if self._target is not None:
+            assert isinstance(input, dict) and isinstance(target, dict), _raise(TypeError(f"Given input or target must be dictionaries, got {type(input)} and {type(target)}."))
+            assert self._target in input and self._target in target, _raise(TypeError(f"Target ‘{self._target}’ cannot be found not in input or target"))
+            input, target = input[self._target], target[self._target]
+
+        # get features
         input_features = self.forward_features(input)
         target_features = self.forward_features(target)
+
+        # rewrap input and target
+        if self._target is not None:
+            input_features, target_features = {self._target: input}, {self._target: target}
         return super().__call__(input_features, target_features)
 
     @torch.no_grad()
