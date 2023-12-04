@@ -1,16 +1,6 @@
-import logging, warnings
+import warnings
 from tqdm import tqdm
 
+from . import logging
+from .logging import logger, set_log_path
 from .protocols import VerboseType
-
-logging.getLogger().handlers.clear()
-logger = logging.getLogger('torchmanager')
-
-def set_log_path(log_path: str) -> logging.Formatter:
-    logger.handlers.clear()
-    logger.setLevel(logging.INFO)
-    file_handler = logging.FileHandler(log_path)
-    formatter = logging.Formatter("%(message)s")
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-    return formatter
