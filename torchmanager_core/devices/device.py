@@ -24,7 +24,7 @@ try:
 except:
     DEFAULT = CPU
     GPU = NotImplemented
-    GPUS = []
+    GPUS: List[torch.device] = []
 
 Module = TypeVar('Module', bound=torch.nn.Module)
 
@@ -80,8 +80,11 @@ def search(specified: Optional[Union[torch.device, list[torch.device]]] = None) 
 
         # check for each device
         for d in specified:
+            # assert all devices are the same type
             if d.type != specified[0].type:
                 raise SystemError("All devices in the specified list must have the same device type.")
+
+            # assert all devices have device index
             if d.index is None:
                 raise SystemError("All devices in the specified list must have a device index.")
     else:

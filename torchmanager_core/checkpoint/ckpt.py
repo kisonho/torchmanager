@@ -111,7 +111,7 @@ class Checkpoint(Generic[T]):
             - epoch: The `int` index of current epoch to save
             - ckpt_path: The `str` of checkpoint path to save
         """
-        # set last epoch
+        # update last epoch and fetch current checkpoint
         self.last_epoch = epoch
 
         # initialize checkpoint dictionary
@@ -121,7 +121,9 @@ class Checkpoint(Generic[T]):
         if self.save_weights_only is True:
             model = self.model.module if isinstance(self.model, torch.nn.parallel.DataParallel) else self.model
             ckpt["model"] = model.state_dict()
-        elif isinstance(ckpt["model"], torch.nn.parallel.DataParallel):
+
+        # remove data parallel wrap
+        if isinstance(ckpt["model"], torch.nn.parallel.DataParallel):
             ckpt["model"] = ckpt["model"].module
 
         # check if model is a container

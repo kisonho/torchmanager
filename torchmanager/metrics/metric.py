@@ -23,7 +23,8 @@ class Metric(torch.nn.Module):
     @property
     def result(self) -> torch.Tensor:
         if len(self._results) > 0:
-            return torch.concat(self._results).mean()
+            results = [r.mean() for r in self._results]
+            return torch.tensor(results).mean()
         else:
             return torch.tensor(torch.nan)
 

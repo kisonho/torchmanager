@@ -1,11 +1,9 @@
 import random, torch
 
 try:
-    import numpy as np  # type: ignore
+    import numpy as np
 except ImportError:
     np = NotImplemented
-
-from .. import devices
 
 def freeze_seed(seed: int, /) -> None:
     """
@@ -14,12 +12,14 @@ def freeze_seed(seed: int, /) -> None:
     - Parameters:
         - seed: An `int` for the random seed
     """
+    # set seed
     random.seed(seed)
     if np is not NotImplemented:
         np.random.seed(seed)
     torch.manual_seed(seed)
 
-    if devices.GPU is not NotImplemented:
+    # set cuda seed
+    if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
 def unfreeze_seed() -> int:
@@ -38,6 +38,6 @@ def unfreeze_seed() -> int:
         np.random.seed(seed_32)
 
     # set cuda seed
-    if devices.GPU is not NotImplemented:
+    if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed_64)
     return seed_64

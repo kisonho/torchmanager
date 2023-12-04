@@ -47,10 +47,14 @@ class Configs(argparse.Namespace, abc.ABC):
         # initialize logging
         assert isinstance(configs, Configs), _raise(TypeError("The namespace is not a valid configs."))
         log_dir = os.path.join("experiments", configs.experiment)
+
+        # check if experiment exists
         if os.path.exists(log_dir) and configs.replace_experiment:
             shutil.rmtree(log_dir)
         elif os.path.exists(log_dir) and not configs.replace_experiment:
             raise IOError(f"Path '{log_dir}' has already existed.")
+
+        # set log path
         os.makedirs(log_dir, exist_ok=True)
         log_file = os.path.basename(configs.experiment.replace(".exp", ".log"))
         log_path = os.path.join(log_dir, log_file)
