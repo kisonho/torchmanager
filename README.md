@@ -5,6 +5,7 @@
 * Python 3.9+
 * PyTorch
 * tqdm
+* PyYAML
 * scipy (Optional)
 * tensorboard (Optional)
 

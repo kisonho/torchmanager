@@ -1,5 +1,5 @@
-from torchmanager_core import argparse, abc, os, shutil, torch, view, _raise
-from torchmanager_core.typing import Any, Optional, Union
+from torchmanager_core import argparse, abc, errors, os, shutil, torch, view, _raise
+from torchmanager_core.typing import Optional, Union
 from torchmanager_core import DESCRIPTION
 
 
@@ -59,7 +59,12 @@ class Configs(argparse.Namespace, abc.ABC):
         log_file = os.path.basename(configs.experiment.replace(".exp", ".log"))
         log_path = os.path.join(log_dir, log_file)
         view.set_log_path(log_path=log_path)
-        configs.format_arguments()
+
+        # format arguments
+        try:
+            configs.format_arguments()
+        except Exception as e:
+            raise errors.ConfigsFormatError(cls) from e
 
         # save configs
         configs.save()
