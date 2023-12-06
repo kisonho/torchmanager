@@ -1,5 +1,5 @@
 from torch.utils.data import DataLoader
-from torchmanager_core import devices, errors, math, torch, view, _raise
+from torchmanager_core import devices, errors, math, os, torch, view, _raise
 from torchmanager_core.checkpoint import Checkpoint
 from torchmanager_core.protocols import Resulting
 from torchmanager_core.typing import Any, Collection, Module, Optional, Self, Union
@@ -55,7 +55,7 @@ class Manager(_Manager[Module]):
         super().__init__(model, optimizer, loss_fn, metrics)
         self.__current_epoch = 0
 
-    def _train(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, iterations: Optional[int] = None, *, device: torch.device = devices.CPU, use_multi_gpus: bool = False, callbacks_list: list[Callback] = [], **kwargs: Any) -> dict[str, float]:
+    def _train(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, iterations: Optional[int] = None, *, device: torch.device = devices.CPU, num_workers: Optional[int] = os.cpu_count(), use_multi_gpus: bool = False, callbacks_list: list[Callback] = [], **kwargs: Any) -> dict[str, float]:
         """
         The single training step for an epoch
 
@@ -63,6 +63,7 @@ class Manager(_Manager[Module]):
             - dataset: A `torch.utils.data.DataLoader` or `.data.Dataset` training dataset
             - iterations: An optional `int` of total training iterations, must be smaller than the size of dataset
             - device: A `torch.device` where the data is moved to, should be same as the model
+            - num_workers: An optional `int` of the number of cpus to load the data
             - use_multi_gpus: A `bool` flag of if using multi gpus
             - callbacks_list: A `list` of callbacks in `Callback`
         - Returns: A summary of `dict` with keys as `str` and values as `float`
@@ -83,7 +84,7 @@ class Manager(_Manager[Module]):
         iterations = dataset_len if iterations is None else iterations
 
         # initialize callbacks
-        callbacks = MultiCallbacks(*callbacks_list)
+        callbacks = MultiCallbacks(*callbacks_list, num_workers=num_workers)
 
         # batch loop
         for batch, data in enumerate(dataset):
@@ -116,7 +117,7 @@ class Manager(_Manager[Module]):
         """
         loss.backward()
 
-    def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, epochs: Optional[int] = None, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any], Collection]] = None, callbacks_list: list[Callback] = [], *, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, return_summary: bool = False, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, **kwargs) -> Union[Module, tuple[Module, dict[str, float]]]:
+    def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, epochs: Optional[int] = None, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any], Collection]] = None, callbacks_list: list[Callback] = [], *, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, return_summary: bool = False, device: Optional[Union[torch.device, list[torch.device]]] = None, num_workers: Optional[int] = os.cpu_count(), use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, **kwargs) -> Union[Module, tuple[Module, dict[str, float]]]:
         """
         Training algorithm
 
@@ -129,6 +130,7 @@ class Manager(_Manager[Module]):
             - initial_epoch: An optional `int` number of initial epoch
             - return_summary: A `bool` flag of if returning the summary along with the trained model
             - device: An optional `torch.device` to test on if not using multi-GPUs or an optional default `torch.device` for testing otherwise
+            - num_workers: An optional `int` of the number of cpus to load the data
             - use_multi_gpus: A `bool` flag of if using multi gpus
             - show_verbose: A `bool` flag to show the progress bar during training
             - verbose_type: A `VerboseType` of the summary to show
@@ -160,7 +162,7 @@ class Manager(_Manager[Module]):
             initial_epoch = self.current_epoch
 
         # wrap callbacks list to multi callbacks
-        callbacks = MultiCallbacks(*callbacks_list)
+        callbacks = MultiCallbacks(*callbacks_list, num_workers=num_workers)
 
         # add progress bar to callbacks
         if show_verbose:

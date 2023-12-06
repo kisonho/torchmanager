@@ -69,7 +69,7 @@ class Dataset(_Dataset[T], abc.ABC):
         else:
             return math.ceil(self.unbatched_len / self.batch_size)
 
-    def __init__(self, batch_size: int, /, *, device: torch.device = devices.CPU, drop_last: bool = False, num_workers: Optional[int] = None, shuffle: bool = False) -> None:
+    def __init__(self, batch_size: int, /, *, device: torch.device = devices.CPU, drop_last: bool = False, num_workers: Optional[int] = os.cpu_count(), shuffle: bool = False) -> None:
         """
         Constructor
 
