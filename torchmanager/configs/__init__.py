@@ -1,3 +1,7 @@
 from .basic import Configs
 from .json import JSONConfigs
-from .yaml import YAMLConfigs
+
+try:
+    from .yaml import YAMLConfigs
+except ImportError:
+    YAMLConfigs = NotImplemented

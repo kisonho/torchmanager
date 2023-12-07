@@ -14,16 +14,17 @@ readme = "README.md"
 python = "^3.9"
 torch = "*"
 tqdm = "*"
-PyYAML = "*"
 
 [tool.poetry.optional-dependencies]
+PyYAML = { version = "*" }
 scipy = { version = "*" }
 tensorboard = { version = "*" }
 
 [tool.poetry.extras]
+yaml = ["PyYAML"]
 scipy = ["scipy"]
 tensorboard = ["tensorboard"]
-all = ["scipy", "tensorboard"]
+all = ["yaml", "scipy", "tensorboard"]
 
 [build-system]
 requires = ["poetry-core"]
