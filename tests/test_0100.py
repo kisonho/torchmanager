@@ -11,8 +11,8 @@ class Test0100(TestCase):
 
         # calculate accuracy
         for i in range(10):
-            y = torch.randint(0, 10, (i+1,))
-            y_test = torch.randint(0, 10, (i+1,))
+            y = torch.randint(0, 10, (i+1,1,1,1))
+            y_test = torch.randint(0, 10, (i+1,1,1,1))
             metric_fn(y, y_test)
         self.assertGreaterEqual(float(metric_fn.result), 0, "Accuracy must be a positive value, got {loss}.")
 
