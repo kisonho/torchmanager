@@ -216,6 +216,10 @@ class BaseManager(Generic[Module]):
 
         # convert to current version
         manager.convert()
+
+        # reset if map location is given
+        if map_location is not None:
+            manager.reset(map_location)
         return manager
 
     def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> None:
