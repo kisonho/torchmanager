@@ -171,10 +171,11 @@ class BaseManager(Generic[Module]):
         - Returns: A `bool` flag of if use multi GPUs
         """
         # multi gpus support for loss
-        assert isinstance(self.raw_loss_fn, Loss), errors._raise(TypeError("The loss function is not a valid `Loss` object."))
-        paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.raw_loss_fn, devices=target_devices, parallel_type=ParallelLoss)
-        assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), errors._raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
-        self.loss_fn = paralleled_loss_fn
+        if self.loss_fn is not None:
+            assert isinstance(self.raw_loss_fn, Loss), errors._raise(TypeError("The loss function is not a valid `Loss` object."))
+            paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.raw_loss_fn, devices=target_devices, parallel_type=ParallelLoss)
+            assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), errors._raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
+            self.loss_fn = paralleled_loss_fn
 
         # multi gpus support for model
         self.model, use_multi_gpus = devices.data_parallel(self.raw_model, devices=target_devices)
