@@ -126,7 +126,7 @@ class Dataset(_Dataset[T], abc.ABC):
 
         - Parameters:
             - data: `Any` kind of single data
-        - Returns: `Any` kind of inputs with type `T`
+        - Returns: A `tuple` of `Any` kind of inputs with type `T`
         """
         if isinstance(data, torch.Tensor) or isinstance(data, dict):
             return data, data  # type: ignore # suppose for unsupervised reconstruction or a dictionary of packed data
