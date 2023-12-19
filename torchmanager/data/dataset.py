@@ -104,7 +104,7 @@ class Dataset(_Dataset[T], abc.ABC):
         """Returns an unbatched item"""
         return NotImplemented
 
-    def __iter__(self) -> Iterator[T]:
+    def __iter__(self) -> Iterator[tuple[T, T]]:
         # initialize loader
         if self.device != devices.CPU:
             data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=self.num_workers, pin_memory=True, pin_memory_device=str(self.device))
@@ -120,7 +120,7 @@ class Dataset(_Dataset[T], abc.ABC):
         return self.unbatched_len
 
     @staticmethod
-    def unpack_data(data: Any) -> T:
+    def unpack_data(data: Any) -> tuple[T, T]:
         """
         Unpacks a single data into inputs and targets
 
