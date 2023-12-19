@@ -24,7 +24,7 @@ try:
 except:
     DEFAULT = CPU
     GPU = NotImplemented
-    GPUS: List[torch.device] = []
+    GPUS: list[torch.device] = []
 
 Module = TypeVar('Module', bound=torch.nn.Module)
 

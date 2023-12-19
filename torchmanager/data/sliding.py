@@ -46,3 +46,35 @@ def sliding_window(image: torch.Tensor, /, window_size: tuple[int, ...], stride:
         # Add the window to the list
         windows.append(window.unsqueeze(0))
     return torch.cat(windows)
+
+def reversed_sliding_window(windows: list[torch.Tensor], /, image_size: tuple[int, ...]) -> torch.Tensor:
+    """
+    Reverses the sliding window operation on input windows.
+
+    Parameters:
+        - windows: A list of `torch.Tensor` with shape [b, c, window_size].
+        - image_size: A `tuple` of the size of the original image without channel size in `int`.
+    Returns: A reconstructed image in `torch.Tensor` with shape [b, c, image_size].
+    """
+    # Get batch size, number of windows, and window shape
+    num_windows = len(windows)
+    batch_size, _, *window_shape = windows[0].size()
+
+    # Initialize the output tensor with zeros
+    output = torch.zeros((batch_size, *image_size), dtype=windows[0].dtype, device=windows[0].device)
+
+    # Calculate the step size along each dimension
+    step_sizes = [size // num_windows for size in image_size]
+
+    # Iterate through each window and place it in the corresponding position in the output tensor
+    for i in range(num_windows):
+        # Calculate the start and end indices for each dimension
+        start_indices = [i * step for i, step in zip(range(len(window_shape)), step_sizes)]
+        end_indices = [(i + 1) * step for i, step in zip(range(len(window_shape)), step_sizes)]
+
+        # Create slices for each dimension
+        slices = tuple(slice(start, end) for start, end in zip(start_indices, end_indices))
+
+        # Place the window in the corresponding position in the output tensor
+        output[:, :, slices] = windows[i]
+    return output
