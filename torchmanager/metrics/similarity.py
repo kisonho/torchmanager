@@ -1,6 +1,5 @@
 import torch.nn.functional as F
 from torchmanager_core import torch
-from torchmanager_core.typing import Any
 
 from .metric import Metric
 from .extractor import FeatureMetric
