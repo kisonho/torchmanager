@@ -26,7 +26,6 @@ class MeanIoU(Metric):
     The mIoU metric for segmentation
 
     * extends: `torch.nn.Module`
-    * [Deprecation Warning]: The old `MIoU` metric in v1.0.3 calculates iIoU has been renamed to `InstanceIoU` in v1.1.0, and will be removed in v1.2.0.
     """
     _dim: int
     _smooth: float
