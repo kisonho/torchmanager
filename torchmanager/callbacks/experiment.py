@@ -22,6 +22,7 @@ class Experiment(MultiCallbacks, Generic[T]):
         - last_ckpt: A `.ckpt.LastCheckpoint` callback that records the last checkpoint
         - tensorboard: A `.ckpt.TensorBoard` callback that records data to tensorboard
     """
+    best_ckpts: list[BestCheckpoint[T]]
     last_ckpt: LastCheckpoint[T]
     tensorboard: TensorBoard
 
@@ -58,8 +59,10 @@ class Experiment(MultiCallbacks, Generic[T]):
             best_ckpts.append(best_ckpt)
 
         # wrap callbacks
-        callbacks: list[Callback] = [last_ckpt, *best_ckpts, tensorboard]
-        super().__init__(*callbacks)
+        super().__init__(last_ckpt, *best_ckpts, tensorboard, num_workers=os.cpu_count())
+        self.best_ckpts = best_ckpts
+        self.last_ckpt = last_ckpt
+        self.tensorboard = tensorboard
 
         # initialize logging
         log_file = os.path.basename(experiment.replace(".exp", ".log"))

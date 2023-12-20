@@ -1,4 +1,4 @@
-from torchmanager_core import os, torch, _raise
+from torchmanager_core import torch, _raise
 from torchmanager_core.multiprocessing import Process
 from torchmanager_core.typing import Any, Callable, Iterator, Optional
 
@@ -18,7 +18,7 @@ class MultiCallbacks(Callback):
     callbacks_list: list[Callback]
     num_workers: Optional[int]
 
-    def __init__(self, *callbacks: Callback, num_workers: Optional[int] = os.cpu_count()) -> None:
+    def __init__(self, *callbacks: Callback, num_workers: Optional[int] = None) -> None:
         """
         Constructor
 
