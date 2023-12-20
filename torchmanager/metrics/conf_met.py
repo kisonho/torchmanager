@@ -129,8 +129,3 @@ class ConfusionMetrics(Metric, abc.ABC):
         mask = (target >= 0) & (target < self.num_classes)
         hist = torch.bincount(self.num_classes * target[mask].to(torch.int64) + input[mask], minlength=self.num_classes ** 2).reshape(self.num_classes, self.num_classes)
         return hist
-
-
-@deprecated('v1.2', 'v1.3')
-class Histogram(ConfusionMetrics):
-    pass
