@@ -75,14 +75,9 @@ class ExtractorScore(FeatureMetric[Module]):
 
     * Extends: `FeatureExtractorMetric`
     * Generic class of `Module`
-    * When forwarding this metric, `target` (real images) parameter is not required
     """
 
-    def __call__(self, input: Any, target: Any = None) -> torch.Tensor:
-        input_features = self.forward_features(input)
-        return super().__call__(input_features, target)
-
-    def forward(self, input: torch.Tensor, **kwargs: Any) -> torch.Tensor:
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         scores = input.softmax(1).mean(0)
         scores = scores * (scores / scores.mean()).log2()
         scores = torch.exp(scores.sum())
