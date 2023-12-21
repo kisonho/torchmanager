@@ -1,28 +1,29 @@
 # torchmanager
-### A highly-wrapped PyTorch training and testing manager
+### A generic deep learning training/testing framework for PyTorch
+To use this framework, simply initialize a `Manager` object. The `Manager` class provides a generic training/testing loop for PyTorch models. It also provides some useful callbacks to use during training/testing.
 
 ## Pre-request
 * Python 3.9+
 * PyTorch
 * tqdm
-* PyYAML (Optional)
-* scipy (Optional)
-* tensorboard (Optional)
+* PyYAML (Optional for yaml configs)
+* scipy (Optional for FID metric)
+* tensorboard (Optional for tensorboard recording)
 
 ## Installation
-* PyPi: `pip install torchmanager-nightly`
+* PyPi: `pip install --pre torchmanager`
 * Conda: `conda install -c kisonho torchmanager-nightly`
 
-## The Manager
-1. Start with configurations:
-```
+## Start from Configurations
+The `Configs` class is designed to be inherited to define necessary configurations. It also provides a method to get configurations from terminal arguments.
+
+```python
 from torchmanager.configs import Configs as _Configs
 
 # define necessary configurations
 class Configs(_Configs):
     epochs: int
     lr: float
-
     ...
 
     def get_arguments(parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup] = argparse.ArgumentParser()) -> Union[argparse.ArgumentParser, argparse._ArgumentGroup]:
@@ -36,8 +37,30 @@ class Configs(_Configs):
 configs = Configs.from_arguments()
 ```
 
-2. Initialize the manager with target model, optimizer, loss function, and metrics:
+## Torchmanager Dataset
+The `data.Dataset` class is designed to be inherited to define a dataset. It is a combination of `torch.utils.data.Dataset` and `torch.utils.data.DataLoader` with easier usage.
+
+```python
+from torchmanager.data import Dataset
+
+# define dataset
+class CustomDataset(Dataset):
+    def __init__(self, ...):
+        ...
+
+    @property
+    def unbatched_len(self) -> int:
+        ...
+
+    def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
+        ...
 ```
+
+## The Manager
+The `Manager` class is the core of the framework. It provides a generic training/testing loop for PyTorch models. The `Manager` class is designed to be inherited to manage the training/testing algorithm. There are also some useful callbacks to use during training/testing.
+
+1. Initialize the manager with target model, optimizer, loss function, and metrics:
+```python
 import torch, torchmanager
 
 # define model
@@ -54,8 +77,8 @@ metrics = {'accuracy': torchmanager.metrics.SparseCategoricalAccuracy()}
 manager = torchmanager.Manager(model, optimizer, loss_fn=loss_fn, metrics=metrics)
 ```
 
-3. Train the model with fit method:
-```
+2. Train the model with fit method:
+```python
 from torchmanager.data import Dataset
 
 # get datasets
@@ -67,7 +90,7 @@ manager.fit(training_dataset, epochs=configs.epochs, val_dataset=val_dataset)
 ```
 
 - There are also some other callbacks to use:
-```
+```python
 ...
 
 tensorboard_callback = torchmanager.callbacks.TensorBoard('logs') # tensorboard dependency required
@@ -76,15 +99,15 @@ model = manager.fit(..., callbacks_list=[tensorboard_callback, last_ckpt_callbac
 ```
 
 - Or use `callbacks.Experiment` to handle both `callbacks.TensorBoard` and `callbacks.LastCheckpoint`:
-```
+```python
 ...
 
 exp_callback = torchmanager.callbacks.Experiment('test.exp', manager) # tensorboard dependency required
 model = manager.fit(..., callbacks_list=[exp_callback])
 ```
 
-4. Test the model with test method:
-```
+3. Test the model with test method:
+```python
 # get dataset
 testing_dataset: Dataset = ...
 
@@ -92,55 +115,36 @@ testing_dataset: Dataset = ...
 manager.test(testing_dataset)
 ```
 
-5. Save final model in PyTorch format:
-```
+4. Save final model in PyTorch format:
+```python
 torch.save(model, "model.pth")
 ```
 
-## Custom your training loop by overriding
-1. Create your own manager class by extending the `Manager` class:
-```
+## Customize training/testing algorithm
+The `Manager` class is designed to be inherited to manage the training/testing algorithm. To customize the training/testing algorithm, simply inherit the `Manager` class and override the `train_step` and `test_step` methods.
+
+1. Create a custom manager class by inheriting the `Manager` class:
+```python
 ...
 
 class CustomManager(Manager):
     ...
 ```
 
-2. Override the `train_step` method:
-```
+2. Override the `train_step` method for training algorithm:
+```python
 class CustomManager(Manager):
     ...
-    
+
     def train_step(x_train: torch.Tensor, y_train: torch.Tensor) -> Dict[str, float]:
         ...
 ```
 
-3. Compile customized manager
-```
-model = ...
-optimizer = ...
-loss_fn = ...
-metrics = ...
-manager = CustomManager(model, optimizer, loss_fn=loss_fn, metrics=metrics)
-```
-
-## Custom your training loop by wrapper function
-1. Compile the manager
-```
-model = ...
-optimizer = ...
-loss_fn = ...
-metrics = ...
-manager = torchmanager.Manager(model, optimizer, loss_fn=loss_fn, metrics=metrics)
-```
-
-2. Add wrapper functions
-```
-@manager.forward_fn
-def forward_wrapper(input: Any, target: Optional[Any]) -> tuple[Any, Optional[torch.Tensor]]:
+3. Override the `test_step` method for testing algorithm:
+```python
+class CustomManager(Manager):
     ...
 
-@manager.backward_fn
-def backward_wrapper(loss: torch.Tensor) -> None:
-    ...
+    def test_step(x_test: torch.Tensor, y_test: torch.Tensor) -> Dict[str, float]:
+        ...
 ```

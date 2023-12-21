@@ -170,10 +170,11 @@ class BaseManager(Generic[Module]):
         - Returns: A `bool` flag of if use multi GPUs
         """
         # multi gpus support for loss
-        assert isinstance(self.raw_loss_fn, Loss), errors._raise(TypeError("The loss function is not a valid `Loss` object."))
-        paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.raw_loss_fn, devices=target_devices, parallel_type=ParallelLoss)
-        assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), errors._raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
-        self.loss_fn = paralleled_loss_fn
+        if self.loss_fn is not None:
+            assert isinstance(self.raw_loss_fn, Loss), errors._raise(TypeError("The loss function is not a valid `Loss` object."))
+            paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.raw_loss_fn, devices=target_devices, parallel_type=ParallelLoss)
+            assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), errors._raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
+            self.loss_fn = paralleled_loss_fn
 
         # multi gpus support for model
         self.model, use_multi_gpus = devices.data_parallel(self.raw_model, devices=target_devices)
@@ -219,6 +220,10 @@ class BaseManager(Generic[Module]):
 
         # convert to current version
         manager.convert()
+
+        # reset if map location is given
+        if map_location is not None:
+            manager.reset(map_location)
         return manager
 
     def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> None:

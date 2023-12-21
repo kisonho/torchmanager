@@ -26,7 +26,7 @@ class Metric(torch.nn.Module):
             try:
                 return torch.cat(self._results).mean()
             except:
-                results = [r.mean() * r.shape[0] for r in self._results]
+                results = [r.mean().unsqueeze(0) * r.shape[0] for r in self._results]
                 num_results = sum(r.shape[0] for r in self._results)
                 return torch.cat(results).sum() / num_results
         else:

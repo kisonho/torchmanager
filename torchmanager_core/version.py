@@ -47,6 +47,16 @@ class PreRelease(Enum):
 
 
 class Version:
+    """
+    The version class
+
+    - Properties:
+        - main_version: An `int` of the main version
+        - minor_version: An `int` of the minor version
+        - pre_release: An optional `PreRelease` of the pre-release version
+        - pre_release_version: An `int` of the pre-release version
+        - sub_version: An `int` of the sub version
+    """
     main_version: int
     minor_version: int
     pre_release: Optional[PreRelease]
@@ -57,6 +67,7 @@ class Version:
         try:
             # convert to string
             version_str = str(v)
+            version_str = version_str.split('+')[0]
 
             # format version
             if version_str.startswith('v'):
