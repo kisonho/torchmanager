@@ -55,6 +55,11 @@ class CustomDataset(Dataset):
 
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
         ...
+
+# initialize datasets
+training_dataset = CustomDataset(...)
+val_dataset = CustomDataset(...)
+testing_dataset = CustomDataset(...)
 ```
 
 ## The Manager
@@ -80,20 +85,11 @@ manager = torchmanager.Manager(model, optimizer, loss_fn=loss_fn, metrics=metric
 
 2. Train the model with fit method:
 ```python
-from torchmanager.data import Dataset
-
-# get datasets
-training_dataset: Dataset = ...
-val_dataset: Dataset = ...
-
-# train with fit method
 manager.fit(training_dataset, epochs=configs.epochs, val_dataset=val_dataset)
 ```
 
 - There are also some other callbacks to use:
 ```python
-...
-
 tensorboard_callback = torchmanager.callbacks.TensorBoard('logs') # tensorboard dependency required
 last_ckpt_callback = torchmanager.callbacks.LastCheckpoint(manager, 'last.model')
 model = manager.fit(..., callbacks_list=[tensorboard_callback, last_ckpt_callback])
@@ -109,14 +105,10 @@ model = manager.fit(..., callbacks_list=[exp_callback])
 
 3. Test the model with test method:
 ```python
-# get dataset
-testing_dataset: Dataset = ...
-
-# test with test method
 manager.test(testing_dataset)
 ```
 
-4. Save final model in PyTorch format:
+4. Save the final trained PyTorch model:
 ```python
 torch.save(model, "model.pth")
 ```
