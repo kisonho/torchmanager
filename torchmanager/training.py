@@ -2,7 +2,7 @@ from torch.utils.data import DataLoader
 from torchmanager_core import devices, errors, math, os, torch, view, _raise
 from torchmanager_core.checkpoint import Checkpoint
 from torchmanager_core.protocols import Resulting
-from torchmanager_core.typing import Any, Collection, Module, Optional, Self, Union
+from torchmanager_core.typing import Any, Collection, Module, Optional, Self, Union, overload
 
 from .callbacks import Callback, MultiCallbacks, ProgressBar
 from .data import Dataset
@@ -116,6 +116,10 @@ class Manager(_Manager[Module]):
             - loss: A `torch.Tensor` of loss value
         """
         loss.backward()
+
+    @overload
+    def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, epochs: Optional[int] = None, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any], Collection]] = None, callbacks_list: list[Callback] = [], *, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, device: Optional[Union[torch.device, list[torch.device]]] = None, num_workers: Optional[int] = os.cpu_count(), use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, **kwargs) -> Module:
+        ...
 
     def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, epochs: Optional[int] = None, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any], Collection]] = None, callbacks_list: list[Callback] = [], *, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, return_summary: bool = False, device: Optional[Union[torch.device, list[torch.device]]] = None, num_workers: Optional[int] = os.cpu_count(), use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, **kwargs) -> Union[Module, tuple[Module, dict[str, float]]]:
         """

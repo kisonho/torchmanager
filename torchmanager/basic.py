@@ -43,7 +43,6 @@ class BaseManager(Generic[Module]):
         - raw_model: A non-paralleled target `torch.nn.Module` model
     """
     # properties
-    __raw_model: Module
     loss_fn: Optional[Resulting]
     """The optional main loss function in `Resulting`"""
     metric_fns: dict[str, Resulting]
@@ -73,10 +72,7 @@ class BaseManager(Generic[Module]):
     @property
     def raw_model(self) -> Module:
         """The `Module` controlled by this manager without `torch.nn.DataParallel` wrap"""
-        try:
-            return self.__raw_model
-        except AttributeError:
-            return self.model.module if isinstance(self.model, torch.nn.DataParallel) else self.model  # type: ignore
+        return self.model.module if isinstance(self.model, torch.nn.DataParallel) else self.model  # type: ignore
 
     def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, dict[str, Loss]]] = None, metrics: dict[str, Metric] = {}) -> None:
         """
@@ -107,17 +103,6 @@ class BaseManager(Generic[Module]):
 
         # initialize optimizer
         self.optimizer = optimizer
-
-    def __enter__(self) -> Self:
-        try:
-            self.model = torch.compile(self.model)
-        except:
-            view.warnings.warn("The model cannot be compiled, please check if PyTorch version is greater or equal than 2.0.")
-            self.model = self.__raw_model
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        self.model = self.__raw_model
 
     @deprecated('v1.3', 'v1.4')
     def _compile(self, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, dict[str, Loss]]] = None, metrics: dict[str, Metric] = {}) -> None:

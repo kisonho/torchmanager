@@ -9,6 +9,12 @@ class _JSON:
 
 
 class JSONConfigs(Configs, abc.ABC):
+    """
+    A `Configs` class that can be loaded from a JSON file
+
+    * extend: `Configs`
+    * Abstract class
+    """
     @staticmethod
     def format_json(json_dict: dict[str, Any]) -> dict[str, Any]:
         """

@@ -9,6 +9,12 @@ class _YAML:
 
 
 class YAMLConfigs(Configs, abc.ABC):
+    """
+    A `Configs` class that can be loaded from a YAML file
+
+    * extend: `Configs`
+    * Abstract class
+    """
     @staticmethod
     def format_yaml(yaml_dict: dict[str, Any]) -> dict[str, Any]:
         """
