@@ -1,6 +1,5 @@
 from itertools import product
 
-from numpy import isin
 from torchmanager_core import torch, _raise
 from torchmanager_core.typing import Union
 

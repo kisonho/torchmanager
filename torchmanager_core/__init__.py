@@ -11,6 +11,3 @@ try:
 except ImportError:
     view.warnings.warn("Module tensorboard is not installed.", ImportWarning)
     tensorboard = NotImplemented
-
-if Version(platform.python_version()) < "v3.9":
-    view.warnings.warn("Torchmanager will no longer support Python 3.8 from v1.3.", PendingDeprecationWarning)
