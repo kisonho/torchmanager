@@ -59,9 +59,13 @@ class Test0103(TestCase):
         self.assertGreaterEqual(API_VERSION, "1.3")
 
     def test_wrapped_fn(self) -> None:
-        from torchmanager.losses import loss, loss_fn
-        from torchmanager.metrics import metric, metric_fn
+        from torchmanager.losses import Loss, loss, loss_fn
+        from torchmanager.metrics import Metric, metric, metric_fn
         from torchmanager_core.protocols import WrappedFn
+
+        # check non-wrapped loss
+        non_wrapped_loss = Loss(lambda a, b: torch.mean(a - b))
+        self.assertNotIsInstance(non_wrapped_loss, WrappedFn, "Non-wrapped function is a `WrappedFn`.")
 
         # check loss wrapper
         @loss
@@ -74,6 +78,10 @@ class Test0103(TestCase):
         def some_loss_fn(input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
             return torch.mean(input - target)
         self.assertIsInstance(some_loss_fn, WrappedFn, "Wrapped function is not a `WrappedFn`.")
+
+        # check non-wrapped metric
+        non_wrapped_metric = Metric(lambda a, b: torch.mean(a - b))
+        self.assertNotIsInstance(non_wrapped_metric, WrappedFn, "Non-wrapped function is a `WrappedFn`.")
 
         # check metric wrapper
         @metric

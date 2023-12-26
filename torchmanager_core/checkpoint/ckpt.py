@@ -133,7 +133,6 @@ class Checkpoint(Generic[T]):
 
             # check if loss in container is wrapped
             if isinstance(loss_fn, WrappedFn):
-                view.warnings.warn("Loss function is wrapped and is not supported by checkpoint, use `losses.Loss` instead.")
                 ckpt["model"].loss_fn = None
 
             # initialize metrics
@@ -143,7 +142,6 @@ class Checkpoint(Generic[T]):
             # check if full metrics contains wrapped function
             for name, metric in full_metrics.items():
                 if isinstance(metric, WrappedFn):
-                    view.warnings.warn(f"Metric {name} is wrapped and is not supported by checkpoint, use `metrics.Metric` instead.")
                     continue
                 else:
                     supported_metrics[name] = metric
