@@ -1,6 +1,6 @@
 import torch
 import warnings
-from typing import Any, Iterable, Optional, Type, TypeVar, Union
+from typing import Any, Iterable, Optional, Type, TypeVar, Union, overload
 
 from .protocols import DeviceMovable
 
@@ -27,6 +27,16 @@ except:
     GPUS: list[torch.device] = []
 
 Module = TypeVar('Module', bound=torch.nn.Module)
+
+
+@overload
+def data_parallel(raw_model: torch.nn.parallel.DataParallel, /, devices: list[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type = torch.nn.parallel.DataParallel) -> tuple[torch.nn.parallel.DataParallel, bool]:
+    ...
+
+
+@overload
+def data_parallel(raw_model: Module, /, devices: list[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type = torch.nn.parallel.DataParallel) -> tuple[Union[Module, torch.nn.parallel.DataParallel], bool]:
+    ...
 
 
 def data_parallel(raw_model: Module, /, devices: list[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type = torch.nn.parallel.DataParallel) -> tuple[Union[Module, torch.nn.parallel.DataParallel], bool]:
@@ -90,6 +100,21 @@ def search(specified: Optional[Union[torch.device, list[torch.device]]] = None) 
     else:
         raise SystemError("Specified device list must not be empty")
     return CPU, device, specified
+
+
+@overload
+def move_to_device(target: DeviceMovable, /, device: torch.device, *, recursive: bool = False) -> DeviceMovable:
+    ...
+
+
+@overload
+def move_to_device(target: dict[str, Union[DeviceMovable, Any]], /, device: torch.device, *, recursive: bool = False) -> dict[str, Union[DeviceMovable, Any]]:
+    ...
+
+
+@overload
+def move_to_device(target: list[Union[DeviceMovable, Any]], /, device: torch.device, *, recursive: bool = False) -> list[Union[DeviceMovable, Any]]:
+    ...
 
 
 def move_to_device(target: Union[DeviceMovable,  dict[str, Union[DeviceMovable,  Any]], list[Union[DeviceMovable,  Any]]], /, device: torch.device, *, recursive: bool = False) -> Union[DeviceMovable,  dict[str, Union[DeviceMovable,  Any]], list[Union[DeviceMovable,  Any]]]:

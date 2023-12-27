@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader
 from torchmanager_core import devices, errors, torch, view
 from torchmanager_core.protocols import Resulting
-from torchmanager_core.typing import Any, Callable, Collection, Module, Optional, Union
+from torchmanager_core.typing import Any, Collection, Module, Optional, Union, overload
 
 from .basic import BaseManager
 from .data import Dataset
@@ -117,7 +117,7 @@ class Manager(BaseManager[Module]):
                 x, _ = self.unpack_data(data)
                 if use_multi_gpus is not True:
                     x = devices.move_to_device(x, device)
-                y, _ = self.forward(x, None)
+                y, _ = self.forward(x)
                 predictions.append(y)
                 if progress_bar is not None:
                     progress_bar.update()

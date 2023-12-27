@@ -1,5 +1,6 @@
 import functools
 
+from .errors import VersionError
 from .typing import Any, Enum, Optional
 from .view import warnings
 
@@ -97,17 +98,6 @@ class Version:
         except Exception as e:
             raise ValueError(f"The given version '{v}' is not in valid version format.") from e
 
-    def __repr__(self) -> str:
-        version_str = f"v{self.main_version}"
-        if self.minor_version > 0 or self.sub_version > 0:
-            version_str += f".{self.minor_version}"
-        if self.sub_version > 0:
-            version_str += f".{self.sub_version}"
-        if self.pre_release is not None:
-            pre_release_version = self.pre_release_version if self.pre_release_version > 0 else ""
-            version_str += f"{self.pre_release.value}{pre_release_version}"
-        return version_str
-
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, Version):
             return self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and self.pre_release == other.pre_release and self.pre_release_version == other.pre_release_version
@@ -115,23 +105,8 @@ class Version:
             other = Version(str(other))
             return self.__eq__(other)
 
-    def __lt__(self, other: Any) -> bool:
-        # convert to version
-        if not isinstance(other, Version):
-            other = Version(str(other))
-
-        # check version
-        if self.main_version < other.main_version:
-            return True
-        elif self.main_version == other.main_version and self.minor_version < other.minor_version:
-                return True
-        elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version < other.sub_version:
-            return True
-        elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and self.pre_release is not None and other.pre_release is not None:
-            return self.pre_release < other.pre_release or (self.pre_release == other.pre_release and self.pre_release_version < other.pre_release_version)
-        elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and self.pre_release is not None:
-            return True
-        return False
+    def __ge__(self, other: Any) -> bool:
+        return self == other or self > other
 
     def __gt__(self, other: Any) -> bool:
         # convert to version
@@ -154,18 +129,42 @@ class Version:
     def __le__(self, other: Any) -> bool:
         return self == other or self < other
 
-    def __ge__(self, other: Any) -> bool:
-        return self == other or self > other
+    def __lt__(self, other: Any) -> bool:
+        # convert to version
+        if not isinstance(other, Version):
+            other = Version(str(other))
+
+        # check version
+        if self.main_version < other.main_version:
+            return True
+        elif self.main_version == other.main_version and self.minor_version < other.minor_version:
+                return True
+        elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version < other.sub_version:
+            return True
+        elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and self.pre_release is not None and other.pre_release is not None:
+            return self.pre_release < other.pre_release or (self.pre_release == other.pre_release and self.pre_release_version < other.pre_release_version)
+        elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and self.pre_release is not None:
+            return True
+        return False
+
+    def __repr__(self) -> str:
+        version_str = f"v{self.main_version}"
+        if self.minor_version > 0 or self.sub_version > 0:
+            version_str += f".{self.minor_version}"
+        if self.sub_version > 0:
+            version_str += f".{self.sub_version}"
+        if self.pre_release is not None:
+            pre_release_version = self.pre_release_version if self.pre_release_version > 0 else ""
+            version_str += f"{self.pre_release.value}{pre_release_version}"
+        return version_str
+    
+    def __str__(self) -> str:
+        return self.__repr__()
 
 
 API = Version("v1.3")
-CURRENT = Version("v1.3a8")
+CURRENT = Version("v1.3a9")
 DESCRIPTION: str = f"PyTorch Training Manager {CURRENT}"
-
-
-class VersionError(SystemError):
-    def __init__(self, method_name: str, maximum_supported_version: str) -> None:
-        super().__init__(f"`{method_name}` has been deprecated and removed from version {maximum_supported_version}. Current version: {CURRENT}.")
 
 
 def deprecated(target_version: Any, removing_version: Any):
@@ -185,7 +184,7 @@ def deprecated(target_version: Any, removing_version: Any):
         @functools.wraps(fn)
         def deprecated_fn(*args, **kwargs):
             if CURRENT >= removing_version:
-                raise VersionError(fn.__name__, removing_version)
+                raise VersionError(fn.__name__, removing_version, str(CURRENT))
             elif CURRENT >= target_version:
                 warnings.warn(f"{fn.__name__} has been deprecated from {target_version} and will be removed from {removing_version}", DeprecationWarning)
             else:

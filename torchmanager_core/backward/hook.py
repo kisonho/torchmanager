@@ -1,5 +1,5 @@
 import torch
-from typing import Callable, Union
+from typing import Callable, Union, overload
 
 from .protocols import Removable
 
@@ -24,6 +24,16 @@ def add_gard_clip(model: torch.nn.Module, /, min_value: float, max_value: float,
         hook_handler = param.register_hook(grad_clip_fn)
         handlers.append(hook_handler)
     return handlers
+
+
+@overload
+def backward_hook(model: torch.nn.Module, /, hook: Callable[[torch.Tensor], torch.Tensor], *, as_decorator: bool = True) -> Callable[[torch.Tensor], torch.Tensor]:
+    ...
+
+
+@overload
+def backward_hook(model: torch.nn.Module, /, hook: Callable[[torch.Tensor], torch.Tensor], *, as_decorator: bool = False) -> list[Removable]:
+    ...
 
 
 def backward_hook(model: torch.nn.Module, /, hook: Callable[[torch.Tensor], torch.Tensor], *, as_decorator: bool = True) -> Union[Callable[[torch.Tensor], torch.Tensor], list[Removable]]:
