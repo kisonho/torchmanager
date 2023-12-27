@@ -1,4 +1,5 @@
 import torch, torchmanager, torchmanager_core
+from torchmanager.losses.loss import loss_fn
 from torchmanager_core import Version, API_VERSION
 from unittest import TestCase
 
