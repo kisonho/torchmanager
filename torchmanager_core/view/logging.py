@@ -11,7 +11,6 @@ def set_log_path(log_path: str) -> Formatter:
         - log_path: A `str` of log file path
     - Returns: A `logging.Formatter` of log formatter with the log path
     """
-
     logger.handlers.clear()
     logger.setLevel(INFO)
     file_handler = FileHandler(log_path)

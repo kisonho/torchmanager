@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader
 from torchmanager_core import devices, errors, torch, view
 from torchmanager_core.protocols import Resulting
-from torchmanager_core.typing import Any, Collection, Module, Optional, Union, overload
+from torchmanager_core.typing import Any, Collection, Module, Optional, Union
 
 from .basic import BaseManager
 from .data import Dataset
