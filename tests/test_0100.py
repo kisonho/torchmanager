@@ -1,10 +1,19 @@
 import torch
-from torchmanager import metrics
-from torchmanager_core import errors, Version
+from torchmanager import metrics, Manager
 from unittest import TestCase
 
 
 class Test0100(TestCase):
+    def test_manager(self) -> None:
+        # initialize model
+        model = torch.nn.Sequential(torch.nn.Linear(16, 16))
+
+        # initialize manager
+        manager = Manager(model)
+
+        # test manager
+        self.assertIsInstance(manager, Manager)
+
     def test_metrics(self) -> None:
         # initialize
         metric_fn = metrics.Accuracy()
@@ -18,6 +27,6 @@ class Test0100(TestCase):
 
     def test_py_version(self) -> None:
         import platform
-
-        py_version = Version(platform.python_version())
-        self.assertGreaterEqual(py_version, "3.8")
+        major, minor, _ = platform.python_version_tuple()
+        self.assertGreaterEqual(int(major), 3)
+        self.assertGreaterEqual(int(minor), 8)
