@@ -146,7 +146,7 @@ class CustomManager(Manager):
 ```bibtex
 @software{he_2023_10381715,
   author       = {He, Qisheng and
-                  Ming, Dong},
+                  Dong, Ming},
   title        = {{TorchManager: A generic deep learning 
                    training/testing framework for PyTorch}},
   month        = dec,
