@@ -1,5 +1,5 @@
 from torchmanager_core import argparse, abc, os, shutil, torch, view, _raise
-from torchmanager_core.typing import Any, Optional, Union
+from torchmanager_core.typing import Optional, Union, overload
 from torchmanager_core import DESCRIPTION
 
 
@@ -72,6 +72,16 @@ class Configs(argparse.Namespace, abc.ABC):
                 view.logger.info(f"{configs.comments}")
             view.logger.info("--------------------------------")
         return configs
+
+    @overload
+    @staticmethod
+    def get_arguments(parser: argparse.ArgumentParser = argparse.ArgumentParser()) -> argparse.ArgumentParser:
+        ...
+
+    @overload
+    @staticmethod
+    def get_arguments(parser: argparse._ArgumentGroup) -> argparse._ArgumentGroup:
+        ...
 
     @staticmethod
     def get_arguments(parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup] = argparse.ArgumentParser()) -> Union[argparse.ArgumentParser, argparse._ArgumentGroup]:
