@@ -8,5 +8,5 @@ authors:
 title: "TorchManager: A generic deep learning training/testing framework for PyTorch"
 version: 1
 doi: 10.5281/zenodo.10381715
-date-released: 2020-02-22
+date-released: 2022-02-22
 url: "https://github.com/github-linguist/linguist"
