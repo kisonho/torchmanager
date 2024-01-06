@@ -125,3 +125,32 @@ class Version:
 
     def __le__(self, other: Any) -> bool:
         return self == other or self < other
+
+    def __lt__(self, other: Any) -> bool:
+        # convert to version
+        if not isinstance(other, Version):
+            other = Version(str(other))
+
+        # check version
+        if self.main_version < other.main_version:
+            return True
+        elif self.main_version == other.main_version and self.minor_version < other.minor_version:
+                return True
+        elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version < other.sub_version:
+            return True
+        elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and self.pre_release is not None and other.pre_release is not None:
+            return self.pre_release < other.pre_release or (self.pre_release == other.pre_release and self.pre_release_version < other.pre_release_version)
+        elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and self.pre_release is not None:
+            return True
+        return False
+
+    def __repr__(self) -> str:
+        version_str = f"v{self.main_version}"
+        if self.minor_version > 0 or self.sub_version > 0:
+            version_str += f".{self.minor_version}"
+        if self.sub_version > 0:
+            version_str += f".{self.sub_version}"
+        if self.pre_release is not None:
+            pre_release_version = self.pre_release_version if self.pre_release_version > 0 else ""
+            version_str += f"{self.pre_release.value}{pre_release_version}"
+        return version_str
