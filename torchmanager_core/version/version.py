@@ -1,7 +1,5 @@
-import functools
-
-from .typing import Any, Enum, Optional
-from .view import warnings
+from enum import Enum
+from typing import Any, Optional
 
 
 class PreRelease(Enum):
@@ -156,40 +154,3 @@ class Version:
 
     def __ge__(self, other: Any) -> bool:
         return self == other or self > other
-
-
-API = Version("v1.2")
-CURRENT = Version("v1.2.2")
-DESCRIPTION: str = f"PyTorch Training Manager {CURRENT}"
-
-
-class VersionError(SystemError):
-    def __init__(self, method_name: str, maximum_supported_version: str) -> None:
-        super().__init__(f"`{method_name}` has been deprecated and removed from version {maximum_supported_version}. Current version: {CURRENT}.")
-
-
-def deprecated(target_version: Any, removing_version: Any):
-    '''
-    Deprecated decorator function
-
-    - Parameters:
-        - target_version: `Any` type of version for the deprecation
-        - removing_version: `Any` type of version for removing
-    '''
-    # format versions
-    target_version = Version(target_version)
-    removing_version = Version(removing_version)
-
-    # define wrapping function
-    def wrapping_fn(fn):
-        @functools.wraps(fn)
-        def deprecated_fn(*args, **kwargs):
-            if CURRENT >= removing_version:
-                raise VersionError(fn.__name__, removing_version)
-            elif CURRENT >= target_version:
-                warnings.warn(f"{fn.__name__} has been deprecated from {target_version} and will be removed from {removing_version}", DeprecationWarning)
-            else:
-                warnings.warn(f"{fn} will be deprecated from {target_version} and removed from {removing_version}", PendingDeprecationWarning)
-            return fn(*args, **kwargs)
-        return deprecated_fn
-    return wrapping_fn
