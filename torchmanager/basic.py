@@ -85,9 +85,8 @@ class BaseManager(Generic[Module]):
             - optimizer: An optional `torch.optim.Optimizer` to train the model
         """
         # initialize
-        self.__raw_model = model
         self.metric_fns = {}
-        self.model = self.raw_model
+        self.model = model
         self.version = CURRENT_VERSION
 
         # initialize loss
