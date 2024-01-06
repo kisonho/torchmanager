@@ -1,5 +1,5 @@
 from torchmanager_core import argparse, abc, errors, os, shutil, torch, view, _raise
-from torchmanager_core.typing import Optional, Union
+from torchmanager_core.typing import Optional, Union, overload
 from torchmanager_core import DESCRIPTION
 
 
@@ -96,6 +96,16 @@ class Configs(argparse.Namespace, abc.ABC):
         cfg = torch.load(cfg_path)
         assert isinstance(cfg, Configs), _raise(TypeError(f"Saved object at path {cfg_path} is not a valid `Configs`."))
         return cfg
+
+    @overload
+    @staticmethod
+    def get_arguments(parser: argparse.ArgumentParser = argparse.ArgumentParser()) -> argparse.ArgumentParser:
+        ...
+
+    @overload
+    @staticmethod
+    def get_arguments(parser: argparse._ArgumentGroup) -> argparse._ArgumentGroup:
+        ...
 
     @staticmethod
     def get_arguments(parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup] = argparse.ArgumentParser()) -> Union[argparse.ArgumentParser, argparse._ArgumentGroup]:

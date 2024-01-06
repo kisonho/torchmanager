@@ -1,8 +1,5 @@
-import functools
-
-from .errors import VersionError
-from .typing import Any, Enum, Optional
-from .view import warnings
+from enum import Enum
+from typing import Any, Optional
 
 
 class PreRelease(Enum):
@@ -128,67 +125,3 @@ class Version:
 
     def __le__(self, other: Any) -> bool:
         return self == other or self < other
-
-    def __lt__(self, other: Any) -> bool:
-        # convert to version
-        if not isinstance(other, Version):
-            other = Version(str(other))
-
-        # check version
-        if self.main_version < other.main_version:
-            return True
-        elif self.main_version == other.main_version and self.minor_version < other.minor_version:
-                return True
-        elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version < other.sub_version:
-            return True
-        elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and self.pre_release is not None and other.pre_release is not None:
-            return self.pre_release < other.pre_release or (self.pre_release == other.pre_release and self.pre_release_version < other.pre_release_version)
-        elif self.main_version == other.main_version and self.minor_version == other.minor_version and self.sub_version == other.sub_version and self.pre_release is not None:
-            return True
-        return False
-
-    def __repr__(self) -> str:
-        version_str = f"v{self.main_version}"
-        if self.minor_version > 0 or self.sub_version > 0:
-            version_str += f".{self.minor_version}"
-        if self.sub_version > 0:
-            version_str += f".{self.sub_version}"
-        if self.pre_release is not None:
-            pre_release_version = self.pre_release_version if self.pre_release_version > 0 else ""
-            version_str += f"{self.pre_release.value}{pre_release_version}"
-        return version_str
-    
-    def __str__(self) -> str:
-        return self.__repr__()
-
-
-API = Version("v1.3")
-CURRENT = Version("v1.3a9")
-DESCRIPTION: str = f"PyTorch Training Manager {CURRENT}"
-
-
-def deprecated(target_version: Any, removing_version: Any):
-    '''
-    Deprecated decorator function
-
-    - Parameters:
-        - target_version: `Any` type of version for the deprecation
-        - removing_version: `Any` type of version for removing
-    '''
-    # format versions
-    target_version = Version(target_version)
-    removing_version = Version(removing_version)
-
-    # define wrapping function
-    def wrapping_fn(fn):
-        @functools.wraps(fn)
-        def deprecated_fn(*args, **kwargs):
-            if CURRENT >= removing_version:
-                raise VersionError(fn.__name__, removing_version, str(CURRENT))
-            elif CURRENT >= target_version:
-                warnings.warn(f"{fn.__name__} has been deprecated from {target_version} and will be removed from {removing_version}", DeprecationWarning)
-            else:
-                warnings.warn(f"{fn} will be deprecated from {target_version} and removed from {removing_version}", PendingDeprecationWarning)
-            return fn(*args, **kwargs)
-        return deprecated_fn
-    return wrapping_fn

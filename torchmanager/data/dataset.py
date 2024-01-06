@@ -91,7 +91,7 @@ class Dataset(_Dataset[T], abc.ABC):
             cpu_count = os.cpu_count()
             self.num_workers = 0 if cpu_count is None else cpu_count
         else:
-            self.num_workers = self.num_workers
+            self.num_workers = num_workers
 
     def __contains__(self, value: Any) -> bool:
         for i in range(len(self)):

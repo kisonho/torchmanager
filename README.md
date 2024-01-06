@@ -140,3 +140,19 @@ class CustomManager(Manager):
     def test_step(x_test: torch.Tensor, y_test: torch.Tensor) -> Dict[str, float]:
         ...
 ```
+
+## Please cite this work if you find it useful
+```bibtex
+@software{he_2023_10381715,
+  author       = {He, Qisheng and
+                  Dong, Ming},
+  title        = {{TorchManager: A generic deep learning 
+                   training/testing framework for PyTorch}},
+  month        = dec,
+  year         = 2023,
+  publisher    = {Zenodo},
+  version      = 1,
+  doi          = {10.5281/zenodo.10381715},
+  url          = {https://doi.org/10.5281/zenodo.10381715}
+}
+```

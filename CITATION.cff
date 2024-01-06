@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this framework, please cite it as below."
+authors:
+- family-names: "He"
+  given-names: "Qisheng"
+- family-names: "Dong"
+  given-names: "Ming"
+title: "TorchManager: A generic deep learning training/testing framework for PyTorch"
+version: 1
+doi: 10.5281/zenodo.10381715
+date-released: 2022-02-22
+url: "https://github.com/github-linguist/linguist"
