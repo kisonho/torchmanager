@@ -5,7 +5,7 @@ from .details import CURRENT
 from .errors import VersionError
 from .version import Version
 
-def deprecated(target_version: Any, removing_version: Any, *, current_version: Any = CURRENT):
+def deprecated(target_version: Any, removing_version: Any):
     '''
     Deprecated decorator function
 
@@ -16,7 +16,7 @@ def deprecated(target_version: Any, removing_version: Any, *, current_version: A
     # format versions
     target_version = Version(target_version)
     removing_version = Version(removing_version)
-    current_version = Version(current_version)
+    current_version = Version(CURRENT)
 
     # define wrapping function
     def wrapping_fn(fn):
