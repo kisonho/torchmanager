@@ -23,12 +23,7 @@ class Metric(torch.nn.Module):
     @property
     def result(self) -> torch.Tensor:
         if len(self._results) > 0:
-            try:
-                return torch.cat(self._results).mean()
-            except:
-                results = [r.mean().unsqueeze(0) * r.shape[0] for r in self._results]
-                num_results = sum(r.shape[0] for r in self._results)
-                return torch.cat(results).sum() / num_results
+            return torch.cat(self._results).mean()
         else:
             return torch.tensor(torch.nan)
 
