@@ -24,7 +24,7 @@ tensorboard = { version = "*" }
 yaml = ["PyYAML"]
 scipy = ["scipy"]
 tensorboard = ["tensorboard"]
-all = ["yaml", "scipy", "tensorboard"]
+all = ["PyYAML", "scipy", "tensorboard"]
 
 [build-system]
 requires = ["poetry-core"]
