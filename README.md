@@ -94,7 +94,8 @@ loss_fn = {
 
 2. Train the model with `fit`` method:
 ```python
-manager.fit(training_dataset, epochs=configs.epochs, val_dataset=val_dataset)
+show_verbose: bool = ... # show progress bar information during training/testing
+manager.fit(training_dataset, epochs=configs.epochs, val_dataset=val_dataset, show_verbose=show_verbose)
 ```
 
 - There are also some other callbacks to use:
@@ -104,22 +105,14 @@ last_ckpt_callback = torchmanager.callbacks.LastCheckpoint(manager, 'last.model'
 model = manager.fit(..., callbacks_list=[tensorboard_callback, last_ckpt_callback])
 ```
 
-- Or use `callbacks.Experiment` to handle both `callbacks.TensorBoard` and `callbacks.LastCheckpoint`:
-```python
-...
-
-exp_callback = torchmanager.callbacks.Experiment('test.exp', manager) # tensorboard dependency required
-model = manager.fit(..., callbacks_list=[exp_callback])
-```
-
 3. Test the model with test method:
 ```python
-manager.test(testing_dataset)
+manager.test(testing_dataset, show_verbose=show_verbose)
 ```
 
 4. Save the final trained PyTorch model:
 ```python
-torch.save(model, "model.pth")
+torch.save(model, "model.pth") # The saved PyTorch model can be loaded individually without using torchmanager
 ```
 
 ## Device selection during training/testing
@@ -157,6 +150,27 @@ class CustomManager(Manager):
 
     def test_step(x_test: torch.Tensor, y_test: torch.Tensor) -> Dict[str, float]:
         ...
+```
+
+## The saved experiment information
+The `Experiment` class is designed to be used as a single callback to save experiment information. It is a combination of `torchmanager.callbacks.TensorBoard`, `torchmanager.callbacks.LastCheckpoint`, and `torchmanager.callbacks.BestCheckpoint` with easier usage.
+```python
+...
+
+exp_callback = torchmanager.callbacks.Experiment('test.exp', manager) # tensorboard dependency required
+model = manager.fit(..., callbacks_list=[exp_callback])
+```
+
+The information, including full training logs and checkpoints, will be saved in the following structure:
+```
+experiments
+└── <experiment name>.exp
+    ├── checkpoints
+    │   ├── best-<metric name>.model
+    │   └── last.model
+    └── data
+    │   └── <TensorBoard data file>
+    └── <experiment name>.log
 ```
 
 ## Please cite this work if you find it useful
