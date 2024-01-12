@@ -169,6 +169,7 @@ experiments
     │   └── last.model
     └── data
     │   └── <TensorBoard data file>
+    ├── <experiment name>.cfg
     └── <experiment name>.log
 ```
 
