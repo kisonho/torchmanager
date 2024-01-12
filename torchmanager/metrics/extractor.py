@@ -90,9 +90,12 @@ class FID(FeatureMetric[Module]):
 
     * Extends: `FeatureExtractorMetric`
     * Generic class of `Module`
+
+    - Properties:
+        - use_linalg: A `bool` flag of if use `scipy.linalg` package
     """
     use_linalg: bool
-    """use_linalg: A `bool` flag of if use `scipy.linalg` package"""
+    """A `bool` flag of if use `scipy.linalg` package"""
 
     def __init__(self, feature_extractor: Optional[Module] = None, *, use_linalg: bool = True, target: Optional[str] = None) -> None:
         """

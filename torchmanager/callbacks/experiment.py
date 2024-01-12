@@ -11,7 +11,7 @@ T = TypeVar('T', bound=StateDictLoadable)
 
 class Experiment(Callback, Generic[T]):
     """
-    The tensorboard callback that wraps last and best checkpoints in `checkpoints` folder by `last.model` and `best_*.model` with tensorboard logs in `data` folder together into a wrapped *.exp file
+    The callback that wraps last and best checkpoints in `checkpoints` folder by `last.model` and `best_*.model` with tensorboard logs in `data` folder together into a wrapped *.exp file
 
     * extends: `.callback.Callback`
     * requires: `tensorboard` package
