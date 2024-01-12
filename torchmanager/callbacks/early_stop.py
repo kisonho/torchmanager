@@ -29,7 +29,7 @@ class EarlyStop(Callback):
         self.monitor_type = monitor_type
         self.steps = steps
 
-    def on_epoch_end(self, epoch: int, summary: Dict[str, float] = ..., val_summary: Optional[Dict[str, float]] = None) -> None:
+    def on_epoch_end(self, epoch: int, summary: Dict[str, float] = {}, val_summary: Optional[Dict[str, float]] = None) -> None:
         # load monitoring value
         summary = val_summary if val_summary is not None else summary
         monitoring_value = summary[self.monitor]

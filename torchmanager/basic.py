@@ -47,7 +47,7 @@ class BaseManager(Generic[Module]):
     """The optional main loss function in `Resulting`"""
     metric_fns: Dict[str, Metric]
     """A `dict` of the metric functions with names as keys in `str` and metric functions as values in `torch.metrics.Metric`"""
-    model: Union[Module, torch.nn.DataParallel]
+    model: Union[Module, torch.nn.DataParallel[Module]]
     optimizer: Optional[torch.optim.Optimizer]
     version: Version
 
