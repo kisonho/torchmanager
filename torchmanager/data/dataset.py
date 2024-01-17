@@ -1,6 +1,6 @@
 from torch.utils.data import Dataset as _Dataset, DataLoader
 from torchmanager_core import abc, devices, math, os, torch, _raise
-from torchmanager_core.typing import Any, Callable, Iterator, Optional, Sequence, TypeVar
+from torchmanager_core.typing import Any, Callable, Iterator, Optional, Sequence, Tuple, TypeVar
 
 T = TypeVar("T")
 
@@ -104,7 +104,7 @@ class Dataset(_Dataset[T], abc.ABC):
         """Returns an unbatched item"""
         return NotImplemented
 
-    def __iter__(self) -> Iterator[tuple[T, T]]:
+    def __iter__(self) -> Iterator[Tuple[T, T]]:
         # initialize loader
         if self.device != devices.CPU:
             data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=self.num_workers, pin_memory=True, pin_memory_device=str(self.device))
@@ -120,7 +120,7 @@ class Dataset(_Dataset[T], abc.ABC):
         return self.unbatched_len
 
     @staticmethod
-    def unpack_data(data: Any) -> tuple[T, T]:
+    def unpack_data(data: Any) -> Tuple[T, T]:
         """
         Unpacks a single data into inputs and targets
 
