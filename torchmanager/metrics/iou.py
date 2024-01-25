@@ -1,11 +1,11 @@
 from torchmanager_core import torch, _raise
 from torchmanager_core.typing import Optional
 
-from .conf_met import ConfusionMetrics
+from .conf_mat import ConfusionMatrix
 from .metric import Metric
 
 
-class InstanceIoU(ConfusionMetrics):
+class InstanceIoU(ConfusionMatrix):
     """
     The iIoU metric for segmentation
 
@@ -17,6 +17,7 @@ class InstanceIoU(ConfusionMetrics):
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # argmax for input
+        input = super().forward(input, target)
         iou = torch.diag(input) / (input.sum(1) + input.sum(0) - torch.diag(input))
         return iou.nanmean()
 
