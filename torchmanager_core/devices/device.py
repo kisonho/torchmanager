@@ -30,16 +30,16 @@ Module = TypeVar('Module', bound=torch.nn.Module)
 
 
 @overload
-def data_parallel(raw_model: torch.nn.parallel.DataParallel, /, devices: List[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type = torch.nn.parallel.DataParallel) -> Tuple[torch.nn.parallel.DataParallel, bool]:
+def data_parallel(raw_model: torch.nn.DataParallel[Module], /, devices: List[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type = torch.nn.DataParallel[Module]) -> Tuple[torch.nn.DataParallel[Module], bool]:
     ...
 
 
 @overload
-def data_parallel(raw_model: Module, /, devices: List[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type = torch.nn.parallel.DataParallel) -> Tuple[Union[Module, torch.nn.parallel.DataParallel], bool]:
+def data_parallel(raw_model: Module, /, devices: List[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type = torch.nn.DataParallel[Module]) -> Tuple[Union[Module, torch.nn.DataParallel[Module]], bool]:
     ...
 
 
-def data_parallel(raw_model: Module, /, devices: List[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type = torch.nn.parallel.DataParallel) -> Tuple[Union[Module, torch.nn.parallel.DataParallel], bool]:
+def data_parallel(raw_model: Module, /, devices: List[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type = torch.nn.DataParallel[Module]) -> Tuple[Union[Module, torch.nn.DataParallel[Module]], bool]:
     """
     Make a `torch.nn.Module` data parallel
 
@@ -47,8 +47,8 @@ def data_parallel(raw_model: Module, /, devices: List[torch.device] = GPUS, *, o
         - raw_model: A target `torch.nn.Module`
         - devices: A `list` of target `torch.device`
         - output_device: An optional `torch.device` of the target output device for the paralleled model
-        - parallel_type: A `type` of `torch.nn.parallel.DataParallel`
-    - Returns: A `tuple` of either data paralleled `torch.nn.parallel.DataParallel` model if CUDA is available or a raw model if not, and a `bool` flag of if the model data paralleled successfuly.
+        - parallel_type: A `type` of `torch.nn.DataParallel[Module]`
+    - Returns: A `tuple` of either data paralleled `torch.nn.DataParallel[Module]` model if CUDA is available or a raw model if not, and a `bool` flag of if the model data paralleled successfuly.
     """
     if isinstance(raw_model, parallel_type):
         return raw_model, True
