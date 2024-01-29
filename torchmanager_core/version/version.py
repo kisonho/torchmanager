@@ -90,15 +90,13 @@ class Version:
             # split version
             version_parts = version_str.split('.')
             self.main_version = int(version_parts[0])
-            self.minor_version = int(version_parts[1])
+            self.minor_version = int(version_parts[1]) if len(version_parts) > 1 else 0
             self.sub_version = int(version_parts[2]) if len(version_parts) > 2 else 0
         except Exception as e:
             raise ValueError(f"The given version '{v}' is not in valid version format.") from e
 
     def __repr__(self) -> str:
-        version_str = f"v{self.main_version}"
-        if self.minor_version > 0 or self.sub_version > 0:
-            version_str += f".{self.minor_version}"
+        version_str = f"v{self.main_version}.{self.minor_version}"
         if self.sub_version > 0:
             version_str += f".{self.sub_version}"
         if self.pre_release is not None:
