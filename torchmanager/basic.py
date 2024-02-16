@@ -1,5 +1,5 @@
-from typing import Callable
-from torchmanager_core import checkpoint, devices, errors, torch, Version, deprecated, API_VERSION, VERSION as CURRENT_VERSION, view
+from torchmanager.losses import loss
+from torchmanager_core import checkpoint, devices, errors, torch, Version, deprecated, API_VERSION, VERSION as CURRENT_VERSION
 from torchmanager_core.protocols import Resulting
 from torchmanager_core.typing import Any, Collection, Generic, Module, Optional, OrderedDict, Self, Union
 
@@ -35,6 +35,7 @@ class BaseManager(Generic[Module]):
 
     - Properties:
         - compiled: A `bool` flag of if the manager has been compiled
+        - loss_dict: A `dict` of loss functions with their names in `str`
         - loss_fn: An optional `Loss` for the objective function
         - metrics: A `dict` of metrics with a name in `str` as keys and a `Metric` as values
         - model: A target `torch.nn.Module` to be trained
@@ -55,6 +56,23 @@ class BaseManager(Generic[Module]):
     def compiled(self) -> bool:
         """The `bool` flag of if this manager has been compiled"""
         return True if self.loss_fn is not None and self.optimizer is not None else False
+
+    @property
+    def loss_dict(self) -> dict[str, Resulting]:
+        """The `dict` of loss functions with their names in `str`"""
+        loss_dict = {"loss": self.loss_fn} if self.loss_fn is not None else {}
+        losses_in_metrics = {k: v for k, v in self.metric_fns.items() if isinstance(v, Loss)}
+        loss_dict.update(losses_in_metrics)
+        return loss_dict
+
+    @loss_dict.setter
+    def loss_dict(self, loss_dict: dict[str, Loss]) -> None:
+        """Set the loss functions with their names in `str`"""
+        # initialize loss
+        loss_fn_mapping = {f"{name}_loss": fn for name, fn in loss_dict.items()}
+        self.metric_fns.update(loss_fn_mapping)
+        loss_fn = MultiLosses([l for l in loss_fn_mapping.values()])
+        self.loss_fn = loss_fn
 
     @property
     def raw_loss_fn(self) -> Optional[Resulting]:
@@ -98,10 +116,14 @@ class BaseManager(Generic[Module]):
 
         # initialize metrics
         for name, fn in metrics.items():
+            name = f"{name}_loss" if isinstance(fn, Loss) and not name.endswith("_loss") else name
             self.metric_fns[name] = fn
 
         # initialize optimizer
         self.optimizer = optimizer
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__} (version={self.version})"
 
     @deprecated('v1.3', 'v1.4')
     def _compile(self, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, dict[str, Loss]]] = None, metrics: dict[str, Metric] = {}) -> None:
