@@ -1,37 +1,60 @@
+from torchmanager_core import _raise
 from torchmanager_core.protocols import Frequency
 from torchmanager_core.typing import Any, Callable, Optional
 
-from .callback import FrequencyCallback
+from .callback import Callback
 
 
-class LambdaCallback(FrequencyCallback):
+class LambdaCallback(Callback):
     """
     The callback for lambda functions
 
     * extends: `.callback.FrequencyCallback`
 
     - Properties:
-        - pre_callback_fn: An optional function that accepts the current step as `int` for callbacks before a batch or epoch starts
-        - post_callback_fn: An optional function that accepts the current step as `int` for callbacks after a batch or epoch starts
+        - freq: A `Frequency` of the callback frequency
+        - pre_callback_fn: An optional function that accepts the current batch or epoch number as `int` for callbacks before a batch or epoch starts
+        - post_callback_fn: An optional function that accepts the current batch or epoch number as `int` for callbacks after a batch or epoch starts
     """
+    __freq: Frequency
     pre_callback_fn: Optional[Callable[[int], None]]
     post_callback_fn: Optional[Callable[[int, dict[str, Any]], None]]
 
-    def __init__(self, pre_fn: Optional[Callable[[int], None]] = None, post_fn: Optional[Callable[[int, dict[str, Any]], None]] = None, *, freq: Frequency = Frequency.EPOCH, initial_step: int = 0) -> None:
-        super().__init__(freq, initial_step)
+    @property
+    def freq(self) -> Frequency:
+        return self.__freq
+
+    @freq.setter
+    def freq(self, f: Frequency) -> None:
+        # check if the frequency is valid
+        assert f in [Frequency.BATCH, Frequency.EPOCH], _raise(TypeError(f"The frequency must be either `Frequency.BATCH` or `Frequency.EPOCH`, {f} is not supported."))
+        self.__freq = f
+
+    def __init__(self, pre_fn: Optional[Callable[[int], None]] = None, post_fn: Optional[Callable[[int, dict[str, Any]], None]] = None, *, freq: Frequency = Frequency.EPOCH) -> None:
+        super().__init__()
+        self.freq = freq
         self.pre_callback_fn = pre_fn
         self.post_callback_fn = post_fn
 
-    def step(self, summary: dict[str, float] = {}, val_summary: Optional[dict[str, float]] = None) -> None:
-        # combine summary
-        if val_summary is not None:
-            summary.update({f"val_{k}": v for k, v in val_summary.items()})
+    def on_batch_end(self, batch: int, summary: dict[str, float] = {}) -> None:
+        if self.freq == Frequency.BATCH and self.post_callback_fn is not None:
+            self.post_callback_fn(batch, summary)
 
-        # call functions
-        if self.pre_callback_fn is not None and (self.freq == Frequency.BATCH_START or self.freq == Frequency.EPOCH_START):
-            self.pre_callback_fn(self.current_step)
-        elif self.post_callback_fn is not None and (self.freq == Frequency.BATCH or self.freq == Frequency.EPOCH):
-            self.post_callback_fn(self.current_step, summary)
+    def on_batch_start(self, batch: int) -> None:
+        if self.freq == Frequency.BATCH and self.pre_callback_fn is not None:
+            self.pre_callback_fn(batch)
+
+    def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: Optional[dict[str, float]] = None) -> None:
+        if self.freq == Frequency.EPOCH and self.post_callback_fn is not None:
+            # add validation summary if exists
+            if val_summary is not None:
+                val_summary = {"val_" + k: v for k, v in val_summary.items()}
+                summary.update(val_summary)
+            self.post_callback_fn(epoch, summary)
+
+    def on_epoch_start(self, epoch: int) -> None:
+        if self.freq == Frequency.EPOCH and self.pre_callback_fn is not None:
+            self.pre_callback_fn(epoch)
 
 
 def on_batch_end(fn: Callable[[int, dict[str, float]], None]) -> LambdaCallback:
@@ -59,7 +82,7 @@ def on_batch_start(fn: Callable[[int], None]) -> LambdaCallback:
 
     >>> callbacks_list = [..., callback_fn]
     """
-    return LambdaCallback(pre_fn=fn, freq=Frequency.BATCH_START)
+    return LambdaCallback(pre_fn=fn, freq=Frequency.BATCH)
 
 
 def on_epoch_end(fn: Callable[[int, dict[str, float]], None]) -> LambdaCallback:
@@ -87,4 +110,4 @@ def on_epoch_start(fn: Callable[[int], None]) -> LambdaCallback:
 
     >>> callbacks_list = [..., callback_fn]
     """
-    return LambdaCallback(pre_fn=fn, freq=Frequency.EPOCH_START)
+    return LambdaCallback(pre_fn=fn, freq=Frequency.EPOCH)
