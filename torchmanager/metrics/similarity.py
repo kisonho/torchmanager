@@ -2,26 +2,6 @@ import torch.nn.functional as F
 from torchmanager_core import torch
 
 from .metric import Metric
-from .extractor import FeatureMetric
-
-
-class LPIPS(FeatureMetric):
-    """The Learned Perceptual Image Patch Similarity metric"""
-    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        # Flatten the feature vectors
-        features_x1 = input.view(input.size(0), -1)
-        features_x2 = target.view(target.size(0), -1)
-
-        # L2 normalize the feature vectors
-        features_x1 = F.normalize(features_x1, p=2, dim=1)
-        features_x2 = F.normalize(features_x2, p=2, dim=1)
-
-        # Calculate cosine similarity
-        similarity = F.cosine_similarity(features_x1, features_x2, dim=1)
-
-        # LPIPS distance is 1 - cosine similarity
-        lpips_distance = 1 - similarity
-        return lpips_distance
 
 
 class SSIM(Metric):

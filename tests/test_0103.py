@@ -55,6 +55,17 @@ class Test0103(TestCase):
         py_version = Version(platform.python_version())
         self.assertGreaterEqual(py_version, "3.9")
 
+    def test_reverse_sliding_window(self) -> None:
+        from torchmanager import data
+
+        # initialize
+        x = torch.randn((3, 256, 256))
+
+        # sliding window
+        x_slides = data.sliding_window(x, (64, 64), (32, 32))
+        restored_x = data.reversed_sliding_window(x_slides, x.shape[1:], (32, 32))
+        self.assertEqual(restored_x.shape, x.shape, "Reversed sliding window shape mismatch")
+
     def test_version(self) -> None:
         self.assertGreaterEqual(API_VERSION, "1.3")
 
