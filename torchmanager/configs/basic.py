@@ -44,8 +44,11 @@ class Configs(argparse.Namespace, abc.ABC):
         else:
             configs = fetched_parser.parse_args(namespace=cls())
 
-        # initialize logging
+        # format arguments
         assert isinstance(configs, Configs), _raise(TypeError("The namespace is not a valid configs."))
+        configs.format_arguments()
+
+        # initialize logging
         log_dir = os.path.join("experiments", configs.experiment)
 
         # check if experiment exists
