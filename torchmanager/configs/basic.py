@@ -43,8 +43,11 @@ class Configs(argparse.Namespace, abc.ABC):
         else:
             configs = parser.parse_args(namespace=cls())
 
-        # initialize logging
+        # format arguments
         assert isinstance(configs, Configs), _raise(TypeError("The namespace is not a valid configs."))
+        configs.format_arguments()
+
+        # initialize logging
         log_dir = os.path.join("experiments", configs.experiment)
 
         # check if experiment exists
@@ -58,7 +61,6 @@ class Configs(argparse.Namespace, abc.ABC):
         log_file = os.path.basename(configs.experiment.replace(".exp", ".log"))
         log_path = os.path.join(log_dir, log_file)
         view.set_log_path(log_path=log_path)
-        configs.format_arguments()
 
         # show configs summarize
         if show_summary:
