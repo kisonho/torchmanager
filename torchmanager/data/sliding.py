@@ -39,7 +39,7 @@ def sliding_window(image: torch.Tensor, /, window_size: Tuple[int, ...], stride:
     window_starts = product(*[range(num_windows) for num_windows in window_dims])
     for indices in window_starts:
         # Calculate the starting coordinates of the window
-        indices = (slice(None),) + tuple(slice(i, i+ws) for i, ws in zip(indices, window_size))
+        indices = (slice(None),) + tuple(slice(i * s, i * s+ws) for i, s, ws in zip(indices, stride, window_size))
 
         # Extract the window from the image
         window = image[indices]
