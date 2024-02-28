@@ -1,7 +1,6 @@
 from itertools import product
 
 from torchmanager_core import torch, _raise
-from torchmanager_core.typing import Union
 
 def sliding_window(image: torch.Tensor, /, window_size: tuple[int, ...], stride: tuple[int, ...]) -> torch.Tensor:
     """
@@ -60,7 +59,7 @@ def reversed_sliding_window(windows: torch.Tensor, /, image_size: tuple[int, ...
     Returns: A reconstructed image in `torch.Tensor` with shape [c, *image_size].
     """
     # Get dimensions
-    num_windows, num_channels, *window_size = windows.shape
+    _, num_channels, *window_size = windows.shape
     stride_dims: list[int] = []
     window_dims: list[int] = []
     
@@ -76,6 +75,7 @@ def reversed_sliding_window(windows: torch.Tensor, /, image_size: tuple[int, ...
     # Initialize output tensor
     output = torch.zeros(output_shape, dtype=windows.dtype, device=windows.device)
     window_starts = list(product(*[range(num_windows) for num_windows in window_dims]))
+    assert len(window_starts) == windows.shape[0], _raise(ValueError(f"Number of windows ({windows.shape[0]}) must match the number of windows calculated ({len(window_starts)})."))
 
     # Iterate over windows
     for i, indices in enumerate(window_starts):
