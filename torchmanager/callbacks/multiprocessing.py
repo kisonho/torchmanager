@@ -64,28 +64,28 @@ class MultiCallbacks(Callback):
                 raise process.exception
 
     def on_batch_end(self, batch: int, summary: dict[str, float] = {}) -> None:
-        callback_fns: list[Callable[..., None]] = [callback.on_batch_end for callback in self.callbacks_list]
-        self.run(callback_fns, batch, summary)
+        callback_fns: list[Callable[..., None]] = [lambda: callback.on_batch_end(batch, summary) for callback in self.callbacks_list]
+        self.run(callback_fns)
 
     def on_batch_start(self, batch: int) -> None:
-        callback_fns: list[Callable[..., None]] = [callback.on_batch_start for callback in self.callbacks_list]
-        self.run(callback_fns, batch)
+        callback_fns: list[Callable[..., None]] = [lambda: callback.on_batch_start(batch) for callback in self.callbacks_list]
+        self.run(callback_fns)
 
     def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: Optional[dict[str, float]] = None) -> None:
-        callback_fns: list[Callable[..., None]] = [callback.on_epoch_end for callback in self.callbacks_list]
-        self.run(callback_fns, epoch, summary, val_summary)
+        callback_fns: list[Callable[..., None]] = [lambda: callback.on_epoch_end(epoch, summary, val_summary) for callback in self.callbacks_list]
+        self.run(callback_fns)
 
     def on_epoch_start(self, epoch: int) -> None:
-        callback_fns: list[Callable[..., None]] = [callback.on_epoch_start for callback in self.callbacks_list]
-        self.run(callback_fns, epoch)
+        callback_fns: list[Callable[..., None]] = [lambda: callback.on_epoch_start(epoch) for callback in self.callbacks_list]
+        self.run(callback_fns)
 
     def on_train_end(self, model: torch.nn.Module) -> None:
-        callback_fns: list[Callable[..., None]] = [callback.on_train_end for callback in self.callbacks_list]
-        self.run(callback_fns, model)
+        callback_fns: list[Callable[..., None]] = [lambda: callback.on_train_end(model) for callback in self.callbacks_list]
+        self.run(callback_fns)
 
     def on_train_start(self, initial_epoch: int = 0) -> None:
-        callback_fns: list[Callable[..., None]] = [callback.on_train_start for callback in self.callbacks_list]
-        self.run(callback_fns, initial_epoch)
+        callback_fns: list[Callable[..., None]] = [lambda: callback.on_train_start(initial_epoch) for callback in self.callbacks_list]
+        self.run(callback_fns)
 
     def pop(self, index: int = -1) -> Callback:
         """
@@ -97,7 +97,7 @@ class MultiCallbacks(Callback):
         """
         return self.callbacks_list.pop(index)
 
-    def run(self, funcs: list[Callable[..., None]], *args: Any, **kwargs: Any) -> None:
+    def run(self, funcs: list[Callable[..., None]]) -> None:
         """
         Run a function 
 
@@ -111,19 +111,18 @@ class MultiCallbacks(Callback):
             # loop through functions
             for func in funcs:
                 # run function
-                func(*args, **kwargs)
-            return
+                func()
+        else:
+            # create processes
+            processes = [Process(func) for func in funcs]
 
-        # create processes
-        processes = [Process(func, *args, **kwargs) for func in funcs]
+            # start processes
+            for process in processes:
+                process.start()
 
-        # start processes
-        for process in processes:
-            process.run()
+            # join processes
+            for process in processes:
+                process.join()
 
-        # join processes
-        for process in processes:
-            process.join()
-
-        # check exceptions
-        self.check_processes_exceptions(processes)
+            # check exceptions
+            self.check_processes_exceptions(processes)

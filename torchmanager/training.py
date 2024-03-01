@@ -177,12 +177,9 @@ class Manager(_Manager[Module]):
         else:
             initial_epoch = self.current_epoch
 
-        # wrap callbacks list to multi callbacks
-        callbacks = MultiCallbacks(*callbacks_list)
-
         # add progress bar to callbacks
         if show_verbose:
-            callbacks.append(ProgressBar(dataset_len, verbose_type=verbose_type))
+            callbacks_list.append(ProgressBar(dataset_len, verbose_type=verbose_type))
 
         # find available device
         cpu, device, target_devices = devices.search(device)
@@ -194,7 +191,8 @@ class Manager(_Manager[Module]):
         summary: dict[str, float] = {}
 
         # on train start
-        callbacks.on_train_start(initial_epoch)
+        for callback in callbacks_list:
+            callback.on_train_start(initial_epoch)
 
         try:
             # move to device
@@ -220,7 +218,10 @@ class Manager(_Manager[Module]):
 
                 # initialize epoch
                 view.logger.info(f"Training epoch {self.current_epoch + 1}/{epochs}")
-                callbacks.on_epoch_start(self.current_epoch)
+
+                # on epoch start
+                for callback in callbacks_list:
+                    callback.on_epoch_start(self.current_epoch)
 
                 # train for one epoch
                 summary = self._train(training_dataset, iterations=batch_iterations, device=device, use_multi_gpus=use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
@@ -231,12 +232,8 @@ class Manager(_Manager[Module]):
                 val_summary = self.test(val_dataset, device=device, use_multi_gpus=use_multi_gpus, empty_cache=False) if val_dataset is not None else None
 
                 # on epoch end
-                try:
-                    callbacks.on_epoch_end(self.current_epoch, summary=summary, val_summary=val_summary)
-                except errors.StopTraining:
-                    # on train end
-                    callbacks.on_train_end(self.raw_model)
-                    return self.raw_model
+                for callback in callbacks_list:
+                    callback.on_epoch_end(self.current_epoch, summary=summary, val_summary=val_summary)
 
                 # print summary info
                 val_message = f"Epoch {self.current_epoch + 1}/{epochs}: "
@@ -247,6 +244,8 @@ class Manager(_Manager[Module]):
                         val_message += ", "
                     val_message += f"{name}={value:.4f}"
                 view.logger.info(val_message)
+        except errors.StopTraining as error:
+            pass
         except KeyboardInterrupt:
             view.logger.info("Training interrupted.")
             pass
@@ -256,11 +255,12 @@ class Manager(_Manager[Module]):
             raise runtime_error from error
         finally:
             # on train end
-            callbacks.on_train_end(self.raw_model)
+            for callback in callbacks_list:
+                callback.on_train_end(self.raw_model)
 
             # remove added progress bar
             if show_verbose:
-                callbacks.pop()
+                callbacks_list.pop()
 
             # reset model
             self.reset(cpu)

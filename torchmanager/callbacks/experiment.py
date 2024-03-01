@@ -59,7 +59,7 @@ class Experiment(MultiCallbacks, Generic[T]):
             best_ckpts.append(best_ckpt)
 
         # wrap callbacks
-        super().__init__(last_ckpt, *best_ckpts, tensorboard, num_workers=os.cpu_count())
+        super().__init__(last_ckpt, *best_ckpts, tensorboard)
         self.best_ckpts = best_ckpts
         self.last_ckpt = last_ckpt
         self.tensorboard = tensorboard
