@@ -32,7 +32,6 @@ class JSONConfigs(Configs, abc.ABC):
     def from_arguments(cls, *arguments: str, parser: argparse.ArgumentParser = argparse.ArgumentParser(), show_summary: bool = True):
         # get arguments
         fetched_parser = cls.get_arguments(parser=parser)
-        assert isinstance(fetched_parser, argparse.ArgumentParser), "Get arguments should be finished by returning an `ArgumentParser` instead of an `_ArgumentGroup`."
         if len(arguments) > 0:
             configs = fetched_parser.parse_args(arguments, namespace=_JSON())
         else:
