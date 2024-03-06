@@ -38,15 +38,16 @@ class Configs(argparse.Namespace, abc.ABC):
         - Returns: A formatted configuration object
         """
         fetched_parser = cls.get_arguments(parser=parser)
-        assert isinstance(fetched_parser, argparse.ArgumentParser), "Get arguments should be finished by returning an `ArgumentParser` instead of an `_ArgumentGroup`."
         if len(arguments) > 0:
             configs = fetched_parser.parse_args(arguments, namespace=cls())
         else:
             configs = fetched_parser.parse_args(namespace=cls())
 
         # format arguments
-        assert isinstance(configs, Configs), _raise(TypeError("The namespace is not a valid configs."))
-        configs.format_arguments()
+        try:
+            configs.format_arguments()
+        except Exception as e:
+            raise errors.ConfigsFormatError(cls) from e
 
         # initialize logging
         log_dir = os.path.join("experiments", configs.experiment)
@@ -62,12 +63,6 @@ class Configs(argparse.Namespace, abc.ABC):
         log_file = os.path.basename(configs.experiment.replace(".exp", ".log"))
         log_path = os.path.join(log_dir, log_file)
         view.set_log_path(log_path=log_path)
-
-        # format arguments
-        try:
-            configs.format_arguments()
-        except Exception as e:
-            raise errors.ConfigsFormatError(cls) from e
 
         # save configs
         configs.save()
