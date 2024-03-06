@@ -35,9 +35,9 @@ class ProgressBar(Callback):
 
     def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: Optional[dict[str, float]] = None) -> None:
         # close progress bar
-        if self.progress_bar is not None:
-            self.progress_bar.close()
-            self.progress_bar = None
+        assert self.progress_bar is not None, _raise(TypeError("Progress bar is not initialized."))
+        self.progress_bar.close()
+        self.progress_bar = None
 
     def on_batch_end(self, batch: int, summary: dict[str, float] = {}) -> None:# initialize progress summary
         # switch verbose type

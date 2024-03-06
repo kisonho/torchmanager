@@ -1,7 +1,42 @@
 import torch.nn.functional as F
 from torchmanager_core import torch
+from torchmanager_core.typing import Callable, Optional
 
 from .metric import Metric
+
+
+class PSNR(Metric):
+    """
+    The Peak Signal-to-Noise Ratio metric
+
+    - Properties:
+        - denormalize_fn: An optional `Callable` function to denormalize the images
+        - max_val: A `float` of the maximum value of the input
+    """
+    denormalize_fn: Optional[Callable[[torch.Tensor], torch.Tensor]]
+    max_val: float
+
+    def __init__(self, max_val: float = 1.0, *, denormalize_fn: Optional[Callable[[torch.Tensor], torch.Tensor]] = None):
+        """
+        Constructor
+
+        - Parameters:
+            - max_val: A `float` of the maximum value of the input
+            - denormalize_fn: An optional `Callable` function to denormalize the images
+        """
+        super().__init__()
+        self.denormalize_fn = denormalize_fn
+        self.max_val = max_val
+
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        # denormalize input and target
+        if self.denormalize_fn is not None:
+            input = self.denormalize_fn(input)
+            target = self.denormalize_fn(target)
+
+        # calculate psnr with denomalized input and target
+        mse = F.mse_loss(input, target)
+        return 10 * torch.log10(1 / mse)
 
 
 class SSIM(Metric):
