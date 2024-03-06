@@ -74,6 +74,7 @@ def reversed_sliding_window(windows: torch.Tensor, /, image_size: tuple[int, ...
 
     # Initialize output tensor
     output = torch.zeros(output_shape, dtype=windows.dtype, device=windows.device)
+    overlap = torch.zeros(output_shape, dtype=torch.int, device=windows.device)
     window_starts = list(product(*[range(num_windows) for num_windows in window_dims]))
     assert len(window_starts) == windows.shape[0], _raise(ValueError(f"Number of windows ({windows.shape[0]}) must match the number of windows calculated ({len(window_starts)})."))
 
@@ -84,4 +85,9 @@ def reversed_sliding_window(windows: torch.Tensor, /, image_size: tuple[int, ...
 
         # Place the window into output tensor
         output[indices] += windows[i]
+        overlap[indices] += 1
+
+    # average the overlap of output tensor
+    overlap = torch.clamp(overlap, min=1)
+    output /= overlap
     return output

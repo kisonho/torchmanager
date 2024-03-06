@@ -1,10 +1,10 @@
 from torch.utils.data import DataLoader
-from torchmanager_core import devices, errors, math, os, torch, view, _raise
+from torchmanager_core import devices, errors, math, torch, view, _raise
 from torchmanager_core.checkpoint import Checkpoint
 from torchmanager_core.protocols import Resulting
 from torchmanager_core.typing import Any, Collection, Module, Optional, Self, Union, overload
 
-from .callbacks import Callback, MultiCallbacks, ProgressBar
+from .callbacks import Callback, ProgressBar
 from .data import Dataset
 from .losses import Loss
 from .metrics import Metric
@@ -55,7 +55,7 @@ class Manager(_Manager[Module]):
         super().__init__(model, optimizer, loss_fn, metrics)
         self.__current_epoch = 0
 
-    def _train(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, iterations: Optional[int] = None, *, device: torch.device = devices.CPU, num_workers: Optional[int] = os.cpu_count(), use_multi_gpus: bool = False, callbacks_list: list[Callback] = [], **kwargs: Any) -> dict[str, float]:
+    def _train(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection], /, iterations: Optional[int] = None, *, device: torch.device = devices.CPU, use_multi_gpus: bool = False, callbacks_list: list[Callback] = [], **kwargs: Any) -> dict[str, float]:
         """
         The single training step for an epoch
 
@@ -63,7 +63,6 @@ class Manager(_Manager[Module]):
             - dataset: A `torch.utils.data.DataLoader` or `.data.Dataset` training dataset
             - iterations: An optional `int` of total training iterations, must be smaller than the size of dataset
             - device: A `torch.device` where the data is moved to, should be same as the model
-            - num_workers: An optional `int` of the number of cpus to load the data
             - use_multi_gpus: A `bool` flag of if using multi gpus
             - callbacks_list: A `list` of callbacks in `Callback`
         - Returns: A summary of `dict` with keys as `str` and values as `float`
@@ -83,13 +82,11 @@ class Manager(_Manager[Module]):
         dataset_len = dataset.batched_len if isinstance(dataset, Dataset) else len(dataset)
         iterations = dataset_len if iterations is None else iterations
 
-        # initialize callbacks
-        callbacks = MultiCallbacks(*callbacks_list, num_workers=num_workers)
-
         # batch loop
         for batch, data in enumerate(dataset):
             # on batch start
-            callbacks.on_batch_start(batch)
+            for callback in callbacks_list:
+                callback.on_batch_start(batch)
 
             # move x_train and y_train to device
             x_train, y_train = self.unpack_data(data)
@@ -101,7 +98,8 @@ class Manager(_Manager[Module]):
             summary = self.train_step(x_train, y_train)
 
             # on batch end
-            callbacks.on_batch_end(batch, summary=summary)
+            for callback in callbacks_list:
+                callback.on_batch_end(batch, summary=summary)
 
             # check for iterations
             if batch + 1 >= iterations:
@@ -146,7 +144,6 @@ class Manager(_Manager[Module]):
             - initial_epoch: An optional `int` number of initial epoch
             - return_summary: A `bool` flag of if returning the summary along with the trained model
             - device: An optional `torch.device` to test on if not using multi-GPUs or an optional default `torch.device` for testing otherwise
-            - num_workers: An optional `int` of the number of cpus to load the data
             - use_multi_gpus: A `bool` flag of if using multi gpus
             - show_verbose: A `bool` flag to show the progress bar during training
             - verbose_type: A `VerboseType` of the summary to show

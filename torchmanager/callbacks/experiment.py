@@ -2,8 +2,7 @@ from torchmanager_core import os, view
 from torchmanager_core.typing import Generic, TypeVar, Union
 from torchmanager_core.protocols import MonitorType, StateDictLoadable
 
-from .callback import Callback
-from .multiprocessing import MultiCallbacks
+from .callback import MultiCallbacks
 from .ckpt import BestCheckpoint, LastCheckpoint
 from .tensorboard import TensorBoard
 
@@ -16,16 +15,7 @@ class Experiment(MultiCallbacks, Generic[T]):
 
     * extends: `.callback.Callback`
     * requires: `tensorboard` package
-
-    - Properties:
-        - best_ckpts: A `list` of `.ckpt.BestCheckpoint` callbacks that records best checkpoints
-        - last_ckpt: A `.ckpt.LastCheckpoint` callback that records the last checkpoint
-        - tensorboard: A `.ckpt.TensorBoard` callback that records data to tensorboard
     """
-    best_ckpts: list[BestCheckpoint[T]]
-    last_ckpt: LastCheckpoint[T]
-    tensorboard: TensorBoard
-
     def __init__(self, experiment: str, model: T, monitors: Union[dict[str, MonitorType], list[str]] = {}, show_verbose: bool = True) -> None:
         """
         Constructor
@@ -46,7 +36,7 @@ class Experiment(MultiCallbacks, Generic[T]):
         ckpt_path = os.path.join(experiment_dir, "checkpoints")
 
         # initial checkpoints
-        best_ckpts = []
+        best_ckpts: list[BestCheckpoint] = []
         last_ckpt_path = os.path.join(ckpt_path, "last.model")
         last_ckpt = LastCheckpoint(model, last_ckpt_path)
         tensorboard = TensorBoard(log_dir)
@@ -60,9 +50,6 @@ class Experiment(MultiCallbacks, Generic[T]):
 
         # wrap callbacks
         super().__init__(last_ckpt, *best_ckpts, tensorboard)
-        self.best_ckpts = best_ckpts
-        self.last_ckpt = last_ckpt
-        self.tensorboard = tensorboard
 
         # initialize logging
         log_file = os.path.basename(experiment.replace(".exp", ".log"))
