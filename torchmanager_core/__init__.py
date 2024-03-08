@@ -1,4 +1,4 @@
-import abc, argparse, gc, json, math, os, platform, shutil, sys, torch, yaml
+import abc, argparse, gc, json, math, os, platform, shutil, sys, torch
 from torch.nn import functional
 from torch.utils import data
 
@@ -11,3 +11,9 @@ try:
 except ImportError:
     view.warnings.warn("Module tensorboard is not installed.", ImportWarning)
     tensorboard = NotImplemented
+
+try:
+    import yaml
+except ImportError:
+    view.warnings.warn("Module yaml is not installed.", ImportWarning)
+    yaml = NotImplemented
