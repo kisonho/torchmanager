@@ -57,6 +57,7 @@ class YAMLConfigs(Configs, abc.ABC):
             yaml_dict: dict[str, Any] = yaml.safe_load(yaml_file)
 
         # create configurations
+        yaml_dict = cls.read_extension(yaml_dict)
         yaml_dict = cls.format_yaml(yaml_dict)
         configs = cls(**yaml_dict)
 
@@ -95,3 +96,36 @@ class YAMLConfigs(Configs, abc.ABC):
         """
         parser.add_argument("yaml", type=str, help="Path to the YAML configuration file.")
         return parser
+
+    @staticmethod
+    def read_extension(yaml_dict: dict[str, Any]) -> dict[str, Any]:
+        """
+        Read the extension of the YAML file
+
+        * abstractmethod
+
+        - Parameters:
+            - yaml_dict: A `dict` of the YAML file with keys as names in `str` and values as `Any` kind of values
+        - Returns: A `dict` of the YAML file with keys as names in `str` and values as `Any` kind of values
+        """
+        if "extends" in yaml_dict:
+            # get extensions
+            extensions: list[str] = yaml_dict.pop("extends")
+            root_dict: dict[str, Any] = {}
+
+            # read extensions
+            for extension in extensions:
+                extension_path = os.path.normpath(extension)
+                assert os.path.exists(extension_path), _raise(FileNotFoundError(f"YAML file '{extension_path}' does not exist."))
+                assert extension_path.endswith(".yaml"), _raise(FileNotFoundError(f"YAML file '{extension_path}' is not a valid YAML file."))
+
+                # read yaml file
+                with open(extension_path, "r") as yaml_file:
+                    extension_dict: dict[str, Any] = yaml.safe_load(yaml_file)
+
+                # update yaml_dict
+                root_dict.update(extension_dict)
+
+            # update yaml_dict
+            yaml_dict.update(root_dict)
+        return yaml_dict

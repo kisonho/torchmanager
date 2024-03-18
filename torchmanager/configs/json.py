@@ -57,6 +57,7 @@ class JSONConfigs(Configs, abc.ABC):
             json_dict: dict[str, Any] = json.load(json_file)
 
         # create configurations
+        json_dict = cls.read_extension(json_dict)
         json_dict = cls.format_json(json_dict)
         configs = cls(**json_dict)
 
@@ -95,3 +96,36 @@ class JSONConfigs(Configs, abc.ABC):
         """
         parser.add_argument("json", type=str, help="Path to the JSON configuration file.")
         return parser
+
+    @staticmethod
+    def read_extension(json_dict: dict[str, Any]) -> dict[str, Any]:
+        """
+        Read the extension of the JSON file
+
+        * abstractmethod
+
+        - Parameters:
+            - json_dict: A `dict` of the JSON file with keys as names in `str` and values as `Any` kind of values
+        - Returns: A `dict` of the JSON file with keys as names in `str` and values as `Any` kind of values
+        """
+        if "extends" in json_dict:
+            # get extensions
+            extensions: list[str] = json_dict.pop("extends")
+            root_dict: dict[str, Any] = {}
+
+            # read extensions
+            for extension in extensions:
+                extension_path = os.path.normpath(extension)
+                assert os.path.exists(extension_path), _raise(FileNotFoundError(f"JSON file '{extension_path}' does not exist."))
+                assert extension_path.endswith(".json"), _raise(FileNotFoundError(f"JSON file '{extension_path}' is not a valid JSON file."))
+
+                # read json file
+                with open(extension_path, "r") as json_file:
+                    extension_dict: dict[str, Any] = json.load(json_file)
+
+                # update json_dict
+                root_dict.update(extension_dict)
+
+            # update json_dict
+            json_dict.update(root_dict)
+        return json_dict
