@@ -1,4 +1,4 @@
-from torchmanager_core import abc, argparse, errors, json, os, view, _raise
+from torchmanager_core import abc, argparse, errors, json, os, shutil, view, _raise
 from torchmanager_core.typing import Any
 
 from .basic import Configs
@@ -15,19 +15,6 @@ class JSONConfigs(Configs, abc.ABC):
     * extend: `Configs`
     * Abstract class
     """
-    @staticmethod
-    def format_json(json_dict: dict[str, Any]) -> dict[str, Any]:
-        """
-        Format the JSON dictionary read from the JSON file
-
-        * staticmethod
-
-        - Parameters:
-            - json_dict: A `dict` of the JSON file with keys as names in `str` and values as `Any` kind of values
-        - Returns: A formatted `dict` of the JSON file with keys as names in `str` and values as `Any` kind of values
-        """
-        return json_dict
-
     @classmethod
     def from_arguments(cls, *arguments: str, parser: argparse.ArgumentParser = argparse.ArgumentParser(), show_summary: bool = True):
         # get arguments
@@ -57,8 +44,8 @@ class JSONConfigs(Configs, abc.ABC):
             json_dict: dict[str, Any] = json.load(json_file)
 
         # create configurations
-        json_dict = cls.read_extension(json_dict)
-        json_dict = cls.format_json(json_dict)
+        json_dir = os.path.dirname(json_path)
+        json_dict = cls.read_extension(json_dict, json_dir)
         configs = cls(**json_dict)
 
         # format arguments
@@ -66,6 +53,21 @@ class JSONConfigs(Configs, abc.ABC):
             configs.format_arguments()
         except Exception as e:
             raise errors.ConfigsFormatError(cls) from e
+
+        # initialize logging
+        log_dir = os.path.join("experiments", configs.experiment)
+
+        # check if experiment exists
+        if os.path.exists(log_dir) and configs.replace_experiment:
+            shutil.rmtree(log_dir)
+        elif os.path.exists(log_dir) and not configs.replace_experiment:
+            raise IOError(f"Path '{log_dir}' has already existed.")
+
+        # set log path
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = os.path.basename(configs.experiment.replace(".exp", ".log"))
+        log_path = os.path.join(log_dir, log_file)
+        view.set_log_path(log_path=log_path)
 
         # save configs
         configs.save()
@@ -98,7 +100,7 @@ class JSONConfigs(Configs, abc.ABC):
         return parser
 
     @staticmethod
-    def read_extension(json_dict: dict[str, Any]) -> dict[str, Any]:
+    def read_extension(json_dict: dict[str, Any], related_dir: str) -> dict[str, Any]:
         """
         Read the extension of the JSON file
 
@@ -106,26 +108,32 @@ class JSONConfigs(Configs, abc.ABC):
 
         - Parameters:
             - json_dict: A `dict` of the JSON file with keys as names in `str` and values as `Any` kind of values
+            - related_dir: A `str` of the related directory path where the JSON file is located
         - Returns: A `dict` of the JSON file with keys as names in `str` and values as `Any` kind of values
         """
         if "extends" in json_dict:
             # get extensions
-            extensions: list[str] = json_dict.pop("extends")
+            extensions: list[str] = list(reversed(json_dict["extends"]))
             root_dict: dict[str, Any] = {}
 
             # read extensions
             for extension in extensions:
-                extension_path = os.path.normpath(extension)
+                extension_path = os.path.normpath(extension) if os.path.isabs(extension) else os.path.normpath(os.path.join(related_dir, extension))
                 assert os.path.exists(extension_path), _raise(FileNotFoundError(f"JSON file '{extension_path}' does not exist."))
                 assert extension_path.endswith(".json"), _raise(FileNotFoundError(f"JSON file '{extension_path}' is not a valid JSON file."))
 
-                # read json file
+                # read extended json files
                 with open(extension_path, "r") as json_file:
                     extension_dict: dict[str, Any] = json.load(json_file)
+
+                # read extension for extended yaml files
+                extension_dir = os.path.dirname(extension_path)
+                extension_dict = JSONConfigs.read_extension(extension_dict, extension_dir)
 
                 # update json_dict
                 root_dict.update(extension_dict)
 
             # update json_dict
-            json_dict.update(root_dict)
+            root_dict.update(json_dict)
+            json_dict = root_dict
         return json_dict

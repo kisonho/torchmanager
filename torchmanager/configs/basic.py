@@ -89,8 +89,7 @@ class Configs(argparse.Namespace, abc.ABC):
             - exp: A `str` of experiment path or name
         """
         exp = os.path.normpath(f"{exp}.exp") if not exp.endswith(".exp") else os.path.normpath(exp)
-        cfg_file = os.path.basename(exp).replace(".exp", ".cfg")
-        cfg_path = os.path.join(exp, cfg_file)
+        cfg_path = os.path.join(exp, "configs.cfg")
         cfg = torch.load(cfg_path)
         assert isinstance(cfg, Configs), _raise(TypeError(f"Saved object at path {cfg_path} is not a valid `Configs`."))
         return cfg
@@ -123,9 +122,8 @@ class Configs(argparse.Namespace, abc.ABC):
 
     def save(self) -> None:
         """Save this configuration to experiment folder"""
-        cfg_file = os.path.basename(self.experiment.replace(".exp", ".cfg"))
-        log_dir = os.path.join("experiments", self.experiment)
-        cfg_path = os.path.join(log_dir, cfg_file)
+        exp = os.path.normpath(f"{self.experiment}.exp") if not self.experiment.endswith(".exp") else os.path.normpath(self.experiment)
+        cfg_path = os.path.join("experiments", exp, "configs.cfg")
         torch.save(self, cfg_path)
 
     def show_environments(self, description: str = DESCRIPTION) -> None:

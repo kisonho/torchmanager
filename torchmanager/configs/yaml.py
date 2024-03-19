@@ -1,4 +1,4 @@
-from torchmanager_core import abc, argparse, errors, os, view, yaml, _raise
+from torchmanager_core import abc, argparse, errors, os, shutil, view, yaml, _raise
 from torchmanager_core.typing import Any
 
 from .basic import Configs
@@ -15,19 +15,6 @@ class YAMLConfigs(Configs, abc.ABC):
     * extend: `Configs`
     * Abstract class
     """
-    @staticmethod
-    def format_yaml(yaml_dict: dict[str, Any]) -> dict[str, Any]:
-        """
-        Format the YAML dictionary read from the YAML file
-
-        * staticmethod
-
-        - Parameters:
-            - yaml_dict: A `dict` of the YAML file with keys as names in `str` and values as `Any` kind of values
-        - Returns: A formatted `dict` of the YAML file with keys as names in `str` and values as `Any` kind of values
-        """
-        return yaml_dict
-
     @classmethod
     def from_arguments(cls, *arguments: str, parser: argparse.ArgumentParser = argparse.ArgumentParser(), show_summary: bool = True):
         # get arguments
@@ -54,11 +41,11 @@ class YAMLConfigs(Configs, abc.ABC):
 
         # read yaml file
         with open(yaml_path, "r") as yaml_file:
-            yaml_dict: dict[str, Any] = yaml.safe_load(yaml_file)
+            yaml_dict: dict[str, Any] = yaml.load(yaml_file, Loader=yaml.UnsafeLoader)
 
         # create configurations
-        yaml_dict = cls.read_extension(yaml_dict)
-        yaml_dict = cls.format_yaml(yaml_dict)
+        yaml_dir = os.path.dirname(yaml_path)
+        yaml_dict = cls.read_extension(yaml_dict, yaml_dir)
         configs = cls(**yaml_dict)
 
         # format arguments
@@ -66,6 +53,21 @@ class YAMLConfigs(Configs, abc.ABC):
             configs.format_arguments()
         except Exception as e:
             raise errors.ConfigsFormatError(cls) from e
+
+        # initialize logging
+        log_dir = os.path.join("experiments", configs.experiment)
+
+        # check if experiment exists
+        if os.path.exists(log_dir) and configs.replace_experiment:
+            shutil.rmtree(log_dir)
+        elif os.path.exists(log_dir) and not configs.replace_experiment:
+            raise IOError(f"Path '{log_dir}' has already existed.")
+
+        # set log path
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = os.path.basename(configs.experiment.replace(".exp", ".log"))
+        log_path = os.path.join(log_dir, log_file)
+        view.set_log_path(log_path=log_path)
 
         # save configs
         configs.save()
@@ -98,7 +100,7 @@ class YAMLConfigs(Configs, abc.ABC):
         return parser
 
     @staticmethod
-    def read_extension(yaml_dict: dict[str, Any]) -> dict[str, Any]:
+    def read_extension(yaml_dict: dict[str, Any], /, related_dir: str) -> dict[str, Any]:
         """
         Read the extension of the YAML file
 
@@ -106,26 +108,32 @@ class YAMLConfigs(Configs, abc.ABC):
 
         - Parameters:
             - yaml_dict: A `dict` of the YAML file with keys as names in `str` and values as `Any` kind of values
+            - related_dir: A `str` of the related directory path where the YAML file is located
         - Returns: A `dict` of the YAML file with keys as names in `str` and values as `Any` kind of values
         """
         if "extends" in yaml_dict:
             # get extensions
-            extensions: list[str] = yaml_dict.pop("extends")
+            extensions: list[str] = list(reversed(yaml_dict["extends"]))
             root_dict: dict[str, Any] = {}
 
             # read extensions
             for extension in extensions:
-                extension_path = os.path.normpath(extension)
+                extension_path = os.path.normpath(extension) if os.path.isabs(extension) else os.path.normpath(os.path.join(related_dir, extension))
                 assert os.path.exists(extension_path), _raise(FileNotFoundError(f"YAML file '{extension_path}' does not exist."))
                 assert extension_path.endswith(".yaml"), _raise(FileNotFoundError(f"YAML file '{extension_path}' is not a valid YAML file."))
 
-                # read yaml file
+                # read extended yaml file
                 with open(extension_path, "r") as yaml_file:
-                    extension_dict: dict[str, Any] = yaml.safe_load(yaml_file)
+                    extension_dict: dict[str, Any] = yaml.load(yaml_file, yaml.UnsafeLoader)
+
+                # read extension for extended yaml files
+                extension_dir = os.path.dirname(extension_path)
+                yaml_dict = YAMLConfigs.read_extension(yaml_dict, extension_dir)
 
                 # update yaml_dict
                 root_dict.update(extension_dict)
 
             # update yaml_dict
-            yaml_dict.update(root_dict)
+            root_dict.update(yaml_dict)
+            yaml_dict = root_dict
         return yaml_dict
