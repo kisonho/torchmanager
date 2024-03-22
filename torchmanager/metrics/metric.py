@@ -1,7 +1,6 @@
 from torchmanager_core import torch, Version, _raise
 from torchmanager_core.protocols import Reduction
 from torchmanager_core.typing import Any, Callable, Optional
-from torchmanager_core.view import warnings
 
 
 class Metric(torch.nn.Module):
@@ -91,6 +90,7 @@ class _WrappedMetric(Metric):
     def __init__(self, metric_fn: Callable[[Any, Any], torch.Tensor], target: Optional[str] = None) -> None:
         super().__init__(metric_fn, target)
 
+    @torch.no_grad()
     def forward(self, input: Any, target: Any) -> torch.Tensor:
         return self.wrapped_metric_fn(input, target)
 

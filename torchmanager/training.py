@@ -279,7 +279,7 @@ class Manager(_Manager[Module]):
         # forward metrics
         for name, fn in self.compiled_metrics.items():
             if not name.startswith("val_") and "loss" not in name:
-                fn(y, y_train)
+                _ = fn(y, y_train)
 
         # backward pass
         self.compiled_optimizer.zero_grad()

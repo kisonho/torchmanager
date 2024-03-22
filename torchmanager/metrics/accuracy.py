@@ -23,6 +23,7 @@ class Accuracy(Metric):
         if from_version < Version("v1.1"):
             self.reduction = Reduction.MEAN
 
+    @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         if self.reduction == Reduction.MEAN:
             return input.eq(target).to(torch.float32).mean()
@@ -55,6 +56,7 @@ class SparseCategoricalAccuracy(Accuracy):
         super().__init__(target=target)
         self._dim = dim
 
+    @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         input = input.argmax(dim=self._dim)
         return super().forward(input, target)
@@ -67,6 +69,7 @@ class CategoricalAccuracy(SparseCategoricalAccuracy):
     * extends: `SparseCategoricalAccuracy`
     """
 
+    @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         target = target.argmax(dim=self._dim)
         return super().forward(input, target)
@@ -114,6 +117,7 @@ class MAE(Metric):
         super().__init__(target=target)
         self.reduction = reduction
 
+    @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # calculate MAE
         error = input - target
@@ -150,6 +154,7 @@ class PartialDice(Dice):
         super().__init__(dim, eps=eps, target=target)
         self.class_idx = c
 
+    @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         input = input.argmax(self._dim)
         input_mask = input == self.class_idx

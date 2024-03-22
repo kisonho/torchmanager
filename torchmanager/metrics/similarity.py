@@ -28,6 +28,7 @@ class PSNR(Metric):
         self.denormalize_fn = denormalize_fn
         self.max_val = max_val
 
+    @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # denormalize input and target
         if self.denormalize_fn is not None:
@@ -72,6 +73,7 @@ class SSIM(Metric):
         window = window.expand(channels, 1, window_size, window_size).contiguous()
         self.window = torch.nn.Parameter(window, requires_grad=False)
 
+    @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # calculate mean
         mu1 = F.conv2d(input, self.window, padding=self.window_size // 2, groups=input.shape[1])

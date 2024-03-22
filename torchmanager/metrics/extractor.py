@@ -77,7 +77,7 @@ class ExtractorScore(FeatureMetric[Module]):
     * Extends: `FeatureExtractorMetric`
     * Generic class of `Module`
     """
-
+    @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         scores = input.softmax(1).mean(0)
         scores = scores * (scores / scores.mean()).log2()
@@ -111,6 +111,7 @@ class FID(FeatureMetric[Module]):
         super().__init__(feature_extractor=feature_extractor, target=target)
         self.use_linalg = use_linalg
 
+    @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # calculate mean and covariance
         mu_real = target.mean(0)

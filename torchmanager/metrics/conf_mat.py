@@ -36,6 +36,7 @@ class BinaryConfusionMetric(Metric, abc.ABC):
     def convert(self, from_version: Version) -> None:
         return super().convert(from_version)
 
+    @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # argmax input
         input = input.argmax(dim=self._dim) if input.shape[self._dim] > 1 else input > 0.5

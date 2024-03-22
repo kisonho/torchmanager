@@ -236,7 +236,7 @@ class Manager(BaseManager[Module]):
             elif "loss" in name:
                 continue
             try:
-                fn(y, y_test)
+                _ = fn(y, y_test)
             except Exception as metric_error:
                 runtime_error = errors.MetricError(name)
                 raise runtime_error from metric_error

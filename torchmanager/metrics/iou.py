@@ -15,6 +15,7 @@ class InstanceIoU(ConfusionMatrix):
     def __init__(self, num_classes: int, /, *, target: Optional[str] = None) -> None:
         super().__init__(num_classes, target=target)
 
+    @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # argmax for input
         input = super().forward(input, target)
@@ -49,6 +50,7 @@ class MeanIoU(Metric):
         self._smooth = smooth
         self._threshold = threshold
 
+    @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         input = input.argmax(self._dim) if input.shape[self._dim] > 1 else input > 0.5
         intersection = (input & target).float().sum()
