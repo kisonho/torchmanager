@@ -1,4 +1,4 @@
-from torchmanager_core import torch, Version
+from torchmanager_core import torch, Version, _raise
 from torchmanager_core.protocols import Reduction
 from torchmanager_core.typing import Optional
 
@@ -12,6 +12,9 @@ class Accuracy(Metric):
 
     * extends: `.metric.Metric`
     * implements: `torchmanager_core.protocols.VersionConvertible`
+
+    - Properties:
+        - reduction: A `torchmanager_core.protocols.Reduction` of reduction method
     """
     reduction: Reduction
 
@@ -42,8 +45,19 @@ class SparseCategoricalAccuracy(Accuracy):
     - Properties:
         - dim: An `int` of the probability dim index for the input
     """
-
+    __dim: int
     _dim: int
+    """Deprecated dimension property"""
+
+    @property
+    def dim(self) -> int:
+        """The dimension of the class in `int`"""
+        return self.__dim
+
+    @dim.setter
+    def dim(self, value: int) -> None:
+        assert value >= 0, _raise(ValueError(f"Dim must be a non-negative number, got {value}."))
+        self.__dim = value
 
     def __init__(self, dim: int = -1, *, target: Optional[str] = None) -> None:
         """
@@ -54,11 +68,16 @@ class SparseCategoricalAccuracy(Accuracy):
             - target: A `str` of target name in `input` and `target` during direct calling
         """
         super().__init__(target=target)
-        self._dim = dim
+        self.dim = dim
+
+    def convert(self, from_version: Version) -> None:
+        super().convert(from_version)
+        if from_version < Version("v1.3"):
+            self.dim = self._dim
 
     @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        input = input.argmax(dim=self._dim)
+        input = input.argmax(dim=self.dim)
         return super().forward(input, target)
 
 
@@ -71,7 +90,7 @@ class CategoricalAccuracy(SparseCategoricalAccuracy):
 
     @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        target = target.argmax(dim=self._dim)
+        target = target.argmax(dim=self.dim)
         return super().forward(input, target)
 
 

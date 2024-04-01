@@ -127,8 +127,7 @@ class ParallelLoss(Loss):
     * implements: `torchmanager_core.protocols.Resulting`
 
     - Properties:
-        - result: A `torch.Tensor` of current result
-        - results: A `torch.Tensor` of concatenated results
+        - module: A `torch.nn.Module` of the loss function
     """
     _metric_fn: torch.nn.DataParallel
     module: Loss
