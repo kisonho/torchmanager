@@ -147,6 +147,7 @@ class KLDiv(Loss):
     """
     __t: Optional[float]
     _metric_fn: torch.nn.KLDivLoss
+    _t: Optional[float]
     replace_nan: bool
 
     @property
