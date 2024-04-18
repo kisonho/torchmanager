@@ -1,3 +1,4 @@
+from sre_compile import dis
 from torch.utils.data import DataLoader
 from torchmanager_core import devices, errors, torch, view
 from torchmanager_core.protocols import Resulting
@@ -99,7 +100,7 @@ class Manager(BaseManager[Module]):
             dataset_len = len(dataset)
 
         # initialize progress bar
-        progress_bar = view.tqdm(total=dataset_len) if show_verbose else None
+        progress_bar = view.tqdm(total=dataset_len, disable=not show_verbose)
 
         # move model
         try:
@@ -119,8 +120,7 @@ class Manager(BaseManager[Module]):
                     x = devices.move_to_device(x, device)
                 y, _ = self.forward(x)
                 predictions.append(y)
-                if progress_bar is not None:
-                    progress_bar.update()
+                progress_bar.update()
 
             # reset model and loss
             return predictions
@@ -133,8 +133,7 @@ class Manager(BaseManager[Module]):
             raise runtime_error from error
         finally:
             # end epoch training
-            if progress_bar is not None:
-                progress_bar.close()
+            progress_bar.close()
 
             # empty cache
             if empty_cache:
@@ -168,7 +167,7 @@ class Manager(BaseManager[Module]):
             dataset_len = len(dataset)
 
         # initialize progress bar
-        progress_bar = view.tqdm(total=dataset_len) if show_verbose else None
+        progress_bar = view.tqdm(total=dataset_len, disable=not show_verbose)
 
         # reset loss function and metrics
         if self.loss_fn is not None:
@@ -194,10 +193,9 @@ class Manager(BaseManager[Module]):
                 # test for one step
                 step_summary = self.test_step(x_test, y_test)
 
-                # implement progress bar
-                if progress_bar is not None:
-                    progress_bar.set_postfix(step_summary)
-                    progress_bar.update()
+                # update progress bar
+                progress_bar.set_postfix(step_summary)
+                progress_bar.update()
 
             # reset model and loss
             return self.summary
@@ -210,8 +208,7 @@ class Manager(BaseManager[Module]):
             raise runtime_error from error
         finally:
             # end epoch training
-            if progress_bar is not None:
-                progress_bar.close()
+            progress_bar.close()
 
             # empty cache
             if empty_cache:
