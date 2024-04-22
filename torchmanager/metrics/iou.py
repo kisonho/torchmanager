@@ -50,9 +50,29 @@ class MeanIoU(Metric):
         self._threshold = threshold
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        input = input.argmax(self._dim) if input.shape[self._dim] > 1 else input > 0.5
-        intersection = (input & target).float().sum()
-        union = (input | target).float().sum()
+        # calculate predictions from logits
+        num_classes = input.shape[self._dim]
+
+        if num_classes > 1:
+            target_shape = input.shape
+            input = input.argmax(self._dim)
+
+            # initialize
+            pred_masks = torch.zeros(*target_shape, device=input.device, dtype=torch.bool)
+            true_masks = torch.zeros(*target_shape, device=target.device, dtype=torch.bool)
+            
+            # Convert indices to one-hot encoded masks
+            for i in range(num_classes):
+                pred_masks[:, i, ...] = (input == i)
+                true_masks[:, i, ...] = (target == i)
+        else:
+            input = input > 0
+            pred_masks = input
+            true_masks = target
+
+        # calculate iou
+        intersection = (pred_masks & true_masks).float().sum()
+        union = (pred_masks | true_masks).float().sum()
         iou = (intersection + self._smooth) / (union + self._smooth)
-        thresholded = torch.clamp(10 / (1 - self._threshold) * (iou - self._threshold), 0, 10).ceil() / 10
+        thresholded = torch.clamp(10 / (1 - self._threshold) * (iou - self._threshold), 0, 10).ceil() / 10 if self._threshold > 0 else iou
         return thresholded
