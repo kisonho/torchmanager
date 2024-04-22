@@ -22,6 +22,38 @@ class Test0102(TestCase):
         self.assertGreaterEqual(float(partial_dice), 0, f"Dice value must be non-negative, got {partial_dice}.")
         self.assertLessEqual(float(partial_dice), 1, f"Dice value must be less or equal to 1, got {partial_dice}.")
 
+    def test_f1_score(self) -> None:
+        from torchmanager import metrics
+        from sklearn.metrics import f1_score
+
+        # initialize
+        f1_score_fn = metrics.F1()
+        y = torch.randn((1, 1, 64, 64))
+        y_test = torch.randn_like(y).argmax(1)
+
+        # test f1 score
+        f1 = f1_score_fn(y, y_test)
+        self.assertGreaterEqual(float(f1_score_fn.result), 0, f"F1 Score value must be non-negative, got {f1}.")
+        y = y.argmax(1) == 1
+        y_test = y_test == 1
+        f1_sklearn = f1_score(y_test.flatten(), y.flatten(), average='binary')
+        self.assertAlmostEqual(float(f1_score_fn.result), f1_sklearn, places=2)
+
+    def test_miou(self) -> None:
+        from torchmanager import metrics
+        from sklearn.metrics import jaccard_score
+
+        # initialize
+        miou_score_fn = metrics.MeanIoU()
+        y = torch.randn((1, 1, 64, 64))
+        y_test = torch.randn_like(y) > 0
+
+        # test miou score
+        miou = miou_score_fn(y, y_test)
+        self.assertGreaterEqual(float(miou_score_fn.result), 0, f"Mean IoU value must be non-negative, got {miou}.")
+        miou_jaccard = jaccard_score(y_test.flatten(), (y > 0).flatten(), average='weighted')
+        self.assertAlmostEqual(float(miou_score_fn.result), miou_jaccard, places=2)
+
     def test_random(self) -> None:
         from torchmanager_core.random import freeze_seed, unfreeze_seed
 

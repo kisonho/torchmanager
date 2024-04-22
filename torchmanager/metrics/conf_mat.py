@@ -38,21 +38,21 @@ class BinaryConfusionMetric(Metric, abc.ABC):
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # argmax input
-        input = input.argmax(dim=self._dim) if input.shape[self._dim] > 1 else input > 0.5
+        input = input.argmax(dim=self._dim) if input.shape[self._dim] > 1 else input > 0
 
         # mask input and target
         input = input == self._class_index
         target = target == self._class_index
 
         # calculate TP, FP, and FN
-        tp, tn, fp, fn = self.forward_conf_met(input.int(), target.int())
+        tp, tn, fp, fn = self.forward_conf_met(input.float(), target.float())
         return self.forward_metric(tp, tn, fp, fn)
 
     def forward_conf_met(self, input: torch.Tensor, target: torch.Tensor) -> Tuple[torch.Tensor, ...]:
-        tp = torch.sum(target * input, dim=0)
-        tn = ((1 - target) * (1 - input)).sum(dim=0)
-        fp = torch.sum((1 - target) * input, dim=0)
-        fn = torch.sum(target * (1 - input), dim=0)
+        tp = torch.sum(target * input, dim=0).mean()
+        tn = ((1 - target) * (1 - input)).sum(dim=0).mean()
+        fp = torch.sum((1 - target) * input, dim=0).mean()
+        fn = torch.sum(target * (1 - input), dim=0).mean()
         return tp, tn, fp, fn
 
     @abc.abstractmethod
