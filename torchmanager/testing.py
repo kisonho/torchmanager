@@ -106,7 +106,7 @@ class Manager(BaseManager[Module]):
                 use_multi_gpus = self.data_parallel(target_devices)
 
             # initialize predictions
-            self.model.eval()
+            self.model = self.model.eval()
             predictions: List[Any] = []
             self.to(device)
 
@@ -168,16 +168,18 @@ class Manager(BaseManager[Module]):
 
         # reset loss function and metrics
         if self.loss_fn is not None:
-            self.loss_fn.eval().reset()
-        for _, m in self.metric_fns.items():
-            m.eval().reset()
+            self.loss_fn = self.loss_fn.eval()
+            self.loss_fn.reset()
+        for k, m in self.metric_fns.items():
+            self.metric_fns[k] = m.eval()
+            m.reset()
 
         try:
             # move to device
             if use_multi_gpus:
                 use_multi_gpus = self.data_parallel(target_devices)
             self.to(device)
-            self.model.eval()
+            self.model = self.model.eval()
 
             # batch loop
             for data in dataset:
