@@ -68,10 +68,10 @@ class Manager(_Manager[Module]):
         - Returns: A summary of `dict` with keys as `str` and values as `float`
         """
         # initialize status
-        self.model.train()
-        self.compiled_losses.train()
-        for m in self.compiled_metrics.values():
-            m.train()
+        self.model = self.model.train()
+        self.loss_fn = self.compiled_losses.train()
+        for k, m in self.compiled_metrics.items():
+            self.compiled_metrics[k] = m.train()
 
         # reset loss and metrics
         self.compiled_losses.reset()
