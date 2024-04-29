@@ -62,6 +62,13 @@ class Configs(argparse.Namespace, abc.ABC):
         log_path = os.path.join(log_dir, log_file)
         view.set_log_path(log_path=log_path)
 
+        # initialize console
+        formatter = view.logging.Formatter("%(message)s")
+        console = view.logging.StreamHandler()
+        console.setLevel(view.logging.INFO)
+        console.setFormatter(formatter)
+        view.logger.addHandler(console)
+
         # show configs summarize
         if show_summary:
             view.logger.info("------------Settings------------")
