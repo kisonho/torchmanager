@@ -30,16 +30,16 @@ Module = TypeVar('Module', bound=torch.nn.Module)
 
 
 @overload
-def data_parallel(raw_model: torch.nn.DataParallel[Module], /, devices: list[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type = torch.nn.DataParallel[Module]) -> tuple[torch.nn.DataParallel[Module], bool]:
+def data_parallel(raw_model: torch.nn.DataParallel[Module], /, devices: list[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type = torch.nn.DataParallel) -> tuple[torch.nn.DataParallel[Module], bool]:
     ...
 
 
 @overload
-def data_parallel(raw_model: Module, /, devices: list[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type = torch.nn.DataParallel[Module]) -> tuple[Union[Module, torch.nn.DataParallel[Module]], bool]:
+def data_parallel(raw_model: Module, /, devices: list[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type = torch.nn.DataParallel) -> tuple[Union[Module, torch.nn.DataParallel[Module]], bool]:
     ...
 
 
-def data_parallel(raw_model: Module, /, devices: list[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type = torch.nn.DataParallel[Module]) -> tuple[Union[Module, torch.nn.DataParallel[Module]], bool]:
+def data_parallel(raw_model: Module, /, devices: list[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type = torch.nn.DataParallel) -> tuple[Union[Module, torch.nn.DataParallel[Module]], bool]:
     """
     Make a `torch.nn.Module` data parallel
 
