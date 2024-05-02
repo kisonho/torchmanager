@@ -56,7 +56,7 @@ class SparseCategoricalAccuracy(Accuracy):
         self._dim = dim
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        input = input.argmax(dim=self._dim)
+        input = input.argmax(dim=self._dim) if input.shape[self._dim] > 1 else input > 0
         return super().forward(input, target)
 
 
