@@ -1,6 +1,6 @@
 import torch
 import warnings
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, TypeVar, Union, overload
+from typing import Any, Iterable, Optional, Type, TypeVar, Union, overload
 
 from .protocols import DeviceMovable
 
@@ -24,23 +24,23 @@ try:
 except:
     DEFAULT = CPU
     GPU = NotImplemented
-    GPUS: List[torch.device] = []
+    GPUS: list[torch.device] = []
 
 Module = TypeVar('Module', bound=torch.nn.Module)
 P = TypeVar('P', bound=torch.nn.parallel.DataParallel)
 
 
 @overload
-def data_parallel(raw_model: torch.nn.parallel.DataParallel, /, devices: List[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type[P] = torch.nn.parallel.DataParallel) -> Tuple[P, bool]:
+def data_parallel(raw_model: torch.nn.parallel.DataParallel, /, devices: list[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type[P] = torch.nn.parallel.DataParallel) -> tuple[P, bool]:
     ...
 
 
 @overload
-def data_parallel(raw_model: Module, /, devices: List[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type[P] = torch.nn.parallel.DataParallel) -> Tuple[Union[Module, P], bool]:
+def data_parallel(raw_model: Module, /, devices: list[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type[P] = torch.nn.parallel.DataParallel) -> tuple[Union[Module, P], bool]:
     ...
 
 
-def data_parallel(raw_model: Module, /, devices: List[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type[P] = torch.nn.parallel.DataParallel) -> Tuple[Union[Module, P], bool]:
+def data_parallel(raw_model: Module, /, devices: list[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type[P] = torch.nn.parallel.DataParallel) -> tuple[Union[Module, P], bool]:
     """
     Make a `torch.nn.Module` data parallel
 
@@ -68,7 +68,7 @@ def empty_cache() -> None:
         torch.cuda.empty_cache()
 
 
-def search(specified: Optional[Union[torch.device, List[torch.device]]] = None) -> Tuple[torch.device, torch.device, List[torch.device]]:
+def search(specified: Optional[Union[torch.device, list[torch.device]]] = None) -> tuple[torch.device, torch.device, list[torch.device]]:
     """
     Find available devices
 
@@ -109,16 +109,16 @@ def move_to_device(target: DeviceMovable, /, device: torch.device, *, recursive:
 
 
 @overload
-def move_to_device(target: Dict[str, Union[DeviceMovable, Any]], /, device: torch.device, *, recursive: bool = False) -> Dict[str, Union[DeviceMovable, Any]]:
+def move_to_device(target: dict[str, Union[DeviceMovable, Any]], /, device: torch.device, *, recursive: bool = False) -> dict[str, Union[DeviceMovable, Any]]:
     ...
 
 
 @overload
-def move_to_device(target: List[Union[DeviceMovable, Any]], /, device: torch.device, *, recursive: bool = False) -> List[Union[DeviceMovable, Any]]:
+def move_to_device(target: list[Union[DeviceMovable, Any]], /, device: torch.device, *, recursive: bool = False) -> list[Union[DeviceMovable, Any]]:
     ...
 
 
-def move_to_device(target: Union[DeviceMovable,  Dict[str, Union[DeviceMovable,  Any]], List[Union[DeviceMovable,  Any]]], /, device: torch.device, *, recursive: bool = False) -> Union[DeviceMovable,  Dict[str, Union[DeviceMovable,  Any]], List[Union[DeviceMovable,  Any]]]:
+def move_to_device(target: Union[DeviceMovable,  dict[str, Union[DeviceMovable,  Any]], list[Union[DeviceMovable,  Any]]], /, device: torch.device, *, recursive: bool = False) -> Union[DeviceMovable,  dict[str, Union[DeviceMovable,  Any]], list[Union[DeviceMovable,  Any]]]:
     """
     Recurrently move a target variable to device if elements perform to `DeviceMovable` protocol
 
