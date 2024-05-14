@@ -67,6 +67,13 @@ class Configs(argparse.Namespace, abc.ABC):
         # save configs
         configs.save()
 
+        # initialize console
+        formatter = view.logging.Formatter("%(message)s")
+        console = view.logging.StreamHandler()
+        console.setLevel(view.logging.INFO)
+        console.setFormatter(formatter)
+        view.logger.addHandler(console)
+
         # show configs summarize
         if show_summary:
             view.logger.info("------------Settings------------")

@@ -77,7 +77,7 @@ class SparseCategoricalAccuracy(Accuracy):
 
     @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        input = input.argmax(dim=self.dim)
+        input = input.argmax(dim=self._dim) if input.shape[self._dim] > 1 else input > 0
         return super().forward(input, target)
 
 
