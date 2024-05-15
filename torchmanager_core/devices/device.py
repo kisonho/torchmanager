@@ -1,5 +1,4 @@
-import torch
-import warnings
+import torch, warnings
 from typing import Any, Iterable, Optional, Type, TypeVar, Union, overload
 
 from .protocols import DeviceMovable

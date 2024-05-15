@@ -94,10 +94,69 @@ class CategoricalAccuracy(SparseCategoricalAccuracy):
         return super().forward(input, target)
 
 
-class Dice(BinaryConfusionMetric):
+class Dice(Metric):
     """The dice score metrics"""
-    def forward_metric(self, tp: torch.Tensor, tn: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
-        dice = 2 * tp / (2 * tp + fp + fn + self._eps)
+    __dim: int
+    __num_classes: int
+    _eps: float
+
+    @property
+    def dim(self) -> int:
+        """The dimension of the class in `int`"""
+        return self.__dim
+
+    @dim.setter
+    def dim(self, value: int) -> None:
+        assert value >= 0, _raise(ValueError(f"Dim must be a non-negative number, got {value}."))
+        self.__dim = value
+
+    @property
+    def num_classes(self) -> int:
+        """The number of classes in `int`"""
+        return self.__num_classes
+
+    @num_classes.setter
+    def num_classes(self, value: int) -> None:
+        assert value > 0, _raise(ValueError(f"Num classes must be a positive number, got {value}."))
+        self.__num_classes = value
+
+    def __init__(self, num_classes: int, /, dim: int = 1, *, eps: float = 1e-7, target: Optional[str] = None) -> None:
+        """
+        Constructor
+
+        - Parameters:
+            - num_classes: The number of classes in `int`
+            - dim: The class channel dimmension index in `int`
+            - eps: A `float` of the small number to avoid zero divide
+            - target: A `str` of target name in `input` and `target` during direct calling
+        """
+        super().__init__(target=target)
+        self.dim = dim
+        self.num_classes = num_classes
+        self._eps = eps
+
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        # Convert target to one-hot encoding
+        input_dims = [s-1 for s in range(self.dim+1, len(input.shape))]
+        target_one_hot = torch.nn.functional.one_hot(target, input.shape[self.dim]).permute(0, len(input.shape)-1, *input_dims)
+
+        # Argmax the input and convert to one-hot encoding
+        input_argmax = input.argmax(dim=self.dim)
+        input = torch.nn.functional.one_hot(input_argmax, input.shape[self.dim]).permute(0, len(input.shape)-1, *input_dims)
+
+        # Flatten the tensors
+        input_flat = input.view(input.shape[0], self.num_classes, -1)
+        target_flat = target_one_hot.view(target_one_hot.shape[0], self.num_classes, -1)
+
+        # Calculate intersection and union for each class
+        intersection = (input_flat * target_flat).sum(dim=2)
+        union = input_flat.sum(dim=2) + target_flat.sum(dim=2)
+
+        # Compute Dice score for each class
+        dice = (2. * intersection + self._eps) / (union + self._eps)
+
+        # Average Dice score across all classes
+        dice = dice.mean(dim=1)
         return dice.mean()
 
 
