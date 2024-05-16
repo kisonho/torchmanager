@@ -30,12 +30,13 @@ class Dice(Loss):
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # softmax activation
-        num_classes = input.shape[self._dim]
-        input = input.softmax(self._dim).view(-1) if self._softmax_input else input.view(-1)
-        target = F.one_hot(target.view(-1), num_classes)
-        assert isinstance(target, torch.Tensor), "Target is not a valid `torch.Tensor`."
-        target = target.view(-1)
+        num_classes = input.shape[self.dim]
+        input = input.softmax(self.dim).view(-1) if self.softmax_input else input.sigmoid().view(-1)
+
+        # one-hot encoding
+        target = F.one_hot(target.view(-1), num_classes).view(-1) if num_classes > 1 else target.view(-1)
 
         # calculate dice
         intersection = input * target
-        return (2 * intersection.sum() + self._smooth) / (input.sum() + target.sum() + self._smooth)
+        dice = 1 - (2 * intersection.sum() + self.smooth) / (input.sum() + target.sum() + self.smooth)
+        return dice.mean()

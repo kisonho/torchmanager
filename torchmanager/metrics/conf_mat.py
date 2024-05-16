@@ -112,7 +112,7 @@ class ConfusionMatrix(Metric):
 
         # add confusion metrics
         for y_pred, y_true in zip(input, target):
-            y_pred = y_pred.argmax(-1)
+            y_pred = y_pred.argmax(0)
             conf_mat += self.forward_hist(y_pred.flatten(), y_true.flatten())
 
         # calculate final metric
