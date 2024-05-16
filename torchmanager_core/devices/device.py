@@ -1,7 +1,7 @@
 import torch, warnings
 from typing import Any, Iterable, Optional, Type, TypeVar, Union, overload
 
-from .protocols import DeviceMovable
+from .protocols import DeviceMovable, DataParallelType
 
 CPU = torch.device('cpu')
 '''The main CPU'''
@@ -26,11 +26,11 @@ except:
     GPUS: list[torch.device] = []
 
 Module = TypeVar('Module', bound=torch.nn.Module)
-P = TypeVar('P', bound=torch.nn.parallel.DataParallel)
+P = TypeVar('P', bound=DataParallelType)
 
 
 @overload
-def data_parallel(raw_model: torch.nn.parallel.DataParallel, /, devices: list[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type[P] = torch.nn.parallel.DataParallel) -> tuple[P, bool]:
+def data_parallel(raw_model: P, /, devices: list[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type[P] = torch.nn.parallel.DataParallel) -> tuple[P, bool]:
     ...
 
 
