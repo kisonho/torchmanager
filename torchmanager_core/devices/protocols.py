@@ -1,5 +1,5 @@
 import abc, torch
-from typing import Any, List, Optional, Protocol, runtime_checkable
+from typing import Any, Optional, Protocol, runtime_checkable
 
 @runtime_checkable
 class DeviceMovable(Protocol):
@@ -12,5 +12,5 @@ class DeviceMovable(Protocol):
 class DataParallelType(Protocol):
     """The data paralleled protocol"""
     @abc.abstractmethod
-    def __init__(self, module: Any, device_ids: Optional[List[int]] = None, output_device: Optional[torch.device] = None) -> None:
+    def __init__(self, module: Any, device_ids: Optional[list[int]] = None, output_device: Optional[torch.device] = None) -> None:
         raise NotImplementedError
