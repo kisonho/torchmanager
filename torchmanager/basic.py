@@ -324,7 +324,7 @@ class BaseManager(Generic[Module]):
         - Returns: A `tuple` of `Any` kind of input and `Any` kind of target
         """
         if len(data) >= 2:
-            data = tuple(data)
-            return data[0], data[1]
+            x, y, *_ = data
+            return (x, y) if not isinstance(data, dict) else (data[x], data[y])
         else:
             return NotImplemented
