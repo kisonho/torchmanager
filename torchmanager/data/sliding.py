@@ -31,15 +31,20 @@ def sliding_window(image: torch.Tensor, /, window_size: tuple[int, ...], stride:
 
     # Calculate number of windows in each dimension
     for dim_size, window_dim, stride_dim in zip(image.shape[1:], window_size, stride):
+        # calculate the number of windows
         num_windows = (dim_size - window_dim) // stride_dim + 1
         window_dims.append(num_windows)
         stride_dims.append(stride_dim)
 
+        # add the very last indices when the window size is not divisible by the stride
+        if (dim_size - window_dim) % stride_dim != 0:
+            window_dims[-1] += 1
+
     # Iterate over each window
     window_starts = list(product(*[range(num_windows) for num_windows in window_dims]))
     for indices in window_starts:
-        # Calculate the starting coordinates of the window
-        indices = (slice(None),) + tuple(slice(i * s, i * s+ws) for i, s, ws in zip(indices, stride, window_size))
+        # Calculate the starting coordinates of the window and adjust the very last indices when the window size is not divisible by the stride
+        indices = (slice(None),) + tuple(slice(min(i * s, image.shape[dim + 1] - ws), min(i * s+ws, image.shape[dim + 1])) for dim, (i, s, ws) in enumerate(zip(indices, stride, window_size)))
 
         # Extract the window from the image
         window = image[indices]
@@ -72,6 +77,10 @@ def reversed_sliding_window(windows: torch.Tensor, /, image_size: tuple[int, ...
         window_dims.append(num_windows)
         stride_dims.append(stride_dim)
 
+        # add the very last indices when the window size is not divisible by the stride
+        if (dim_size - window_dim) % stride_dim != 0:
+            window_dims[-1] += 1
+
     # Initialize output tensor
     output = torch.zeros(output_shape, dtype=windows.dtype, device=windows.device)
     overlap = torch.zeros(output_shape, dtype=torch.int, device=windows.device)
@@ -81,7 +90,7 @@ def reversed_sliding_window(windows: torch.Tensor, /, image_size: tuple[int, ...
     # Iterate over windows
     for i, indices in enumerate(window_starts):
         # Calculate the starting coordinates of the window
-        indices = (slice(None),) + tuple(slice(i * s, i * s+ws) for i, s, ws in zip(indices, stride, window_size))
+        indices = (slice(None),) + tuple(slice(min(i * s, image_size[dim + 1] - ws), min(i * s+ws, image_size[dim + 1])) for dim, (i, s, ws) in enumerate(zip(indices, stride, window_size)))
 
         # Place the window into output tensor
         output[indices] += windows[i]
