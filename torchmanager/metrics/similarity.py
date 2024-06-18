@@ -11,7 +11,6 @@ class PSNR(Metric):
 
     - Properties:
         - denormalize_fn: An optional `Callable` function to denormalize the images
-        - max_val: A `float` of the maximum value of the input
     """
     denormalize_fn: Optional[Callable[[torch.Tensor], torch.Tensor]]
 
