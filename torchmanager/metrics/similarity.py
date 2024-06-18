@@ -37,7 +37,7 @@ class PSNR(Metric):
 
         # calculate psnr with denomalized input and target
         mse = F.mse_loss(input, target)
-        return 10 * torch.log10(1 / mse)
+        return 10 * torch.log10(self.max_val ** 2 / mse)
 
 
 class SSIM(Metric):
