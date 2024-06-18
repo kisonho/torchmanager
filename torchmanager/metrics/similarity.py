@@ -14,9 +14,8 @@ class PSNR(Metric):
         - max_val: A `float` of the maximum value of the input
     """
     denormalize_fn: Optional[Callable[[torch.Tensor], torch.Tensor]]
-    max_val: float
 
-    def __init__(self, max_val: float = 1.0, *, denormalize_fn: Optional[Callable[[torch.Tensor], torch.Tensor]] = None):
+    def __init__(self, *, denormalize_fn: Optional[Callable[[torch.Tensor], torch.Tensor]] = None) -> None:
         """
         Constructor
 
@@ -26,7 +25,6 @@ class PSNR(Metric):
         """
         super().__init__()
         self.denormalize_fn = denormalize_fn
-        self.max_val = max_val
 
     @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
@@ -37,7 +35,7 @@ class PSNR(Metric):
 
         # calculate psnr with denomalized input and target
         mse = F.mse_loss(input, target)
-        return 10 * torch.log10(self.max_val ** 2 / mse)
+        return 10 * torch.log10(input.max() ** 2 / mse)
 
 
 class SSIM(Metric):
