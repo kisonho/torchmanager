@@ -113,4 +113,5 @@ class SSIM(Metric):
         C1 = (0.01 * self.pixel_range) ** 2
         C2 = (0.03 * self.pixel_range) ** 2
         ssim = ((2 * mu1_mu2 + C1) * (2 * sigma12 + C2)) / ((mu1_sq + mu2_sq + C1) * (sigma1_sq + sigma2_sq + C2))
+        ssim = ssim.clip(-1, 1)
         return ssim.mean()
