@@ -1,4 +1,4 @@
-from torchmanager_core import functional as F, torch
+from torchmanager_core import functional as F, torch, _raise
 from torchmanager_core.typing import Any
 
 from .loss import Loss
@@ -12,7 +12,25 @@ class Dice(Loss):
     """
     _dim: int
     _smooth: float
-    _softmax_input: bool
+    softmax_input: bool
+
+    @property
+    def dim(self) -> int:
+        return self._dim
+
+    @dim.setter
+    def dim(self, value: int) -> None:
+        assert value >= 0, _raise(ValueError("Dimension must be non-negative."))
+        self._dim = value
+
+    @property
+    def smooth(self) -> float:
+        return self._smooth
+
+    @smooth.setter
+    def smooth(self, value: float) -> None:
+        assert value >= 0, _raise(ValueError("Smooth value must be non-negative."))
+        self._smooth = value
 
     def __init__(self, dim: int = 1, smooth: float = 1e-6, *, softmax_input: bool = True, **kwargs: Any) -> None:
         """
@@ -24,9 +42,9 @@ class Dice(Loss):
             - softmax_input: A `bool` flag of if softmax the input
         """
         super().__init__(**kwargs)
-        self._dim = dim
-        self._smooth = smooth
-        self._softmax_input = softmax_input
+        self.smooth = smooth
+        self.softmax_input = softmax_input
+        self.dim = dim
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # softmax activation
