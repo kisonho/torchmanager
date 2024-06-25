@@ -9,7 +9,7 @@ class Test0102(TestCase):
         from torchmanager import metrics
 
         # initialize
-        dice_score_fn = metrics.Dice()
+        dice_score_fn = metrics.Dice(4)
         partial_dice_score_fn = metrics.PartialDice(2)
         y = torch.randn((4, 4, 224, 224))
         y_test = torch.randn_like(y).argmax(1)

@@ -98,6 +98,8 @@ class Dice(Metric):
     """The dice score metrics"""
     __dim: int
     __num_classes: int
+    _dim: int
+    """Deprecated dimension property"""
     _eps: float
 
     @property
@@ -134,6 +136,10 @@ class Dice(Metric):
         self.dim = dim
         self.num_classes = num_classes
         self._eps = eps
+
+    def convert(self, from_version: Version) -> None:
+        if from_version < Version("v1.3"):
+            self.dim = self._dim
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # Convert target to one-hot encoding
@@ -234,7 +240,7 @@ class PartialDice(Dice):
 
     @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        input = input.argmax(self._dim)
+        input = input.argmax(self.dim)
         input_mask = input == self.class_idx
         target_mask = target == self.class_idx
         intersection = input_mask * target_mask

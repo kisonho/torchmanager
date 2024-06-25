@@ -90,7 +90,7 @@ def reversed_sliding_window(windows: torch.Tensor, /, image_size: tuple[int, ...
     # Iterate over windows
     for i, indices in enumerate(window_starts):
         # Calculate the starting coordinates of the window
-        indices = (slice(None),) + tuple(slice(min(i * s, image_size[dim + 1] - ws), min(i * s+ws, image_size[dim + 1])) for dim, (i, s, ws) in enumerate(zip(indices, stride, window_size)))
+        indices = (slice(None),) + tuple(slice(min(i * s, image_size[dim] - ws), min(i * s+ws, image_size[dim])) for dim, (i, s, ws) in enumerate(zip(indices, stride, window_size)))
 
         # Place the window into output tensor
         output[indices] += windows[i]
