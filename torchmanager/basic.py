@@ -1,5 +1,4 @@
-from torchmanager.losses import loss
-from torchmanager_core import checkpoint, devices, errors, torch, Version, deprecated, API_VERSION, VERSION as CURRENT_VERSION
+from torchmanager_core import checkpoint, devices, errors, torch, Version, deprecated, API_VERSION
 from torchmanager_core.protocols import Resulting
 from torchmanager_core.typing import Any, Collection, Generic, Module, Optional, OrderedDict, Self, Union
 
@@ -105,7 +104,7 @@ class BaseManager(Generic[Module]):
         # initialize
         self.metric_fns = {}
         self.model = model
-        self.version = CURRENT_VERSION
+        self.version = API_VERSION
 
         # initialize loss
         if isinstance(loss_fn, dict):
