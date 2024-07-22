@@ -1,5 +1,5 @@
 import functools, warnings
-from typing import Optional, TypeVar, Union
+from typing import Optional, Union
 
 from .details import CURRENT
 from .errors import VersionError
@@ -16,9 +16,9 @@ def deprecated(target_version: VersionType, removing_version: Optional[VersionTy
         - removing_version: `Any` type of version for removing
     '''
     # format versions
-    target_version = Version(target_version)
-    removing_version = Version(removing_version) if removing_version is not None else None
-    current_version = Version(current_version)
+    target_version = Version(target_version) if isinstance(target_version, str) else target_version
+    removing_version = Version(removing_version) if isinstance(removing_version, str) else removing_version
+    current_version = Version(current_version) if isinstance(current_version, str) else current_version
 
     # define wrapping function
     def wrapping_fn(fn):
