@@ -61,14 +61,37 @@ class Version(_Version):
         - pre_release_version: An `int` of the pre-release version
         - sub_version: An `int` of the sub version
     """
-    pre_release: Optional[PreRelease]
+    @property
+    def main_version(self) -> int:
+        return self.release[0]
+
+    @property
+    def minor_version(self) -> int:
+        return self.release[1]
+
+    @property
+    def pre_release(self) -> Optional[PreRelease]:
+        if self.pre is not None:
+            return PreRelease(self.pre[0])
+        else:
+            return None
+
+    @property
+    def pre_release_version(self) -> int:
+        if self.pre is not None:
+            return int(self.pre[1])
+        else:
+            return 0
+
+    @property
+    def sub_version(self) -> int:
+        return self.release[2]
 
     def __init__(self, v: Any, /) -> None:
         try:
             # convert to string
             version_str = str(v)
             super().__init__(version_str)
-            self.pre_release = PreRelease(self.pre[0]) if self.pre is not None else None
         except Exception as e:
             raise ValueError(f"The given version '{v}' is not in valid version format.") from e
 
