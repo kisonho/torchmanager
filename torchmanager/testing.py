@@ -51,6 +51,20 @@ class Manager(BaseManager[Module]):
                 raise runtime_error from metric_error
         return summary
 
+    def eval(self, input: Any, target: Any, /) -> dict[str, float]:
+        # forward metrics
+        for name, fn in self.compiled_metrics.items():
+            if name.startswith("val_"):
+                name = name.replace("val_", "")
+            elif "loss" in name:
+                continue
+            try:
+                _ = fn(input, target)
+            except Exception as metric_error:
+                runtime_error = errors.MetricError(name)
+                raise runtime_error from metric_error
+        return self.summary
+
     def forward(self, input: Any, target: Optional[Any] = None, /) -> tuple[Any, Optional[torch.Tensor]]:
         """
         Forward pass function
@@ -225,16 +239,4 @@ class Manager(BaseManager[Module]):
         """
         # forward pass
         y, _ = self.forward(x_test, y_test)
-
-        # forward metrics
-        for name, fn in self.compiled_metrics.items():
-            if name.startswith("val_"):
-                name = name.replace("val_", "")
-            elif "loss" in name:
-                continue
-            try:
-                _ = fn(y, y_test)
-            except Exception as metric_error:
-                runtime_error = errors.MetricError(name)
-                raise runtime_error from metric_error
-        return self.summary
+        return self.eval(y, y_test)

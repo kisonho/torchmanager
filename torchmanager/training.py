@@ -115,6 +115,13 @@ class Manager(_Manager[Module]):
         """
         loss.backward()
 
+    def eval(self, input: Any, target: Any, /) -> dict[str, float]:
+        # forward metrics
+        for name, fn in self.compiled_metrics.items():
+            if not name.startswith("val_") and "loss" not in name:
+                _ = fn(input, target)
+        return self.summary
+
     @overload
     def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any], Collection[Any]], /, epochs: int, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any], Collection[Any]]] = None, callbacks_list: list[Callback] = [], *, iterations: None = None, initial_epoch: Optional[int] = None, return_summary: bool = False, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, **kwargs) -> Module:
         ...
@@ -276,16 +283,13 @@ class Manager(_Manager[Module]):
         y, loss = self.forward(x_train, y_train)
         assert loss is not None, _raise(TypeError("Loss cannot be fetched."))
 
-        # forward metrics
-        for name, fn in self.compiled_metrics.items():
-            if not name.startswith("val_") and "loss" not in name:
-                _ = fn(y, y_train)
-
         # backward pass
         self.compiled_optimizer.zero_grad()
         self.backward(loss)
         self.compiled_optimizer.step()
-        return self.summary
+
+        # training evaluation
+        return self.eval(y, y_train)
 
     def to_checkpoint(self) -> Checkpoint[Self]:
         ckpt = super().to_checkpoint()
