@@ -1,6 +1,6 @@
-from torchmanager_core import abc, torch, _raise
+from torchmanager_core import abc, torch
 from torchmanager_core.protocols import Frequency
-from torchmanager_core.typing import Any, Callable, Iterator, Optional
+from torchmanager_core.typing import Any, Iterator, Optional
 
 
 class Callback:

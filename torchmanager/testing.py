@@ -1,4 +1,3 @@
-from sre_compile import dis
 from torch.utils.data import DataLoader
 from torchmanager_core import devices, errors, torch, view
 from torchmanager_core.protocols import Resulting
@@ -52,6 +51,14 @@ class Manager(BaseManager[Module]):
         return summary
 
     def eval(self, input: Any, target: Any, /) -> dict[str, float]:
+        """
+        Evaluate the model using metrics
+
+        - Parameters:
+            - input: `Any` kind of model output
+            - target: `Any` kind of ground truth target
+        - Returns: A `dict` of metrics summary with keys as name in `str` and values as metric value in `float`
+        """
         # forward metrics
         for name, fn in self.compiled_metrics.items():
             if name.startswith("val_"):
@@ -154,7 +161,7 @@ class Manager(BaseManager[Module]):
                 self.reset(cpu)
 
     @torch.no_grad()
-    def test(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection[Any]],  /, *,device: Optional[Union[torch.device, list[torch.device]]] = None, empty_cache: bool = True, use_multi_gpus: bool = False, show_verbose: bool = False) -> dict[str, float]:
+    def test(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection[Any]], /, *, device: Optional[Union[torch.device, list[torch.device]]] = None, empty_cache: bool = True, use_multi_gpus: bool = False, show_verbose: bool = False) -> dict[str, float]:
         """
         Test target model
 
