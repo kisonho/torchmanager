@@ -5,6 +5,7 @@ To use this framework, simply initialize a `Manager` object. The `Manager` class
 ## Pre-request
 * Python 3.9+
 * PyTorch
+* Packaging
 * tqdm
 * PyYAML (Optional for yaml configs)
 * scipy (Optional for FID metric)
