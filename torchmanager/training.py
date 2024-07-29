@@ -1,4 +1,5 @@
 from torch.utils.data import DataLoader
+from torchmanager.data import dataset
 from torchmanager_core import devices, errors, math, torch, view, _raise
 from torchmanager_core.checkpoint import Checkpoint
 from torchmanager_core.protocols import Resulting
@@ -215,16 +216,13 @@ class Manager(_Manager[Module]):
                 # calculate iterations per epoch
                 iterations_per_epoch = dataset_len if batch_iterations is None else batch_iterations
 
-                # set iterations per epoch in progress bar
-                for callback in callbacks_list:
-                    if isinstance(callback, ProgressBar):
-                        callback.iterations_per_epoch = iterations_per_epoch
-
                 # initialize epoch
                 view.logger.info(f"Training epoch {self.current_epoch + 1}/{epochs}")
 
                 # on epoch start
                 for callback in callbacks_list:
+                    if isinstance(callback, ProgressBar) and iterations_per_epoch != callback.iterations_per_epoch:
+                        callback.iterations_per_epoch = iterations_per_epoch
                     callback.on_epoch_start(self.current_epoch)
 
                 # train for one epoch
