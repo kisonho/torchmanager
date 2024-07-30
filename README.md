@@ -13,7 +13,7 @@ The following packages are required to use this framework:
 ## Installation
 The package can be installed directly from PyPi or Conda:
 * PyPi: `pip install torchmanager`
-* Conda: `conda install -c kisonho torchmanager`
+* Conda: `conda install torchmanager`
 
 ## Start from Configurations
 The `Configs` class is designed to be inherited to define necessary configurations. It also provides a method to get configurations from terminal arguments.
@@ -88,6 +88,15 @@ manager = torchmanager.Manager(model, optimizer, loss_fn=loss_fn, metrics=metric
 loss_fn = {
     'loss1': torchmanager.losses.CrossEntropy(),
     'loss2': torchmanager.losses.Dice(),
+    ...
+}
+```
+
+- If the name of metric has a prefix of `val_`, the metric will be used during only validation:
+```python
+metrics = {
+    'mae': torchmanager.metrics.MAE(),  # mae will be called during both training and validation
+    'val_accuracy': torchmanager.metrics.SparseCategoricalAccuracy(),  # accuracy will be only called during validation
     ...
 }
 ```
@@ -190,5 +199,6 @@ experiments
 ```
 
 ## Also checkout our projects implemented with torchmanager
+* [torchmanager-diffusion](https://github.com/kisonho/torchmanager-diffusion) - Torchmanager Diffusion Models Plug-in
 * [magnet](https://github.com/kisonho/magnet) - Modality-Agnostic Learning for Medical Image Segmentation Using Multi-modality Self-distillation
 * [tlt](https://github.com/kisonho/tlt) - Transferring Lottery Tickets in Computer Vision Models: a Dynamic Pruning Approach
