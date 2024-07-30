@@ -49,6 +49,18 @@ class Test0103(TestCase):
         self.assertTrue(self.callback_fn_called, "On epoch start function not called")
         self.assertIsInstance(on_epoch_start_callback, LambdaCallback, "On epoch start function is not a `LambdaCallback`.")
 
+    def test_psnr(self) -> None:
+        from torchmanager.metrics import PSNR
+
+        # initialize
+        x = torch.randn((1, 3, 256, 256))
+        y = torch.randn_like(x)
+        psnr_fn = PSNR()
+
+        # calculate psnr
+        psnr = psnr_fn(x, y)
+        self.assertGreaterEqual(float(psnr_fn.result), 0, f"PSNR value must be non-negative, got {psnr}.")
+
     def test_py_version(self) -> None:
         import platform
 
