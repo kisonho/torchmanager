@@ -1,7 +1,7 @@
 from torchmanager_core import os, torch, view, _raise
 from torchmanager_core.checkpoint import Checkpoint as Ckpt
 from torchmanager_core.protocols import ModelContainer, MonitorType, StateDictLoadable
-from torchmanager_core.typing import Any, Generic, Optional, TypeVar
+from torchmanager_core.typing import Any, Generic, Optional, TypeVar, overload
 
 from .callback import Callback
 
@@ -31,6 +31,14 @@ class _Checkpoint(Callback, Generic[T]):
     @property
     def checkpoint(self) -> Ckpt[T]:
         return self.__checkpoint
+
+    @overload
+    def __init__(self, model: T, ckpt_path: str) -> None:
+        ...
+
+    @overload
+    def __init__(self, model: T, ckpt_path: str, *, last_epoch: int = 0, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[StateDictLoadable] = None, metrics: Optional[dict[str, StateDictLoadable]] = None, save_weights_only: bool = False) -> None:
+        ...
 
     def __init__(self, model: T, ckpt_path: str, **kwargs: Any) -> None:
         """
@@ -69,6 +77,14 @@ class LastCheckpoint(_Checkpoint[T]):
         assert f > 0, _raise(ValueError(f"Frequency must be a positive number, got {f}. "))
         self.__freq = f
 
+    @overload
+    def __init__(self, model: T, ckpt_path: str, freq: int = 1) -> None:
+        ...
+
+    @overload
+    def __init__(self, model: T, ckpt_path: str, freq: int = 1, *, last_epoch: int = 0, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[StateDictLoadable] = None, metrics: Optional[dict[str, StateDictLoadable]] = None, save_weights_only: bool = False) -> None:
+        ...
+
     def __init__(self, model: T, ckpt_path: str, freq: int = 1, **kwargs: Any) -> None:
         super().__init__(model, ckpt_path, **kwargs)
         self.freq = freq
@@ -99,6 +115,14 @@ class BestCheckpoint(_Checkpoint[T]):
     @property
     def best_score(self) -> float:
         return self.best_summary[f"val_{self.monitor}"] if f"val_{self.monitor}" in self.best_summary else self.best_summary[self.monitor]
+
+    @overload
+    def __init__(self, monitor: str, model: T, ckpt_path: str, *, load_best: bool = False, monitor_type: MonitorType = MonitorType.MAX, show_verbose: bool = False) -> None:
+        ...
+
+    @overload
+    def __init__(self, monitor: str, model: T, ckpt_path: str, *, load_best: bool = False, monitor_type: MonitorType = MonitorType.MAX, show_verbose: bool = False, last_epoch: int = 0, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[StateDictLoadable] = None, metrics: Optional[dict[str, StateDictLoadable]] = None, save_weights_only: bool = False) -> None:
+        ...
 
     def __init__(self, monitor: str, model: T, ckpt_path: str, load_best: bool = False, monitor_type: MonitorType = MonitorType.MAX, show_verbose: bool = False, **kwargs: Any) -> None:
         """
