@@ -1,6 +1,6 @@
 from torch.utils.data import Dataset as _Dataset, DataLoader
 from torchmanager_core import abc, devices, errors, math, os, torch, _raise
-from torchmanager_core.typing import Any, Callable, Iterable, Iterator, Optional, Sequence, TypeVar
+from torchmanager_core.typing import Any, Callable, Iterable, Iterator, Optional, Sequence, TypeVar, cast
 
 T = TypeVar("T")
 
@@ -129,9 +129,9 @@ class Dataset(_Dataset[T], abc.ABC):
         - Returns: A `tuple` of `Any` kind of inputs with type `T`
         """
         if isinstance(data, torch.Tensor) or isinstance(data, dict):
-            return data, data  # type: ignore # suppose for unsupervised reconstruction or a dictionary of packed data
+            return cast(T, data), cast(T, data)  # suppose for unsupervised reconstruction or a dictionary of packed data
         if isinstance(data, Sequence) and len(data) == 2:
-            return data[0], data[1]  # type: ignore # suppose for supervised
+            return data[0], data[1]  # suppose for supervised
         else:
             return NotImplemented  # unknown type of dataset
 

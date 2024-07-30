@@ -1,6 +1,6 @@
 from torchmanager_core import checkpoint, devices, errors, torch, Version, deprecated, API_VERSION
 from torchmanager_core.protocols import Resulting
-from torchmanager_core.typing import Any, Collection, Generic, Module, Optional, OrderedDict, Self, Union
+from torchmanager_core.typing import Any, Collection, Generic, Module, Optional, OrderedDict, Self, Union, cast
 
 from .losses import Loss, MultiLosses, ParallelLoss
 from .metrics import Metric
@@ -89,7 +89,7 @@ class BaseManager(Generic[Module]):
     @property
     def raw_model(self) -> Module:
         """The `Module` controlled by this manager without `torch.nn.DataParallel` wrap"""
-        return self.model.module if isinstance(self.model, torch.nn.DataParallel) else self.model  # type: ignore
+        return cast(torch.nn.DataParallel[Module], self.model).module if isinstance(self.model, torch.nn.DataParallel) else self.model
 
     def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, dict[str, Loss]]] = None, metrics: dict[str, Metric] = {}) -> None:
         """
@@ -222,7 +222,7 @@ class BaseManager(Generic[Module]):
 
         # recover model to manager
         if isinstance(ckpt.model, torch.nn.Module):
-            manager = cls(ckpt.model, ckpt.optimizer, loss_fn=ckpt.loss_fn, metrics=ckpt.metrics)  # type: ignore
+            manager = cls(ckpt.model, ckpt.optimizer, loss_fn=cast(Optional[Loss], ckpt.loss_fn), metrics=cast(dict[str, Metric], ckpt.metrics))
         elif isinstance(ckpt.model, BaseManager):
             manager = ckpt.model
             if isinstance(manager.model, torch.nn.parallel.DataParallel):
@@ -260,7 +260,7 @@ class BaseManager(Generic[Module]):
         metrics: dict[str, OrderedDict[str, Any]] = state_dict["metrics"]
 
         # load state dict to current model, optimizer, loss_fn, and metrics
-        self.model.load_state_dict(model, strict=strict)  # type: ignore
+        self.model.load_state_dict(model, strict=strict)
         if optimizer is not None:
             assert self.optimizer is not None, errors._raise(ValueError("The manager has not been compiled with 'optimizer' given."))
             self.optimizer.load_state_dict(optimizer)
