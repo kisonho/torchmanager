@@ -50,7 +50,7 @@ class Metric(torch.nn.Module):
         # unpack input and target
         if self._target is not None:
             assert isinstance(input, dict) and isinstance(target, dict), _raise(TypeError(f"Given input or target must be dictionaries, got {type(input)} and {type(target)}."))
-            assert self._target in input and self._target in target, _raise(TypeError(f"Target ‘{self._target}’ cannot be found not in input or target"))
+            assert self._target in input and self._target in target, _raise(TypeError(f"Target ‘{self._target}’ cannot be found in input or target"))
             input, target = input[self._target], target[self._target]
 
         # call
