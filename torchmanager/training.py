@@ -186,6 +186,9 @@ class Manager(_Manager[Module]):
         else:
             initial_epoch = self.current_epoch
 
+        # add console
+        view.logging.add_console()
+
         # add progress bar to callbacks
         if show_verbose:
             callbacks_list.append(ProgressBar(dataset_len, verbose_type=verbose_type))

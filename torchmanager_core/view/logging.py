@@ -3,6 +3,25 @@ from logging import *  # type: ignore
 getLogger().handlers.clear()
 logger = getLogger('torchmanager')
 
+# initialize console
+def add_console(console: StreamHandler = StreamHandler()) -> None:
+    """
+    Add console handler to the logger
+
+    - Parameters:
+        - console: A `logging.StreamHandler` of console handler
+    """
+    # check if console handler exists
+    handlers = logger.handlers
+    contains_console = any(isinstance(handler, StreamHandler) for handler in handlers)
+
+    # add console handler
+    if not contains_console:
+        formatter = Formatter("%(message)s")
+        console.setLevel(INFO)
+        console.setFormatter(formatter)
+        logger.addHandler(console)
+
 def set_log_path(log_path: str) -> Formatter:
     """
     Set log path for torchmanager logger
