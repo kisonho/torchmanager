@@ -85,6 +85,19 @@ class Test0102(TestCase):
         x_slides = data.sliding_window(x, (64, 64), (32, 32))
         self.assertEqual(x_slides.shape, (49, 3, 64, 64))
 
+    def test_ssim(self) -> None:
+        from torchmanager.metrics import SSIM
+
+        # initialize
+        x = torch.randn((1, 3, 256, 256))
+        y = torch.randn_like(x)
+        ssim_fn = SSIM(3)
+
+        # calculate ssim
+        ssim = ssim_fn(x, y)
+        self.assertGreaterEqual(float(ssim_fn.result), 0, f"SSIM value must be non-negative, got {ssim}.")
+        self.assertLessEqual(float(ssim_fn.result), 1, f"SSIM value must be less or equal to 1, got {ssim}.")
+
     def test_version(self) -> None:
         self.assertGreaterEqual(API_VERSION, "1.2")
 
