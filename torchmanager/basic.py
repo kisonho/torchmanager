@@ -1,7 +1,9 @@
-from torchmanager_core import checkpoint, devices, errors, torch, Version, deprecated, API_VERSION
+from torch.utils.data import DataLoader
+from torchmanager_core import checkpoint, devices, errors, torch, view, Version, deprecated, API_VERSION
 from torchmanager_core.protocols import Resulting
 from torchmanager_core.typing import Any, Collection, Generic, Module, Optional, OrderedDict, Self, Union, cast
 
+from .data import Dataset
 from .losses import Loss, MultiLosses, ParallelLoss
 from .metrics import Metric
 
@@ -52,8 +54,9 @@ class BaseManager(Generic[Module]):
     version: Version
 
     @property
+    @deprecated('v1.3', 'v1.4')
     def compiled(self) -> bool:
-        """The `bool` flag of if this manager has been compiled"""
+        """The `bool` flag of if this manager has been compiled for training"""
         return True if self.loss_fn is not None and self.optimizer is not None else False
 
     @property
@@ -201,6 +204,28 @@ class BaseManager(Generic[Module]):
         # multi gpus support for model
         self.model, use_multi_gpus = devices.data_parallel(self.raw_model, devices=target_devices)
         return use_multi_gpus
+
+    def forward(self, input: Any, target: Optional[Any] = None, /) -> tuple[Any, Optional[torch.Tensor]]:
+        """
+        Forward pass function
+
+        - Parameters:
+            - x_train: The training data
+        - Returns: `Any` kind of model output
+        """
+        # forward model
+        y = self.model(input)
+
+        # forward loss
+        if self.loss_fn is not None and target is not None:
+            try:
+                loss = self.loss_fn(y, target)
+            except Exception as loss_error:
+                runtime_error = errors.LossError()
+                raise loss_error from runtime_error
+        else:
+            loss = None
+        return y, loss
 
     @classmethod
     def from_checkpoint(cls, ckpt: Union[checkpoint.Checkpoint[Any], str], experiment: Optional[str] = None, *, map_location: Optional[torch.device] = None):

@@ -72,28 +72,6 @@ class Manager(BaseManager[Module]):
                 raise runtime_error from metric_error
         return self.summary
 
-    def forward(self, input: Any, target: Optional[Any] = None, /) -> tuple[Any, Optional[torch.Tensor]]:
-        """
-        Forward pass function
-
-        - Parameters:
-            - x_train: The training data
-        - Returns: `Any` kind of model output
-        """
-        # forward model
-        y = self.model(input)
-
-        # forward loss
-        if self.loss_fn is not None and target is not None:
-            try:
-                loss = self.loss_fn(y, target)
-            except Exception as loss_error:
-                runtime_error = errors.LossError()
-                raise loss_error from runtime_error
-        else:
-            loss = None
-        return y, loss
-
     @torch.no_grad()
     def predict(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection[Any]], /, *, device: Optional[Union[torch.device, list[torch.device]]] = None, empty_cache: bool = True, use_multi_gpus: bool = False, show_verbose: bool = False) -> list[Any]:
         '''

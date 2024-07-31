@@ -31,6 +31,11 @@ class Manager(_Manager[Module]):
     __current_epoch: int
 
     @property
+    def compiled(self) -> bool:
+        """The `bool` flag of if this manager has been compiled for training"""
+        return True if self.loss_fn is not None and self.optimizer is not None else False
+
+    @property
     def current_epoch(self) -> int:
         return self.__current_epoch
 
