@@ -22,8 +22,6 @@ class Manager(BaseManager[Module]):
         - compiled_metrics: The `dict` of metrics in `Resulting` that does not contain losses
         - summary: A `dict` of metrics summary with name in `str` and value in `float`
     """
-    model: Union[Module, torch.nn.parallel.DataParallel[Module]]
-
     @property
     def compiled_metrics(self) -> dict[str, Resulting]:
         return {name: m for name, m in self.metric_fns.items() if "loss" not in name}

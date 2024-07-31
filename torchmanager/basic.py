@@ -1,9 +1,7 @@
-from torch.utils.data import DataLoader
-from torchmanager_core import checkpoint, devices, errors, torch, view, Version, deprecated, API_VERSION
+from torchmanager_core import checkpoint, devices, errors, torch, Version, deprecated, API_VERSION
 from torchmanager_core.protocols import Resulting
 from torchmanager_core.typing import Any, Collection, Generic, Module, Optional, OrderedDict, Self, Union, cast
 
-from .data import Dataset
 from .losses import Loss, MultiLosses, ParallelLoss
 from .metrics import Metric
 
@@ -49,7 +47,7 @@ class BaseManager(Generic[Module]):
     """The optional main loss function in `Resulting`"""
     metric_fns: dict[str, Resulting]
     """A `dict` of the metric functions with names as keys in `str` and metric functions as values in `torch.metrics.Metric`"""
-    model: Union[Module, torch.nn.DataParallel[Module]]
+    model: Union[Module, torch.nn.DataParallel]
     optimizer: Optional[torch.optim.Optimizer]
     version: Version
 
@@ -92,7 +90,7 @@ class BaseManager(Generic[Module]):
     @property
     def raw_model(self) -> Module:
         """The `Module` controlled by this manager without `torch.nn.DataParallel` wrap"""
-        return cast(torch.nn.DataParallel[Module], self.model).module if isinstance(self.model, torch.nn.DataParallel) else self.model
+        return cast(Module, self.model.module) if isinstance(self.model, torch.nn.DataParallel) else self.model
 
     def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, dict[str, Loss]]] = None, metrics: dict[str, Metric] = {}) -> None:
         """
