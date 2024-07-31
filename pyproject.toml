@@ -13,7 +13,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.9"
 packaging = ">=16.8"
-torch = "^2.1"
+torch = "*"
 tqdm = "*"
 
 [tool.poetry.optional-dependencies]
