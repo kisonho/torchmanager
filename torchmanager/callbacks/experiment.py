@@ -1,4 +1,4 @@
-from torchmanager_core import os, view
+from torchmanager_core import os, view, _raise
 from torchmanager_core.typing import Generic, TypeVar, Union
 from torchmanager_core.protocols import MonitorType, StateDictLoadable
 
@@ -16,7 +16,7 @@ class Experiment(MultiCallbacks, Generic[T]):
     * extends: `.callback.Callback`
     * requires: `tensorboard` package
     """
-    def __init__(self, experiment: str, model: T, monitors: Union[dict[str, MonitorType], list[str]] = {}, show_verbose: bool = True) -> None:
+    def __init__(self, experiment: str, model: T, monitors: Union[dict[str, MonitorType], list[str]] = {}, **kwargs) -> None:
         """
         Constructor
 
@@ -24,8 +24,14 @@ class Experiment(MultiCallbacks, Generic[T]):
             - experiment: A `str` of target folder for the experiment
             - model: A target model to be tracked during experiment in `T`
             - monitors: A `list` of metric name if all monitors are using `MonitorType.MAX` to track, or `dict` of metric name to be tracked for the best checkpoint in `str` and the `.ckpt.MonitorType` to track as values
-            - show_verbose: A `bool` flag of if showing loggins in console
         """
+        # check arguments
+        if "show_verbose" in kwargs:
+            view.warnings.warn("`show_verbose` has been deprecated in v1.3 and will be removed in v1.4, it will not take affect of the display anymore.", DeprecationWarning)
+            del kwargs['show_verbose']
+        else:
+            assert len(kwargs) == 0, _raise(TypeError(f"Unknown arguments: {kwargs.keys()}"))
+
         # call super constructor
         experiment = os.path.normpath(experiment)
         if not experiment.endswith(".exp"):
@@ -58,8 +64,4 @@ class Experiment(MultiCallbacks, Generic[T]):
         formatter = view.set_log_path(log_path)
 
         # initialize console
-        if show_verbose:
-            console = view.logging.StreamHandler()
-            console.setLevel(view.logging.INFO)
-            console.setFormatter(formatter)
-            view.logger.addHandler(console)
+        view.add_console(formatter=formatter)

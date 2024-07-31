@@ -4,7 +4,7 @@ getLogger().handlers.clear()
 logger = getLogger('torchmanager')
 
 # initialize console
-def add_console(console: StreamHandler = StreamHandler()) -> None:
+def add_console(console: StreamHandler = StreamHandler(), formatter = Formatter("%(message)s")) -> None:
     """
     Add console handler to the logger
 
@@ -17,7 +17,6 @@ def add_console(console: StreamHandler = StreamHandler()) -> None:
 
     # add console handler
     if not contains_console:
-        formatter = Formatter("%(message)s")
         console.setLevel(INFO)
         console.setFormatter(formatter)
         logger.addHandler(console)
