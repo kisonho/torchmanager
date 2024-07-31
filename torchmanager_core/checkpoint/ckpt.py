@@ -1,7 +1,7 @@
-import os, torch
-from torchmanager_core import view
-from torchmanager_core.protocols import ModelContainer, StateDictLoadable, WrappedFn
-from torchmanager_core.typing import Any, Generic, Optional, OrderedDict, TypeVar
+import os, torch, warnings
+from typing import Any, Generic, Optional, OrderedDict, TypeVar
+
+from .protocols import ModelContainer, StateDictLoadable, WrappedFn
 
 T = TypeVar("T", bound=StateDictLoadable)
 
@@ -48,16 +48,16 @@ class Checkpoint(Generic[T]):
         if isinstance(model, ModelContainer):
             # check if loss function is wrapped
             if isinstance(model.loss_fn, WrappedFn):
-                view.warnings.warn("Loss function is wrapped and is not supported by checkpoint, use `losses.Loss` instead.")
+                warnings.warn("Loss function is wrapped and is not supported by checkpoint, use `losses.Loss` instead.")
             
             # check if metrics is wrapped
             for name, metric in model.metric_fns.items():
                 if isinstance(metric, WrappedFn):
-                    view.warnings.warn(f"Metric {name} is wrapped and is not supported by checkpoint, use `metrics.Metric` instead.")
+                    warnings.warn(f"Metric {name} is wrapped and is not supported by checkpoint, use `metrics.Metric` instead.")
 
         # check if loss function is wrapped
         if isinstance(loss_fn, WrappedFn):
-            view.warnings.warn("Loss function is wrapped and is not supported by checkpoint, use `losses.Loss` instead.")
+            warnings.warn("Loss function is wrapped and is not supported by checkpoint, use `losses.Loss` instead.")
             self.loss_fn = None
         else:
             self.loss_fn = loss_fn
@@ -67,7 +67,7 @@ class Checkpoint(Generic[T]):
             # check if metrics is wrapped
             for name, metric in self.metrics.items():
                 if isinstance(metric, WrappedFn):
-                    view.warnings.warn(f"Metric {name} is wrapped and is not supported by checkpoint, use `metrics.Metric` instead.")
+                    warnings.warn(f"Metric {name} is wrapped and is not supported by checkpoint, use `metrics.Metric` instead.")
                     continue
                 else:
                     self.metrics[name] = metric
