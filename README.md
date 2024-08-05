@@ -1,5 +1,14 @@
 # torchmanager
 ### A generic deep learning training/testing framework for PyTorch
+![](res/torchmanager.png)
+
+<div style="text-align: center;">
+
+<!-- [![Conda Version](https://img.shields.io/conda/vn/conda-forge/torchmanager.svg)](https://anaconda.org/conda-forge/torchmanager) -->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10381715.svg)](https://doi.org/10.5281/zenodo.10381715)
+
+</div>
+
 To use this framework, simply initialize a `Manager` object. The `Manager` class provides a generic training/testing loop for PyTorch models. It also provides some useful callbacks to use during training/testing.
 
 ## Pre-request
