@@ -123,7 +123,7 @@ class Manager(_Manager[Module]):
     def eval(self, input: Any, target: Any, /) -> dict[str, float]:
         # forward metrics
         for name, fn in self.compiled_metrics.items():
-            if not name.startswith("val_") and "loss" not in name:
+            if (not name.startswith("val_") and self.model.training) and "loss" not in name:
                 _ = fn(input, target)
         return self.summary
 

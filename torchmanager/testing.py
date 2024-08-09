@@ -39,7 +39,7 @@ class Manager(BaseManager[Module]):
         for name, fn in self.metric_fns.items():
             if name.startswith("val_") and self.model.training:
                 continue
-            elif name.startswith("val_"):
+            else:
                 name = name.replace("val_", "")
             try:
                 summary[name] = float(fn.result.detach())
