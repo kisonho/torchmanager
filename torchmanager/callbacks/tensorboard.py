@@ -51,7 +51,10 @@ class TensorBoard(FrequencyCallback):
 
         # write results to Tensorboard
         for key in keys:
+            # initialize
             r: dict[str, float] = {}
+
+            # record key
             if key in summary:
                 r["train"] = summary[key]
             if val_summary is not None and key in val_summary:
