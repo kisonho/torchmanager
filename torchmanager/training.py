@@ -233,7 +233,8 @@ class Manager(_Manager[Module]):
                     callback.on_epoch_start(self.current_epoch)
 
                 # train for one epoch
-                summary = self._train(training_dataset, iterations=batch_iterations, device=device, use_multi_gpus=use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
+                training_summary = self._train(training_dataset, iterations=batch_iterations, device=device, use_multi_gpus=use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
+                summary |= training_summary
                 if iterations is not None and batch_iterations is not None:
                     iterations -= batch_iterations
 
@@ -242,7 +243,7 @@ class Manager(_Manager[Module]):
 
                 # on epoch end
                 for callback in callbacks_list:
-                    callback.on_epoch_end(self.current_epoch, summary=summary, val_summary=val_summary)
+                    callback.on_epoch_end(self.current_epoch, summary=training_summary, val_summary=val_summary)
 
                 # print summary info
                 val_message = f"Epoch {self.current_epoch + 1}/{epochs}: "
