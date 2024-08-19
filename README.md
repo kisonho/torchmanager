@@ -21,8 +21,8 @@ To use this framework, simply initialize a `Manager` object. The `Manager` class
 * tensorboard (Optional for tensorboard recording)
 
 ## Installation
-* PyPi: `pip install --pre torchmanager`
-* Conda: `conda install -c kisonho torchmanager-nightly`
+* PyPi: `pip install torchmanager`
+* Conda: `conda install torchmanager`
 
 ## Start from Configurations
 The `Configs` class is designed to be inherited to define necessary configurations. It also provides a method to get configurations from terminal arguments.
