@@ -140,13 +140,16 @@ class BestCheckpoint(_Checkpoint[T]):
         self.show_verbose = show_verbose
 
     def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: Optional[dict[str, float]] = None) -> None:
+        # initialize
+        current_summary = summary.copy()
+
         # get score
         if val_summary is not None:
             score = val_summary[self.monitor]
             val_summary = {f"val_{k}": v for k, v in val_summary.items()}
-            summary.update(val_summary)
+            current_summary.update(val_summary)
         else: 
-            score = summary[self.monitor]
+            score = current_summary[self.monitor]
 
         # check max or min found
         max_score_found = score >= self.best_score and self.monitor_type == MonitorType.MAX
@@ -158,11 +161,11 @@ class BestCheckpoint(_Checkpoint[T]):
 
         # save when best
         if max_score_found:
-            self.best_summary = summary
-            super().on_epoch_end(epoch, summary, val_summary)
+            self.best_summary = current_summary
+            super().on_epoch_end(epoch, current_summary, val_summary)
         elif min_score_found:
-            self.best_summary = summary
-            super().on_epoch_end(epoch, summary, val_summary)
+            self.best_summary = current_summary
+            super().on_epoch_end(epoch, current_summary, val_summary)
 
     def on_train_end(self, model: torch.nn.Module) -> None:
         # load best checkpoint
