@@ -1,4 +1,4 @@
-import abc, torch, sys
+import torch, sys
 from enum import Enum
 from typing import Any, Callable, Optional, Protocol
 from typing_extensions import Self
@@ -37,22 +37,18 @@ class MonitorType(Enum):
 
 
 class LrSteping(Protocol):
-    @abc.abstractmethod
     def get_last_lr(self) -> list[float]:
         ...
 
-    @abc.abstractmethod
     def step(self, epoch: Optional[int] = None) -> None:
         ...
 
 
 class Trainable(Protocol):
     """An object that can switch training mode"""
-    @abc.abstractmethod
     def eval(self) -> Self:
         ...
 
-    @abc.abstractmethod
     def train(self, mode: bool = True) -> Self:
         ...
 
@@ -69,24 +65,19 @@ class Resulting(DeviceMovable, StateDictLoadable, Trainable, Protocol):
     _target: Optional[str]
 
     @property
-    @abc.abstractmethod
     def result(self) -> torch.Tensor:
         ...
 
     @property
-    @abc.abstractmethod
     def results(self) -> Optional[torch.Tensor]:
         ...
 
-    @abc.abstractmethod
     def __call__(self, input: Any, target: Any) -> torch.Tensor:
         ...
 
-    @abc.abstractmethod
     def convert(self, from_version: Version) -> None:
         ...
 
-    @abc.abstractmethod
     def reset(self) -> None:
         ...
 
@@ -94,7 +85,6 @@ class Resulting(DeviceMovable, StateDictLoadable, Trainable, Protocol):
 class SummaryWriteble(Protocol):
     """The SummaryWriter protocol"""
 
-    @abc.abstractmethod
     def add_scalars(self, main_tag: str, tag_scalar_dict: Any, global_step: Optional[int] = None) -> None:
         ...
 

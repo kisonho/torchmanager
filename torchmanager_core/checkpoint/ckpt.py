@@ -1,4 +1,5 @@
 import os, torch, warnings
+from torch.optim.optimizer import Optimizer
 from typing import Any, Generic, Optional, OrderedDict, TypeVar
 
 from .protocols import ModelContainer, StateDictLoadable, WrappedFn
@@ -23,17 +24,17 @@ class Checkpoint(Generic[T]):
     loss_fn: Optional[StateDictLoadable]
     metrics: dict[str, StateDictLoadable]
     model: T
-    optimizer: Optional[torch.optim.Optimizer]
+    optimizer: Optional[Optimizer]
     save_weights_only: bool
 
-    def __init__(self, model: T, last_epoch: int = 0, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[StateDictLoadable] = None, metrics: Optional[dict[str, StateDictLoadable]] = None, save_weights_only: bool = False) -> None:
+    def __init__(self, model: T, last_epoch: int = 0, optimizer: Optional[Optimizer] = None, loss_fn: Optional[StateDictLoadable] = None, metrics: Optional[dict[str, StateDictLoadable]] = None, save_weights_only: bool = False) -> None:
         """
         Constructor
 
         - Parameters:
             - model: Any type of model to be saved
             - epoch: An `int` of epoch index
-            - optimizer: An optional `torch.optim.Optimizer` to be recorded
+            - optimizer: An optional `Optimizer` to be recorded
             - loss_fn: An optional `torch.nn.Module` for loss function to be recorded
             - metrics: An optional `dict` of the metrics with key in `str` and value in `torch.nn.Module` to be recorded
         """

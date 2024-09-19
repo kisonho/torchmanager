@@ -26,7 +26,7 @@ except:
     GPUS: list[torch.device] = []
 
 Module = TypeVar('Module', bound=torch.nn.Module)
-P = TypeVar('P', bound=DataParallelType)
+P = TypeVar('P', bound=torch.nn.parallel.DataParallel)
 
 
 @overload
@@ -39,7 +39,7 @@ def data_parallel(raw_model: Module, /, devices: list[torch.device] = GPUS, *, o
     ...
 
 
-def data_parallel(raw_model: Module, /, devices: list[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type[P] = torch.nn.parallel.DataParallel) -> tuple[Union[Module, P], bool]:
+def data_parallel(raw_model: Union[Module, P], /, devices: list[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type[P] = torch.nn.parallel.DataParallel) -> tuple[Union[Module, P], bool]:
     """
     Make a `torch.nn.Module` data parallel
 

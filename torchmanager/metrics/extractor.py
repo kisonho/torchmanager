@@ -1,4 +1,3 @@
-from torch.nn import functional as F
 from torchmanager_core import torch, view, _raise
 from torchmanager_core.typing import Any, Callable, Generic, Module, Optional
 

@@ -1,5 +1,5 @@
-from torchmanager_core import Version, abc, torch, deprecated, _raise
-from torchmanager_core.typing import Any, Dict, Optional, Tuple, Union
+from torchmanager_core import Version, abc, torch, _raise
+from torchmanager_core.typing import Optional, Tuple
 
 from .metric import Metric
 
@@ -131,51 +131,3 @@ class ConfusionMatrix(Metric):
         mask = (target >= 0) & (target < self.num_classes)
         hist = torch.bincount(self.num_classes * target[mask].to(torch.int64) + input[mask], minlength=self.num_classes ** 2).reshape(self.num_classes, self.num_classes)
         return hist
-
-
-class ConfusionMetrics(ConfusionMatrix, abc.ABC):
-    """
-    The metric that forward confusion metrics calculated by given `input` and `target` as final `input` in `forward` method
-
-    * Extends: `.metric.Metric`
-    * Abstract class
-
-    - Properties:
-        - num_classes: An `int` of the total number of classes
-    - Methods to implement:
-        - forward: The main forward function to calculate final metric as `torch.Tensor`, which accepts the confusion metrics of `torch.Tensor` with the label of `torch.Tensor
-    """
-    @deprecated("v1.3", "v1.4")
-    def __init__(self, num_classes: int, /, *, target: Optional[str] = None) -> None:
-        super().__init__(num_classes, target=target)
-
-    def __call__(self, input: Union[torch.Tensor, Dict[str, torch.Tensor]], target: Union[torch.Tensor, Dict[str, torch.Tensor]]) -> torch.Tensor:
-        # unpack input and target
-        if self._target is not None:
-            assert isinstance(input, dict) and isinstance(target, dict), _raise(TypeError(f"Given input or target must be dictionaries, got {type(input)} and {type(target)}."))
-            assert self._target in input and self._target in target, _raise(TypeError(f"Target '{self._target}' cannot be found not in input or target"))
-            x, y = input[self._target], target[self._target]
-        else:
-            assert isinstance(input, torch.Tensor) and isinstance(target, torch.Tensor), _raise(TypeError(f"Given input or target must be in type of `torch.Tensor`, got {type(input)} and {type(target)}."))
-            x, y = input, target
-
-        # initialize metrics
-        conf_mat = torch.zeros((self.num_classes, self.num_classes), device=x.device)
-
-        # add confusion metrics
-        for y_pred, y_true in zip(x, y):
-            y_pred = y_pred.argmax(-1)
-            conf_mat += self.forward_hist(y_pred.flatten(), y_true.flatten())
-
-        # calculate final metric
-        if self._target is not None:
-            assert isinstance(input, dict), _raise(TypeError(f"Given input must be a dictionary, got {type(input)}."))
-            input.update({self._target: conf_mat})
-        return super().__call__(input, target)
-
-    @abc.abstractmethod
-    def forward(self, input: Any, target: Any) -> torch.Tensor:
-        return NotImplemented
-
-
-Histogram = ConfusionMetrics

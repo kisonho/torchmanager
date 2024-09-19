@@ -1,6 +1,7 @@
-from torchmanager_core import checkpoint, devices, errors, torch, Version, deprecated, API_VERSION
+from torch.optim.optimizer import Optimizer
+from torchmanager_core import checkpoint, devices, errors, torch, Version, API_VERSION
 from torchmanager_core.protocols import Resulting
-from torchmanager_core.typing import Any, Collection, Generic, Module, Optional, OrderedDict, Self, Union, cast
+from torchmanager_core.typing import Any, Collection, Generic, Mapping, Module, Optional, OrderedDict, Self, Union, cast
 
 from .losses import Loss, MultiLosses, ParallelLoss
 from .metrics import Metric
@@ -38,7 +39,7 @@ class BaseManager(Generic[Module]):
         - loss_fn: An optional `Loss` for the objective function
         - metrics: A `dict` of metrics with a name in `str` as keys and a `Metric` as values
         - model: A target `torch.nn.Module` to be trained
-        - optimizer: A `torch.optim.Optimizer` to train the model
+        - optimizer: A `Optimizer` to train the model
         - raw_loss_fn: An optional `Loss` of the non-paralleled loss function
         - raw_model: A non-paralleled target `torch.nn.Module` model
     """
@@ -48,11 +49,10 @@ class BaseManager(Generic[Module]):
     metric_fns: dict[str, Resulting]
     """A `dict` of the metric functions with names as keys in `str` and metric functions as values in `torch.metrics.Metric`"""
     model: Union[Module, torch.nn.DataParallel]
-    optimizer: Optional[torch.optim.Optimizer]
+    optimizer: Optional[Optimizer]
     version: Version
 
     @property
-    @deprecated('v1.3', 'v1.4')
     def compiled(self) -> bool:
         """The `bool` flag of if this manager has been compiled for training"""
         return True if self.loss_fn is not None and self.optimizer is not None else False
@@ -92,7 +92,7 @@ class BaseManager(Generic[Module]):
         """The `Module` controlled by this manager without `torch.nn.DataParallel` wrap"""
         return cast(Module, self.model.module) if isinstance(self.model, torch.nn.DataParallel) else self.model
 
-    def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, dict[str, Loss]]] = None, metrics: dict[str, Metric] = {}) -> None:
+    def __init__(self, model: Module, optimizer: Optional[Optimizer] = None, loss_fn: Optional[Union[Loss, dict[str, Loss]]] = None, metrics: dict[str, Metric] = {}) -> None:
         """
         Constructor
 
@@ -100,7 +100,7 @@ class BaseManager(Generic[Module]):
             - loss_fn: An optional `Loss` object to calculate the loss for single loss or a `dict` of losses in `Loss` with their names in `str` to calculate multiple losses
             - metrics: An optional `dict` of metrics with a name in `str` and a `Metric` object to calculate the metric
             - model: An optional target `torch.nn.Module` to be trained
-            - optimizer: An optional `torch.optim.Optimizer` to train the model
+            - optimizer: An optional `Optimizer` to train the model
         """
         # initialize
         self.metric_fns = {}
@@ -125,15 +125,14 @@ class BaseManager(Generic[Module]):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} (version={self.version})"
 
-    @deprecated('v1.3', 'v1.4')
-    def _compile(self, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, dict[str, Loss]]] = None, metrics: dict[str, Metric] = {}) -> None:
+    def _compile(self, optimizer: Optional[Optimizer] = None, loss_fn: Optional[Union[Loss, dict[str, Loss]]] = None, metrics: dict[str, Metric] = {}) -> None:
         """
         Compiles the manager
 
         - Parameters:
             - loss_fn: An optional `Loss` object to calculate the loss for single loss or a `dict` of losses in `Loss` with their names in `str` to calculate multiple losses
             - metrics: An optional `dict` of metrics with a name in `str` and a `Metric` object to calculate the metric
-            - optimizer: An optional `torch.optim.Optimizer` to train the model
+            - optimizer: An optional `Optimizer` to train the model
         """
         # initialize loss
         if isinstance(loss_fn, dict):
@@ -149,15 +148,14 @@ class BaseManager(Generic[Module]):
         # initialize optimizer
         self.optimizer = optimizer
 
-    @deprecated('v1.3', 'v1.4')
-    def compile(self, optimizer: torch.optim.Optimizer, loss_fn: Union[Loss, dict[str, Loss]], metrics: dict[str, Metric] = {}) -> None:
+    def compile(self, optimizer: Optimizer, loss_fn: Union[Loss, dict[str, Loss]], metrics: dict[str, Metric] = {}) -> None:
         """
         Recompiles the manager with optimizer loss function and metrics
 
         - Parameters:
             - loss_fn: A `Loss` object to calculate the loss for single loss or a `dict` of losses in `Loss` with their names in `str` to calculate multiple losses
             - metrics: A `dict` of metrics with a name in `str` and a `Metric` object to calculate the metric
-            - optimizer: A `torch.optim.Optimizer` to train the model
+            - optimizer: A `Optimizer` to train the model
         """
         self._compile(optimizer, loss_fn, metrics)
 
@@ -245,7 +243,7 @@ class BaseManager(Generic[Module]):
 
         # recover model to manager
         if isinstance(ckpt.model, torch.nn.Module):
-            manager = cls(ckpt.model, ckpt.optimizer, loss_fn=cast(Optional[Loss], ckpt.loss_fn), metrics=cast(dict[str, Metric], ckpt.metrics))
+            manager = cls(cast(Module, ckpt.model), ckpt.optimizer, loss_fn=cast(Optional[Loss], ckpt.loss_fn), metrics=cast(dict[str, Metric], ckpt.metrics))
         elif isinstance(ckpt.model, BaseManager):
             manager = ckpt.model
             if isinstance(manager.model, torch.nn.parallel.DataParallel):
@@ -271,7 +269,7 @@ class BaseManager(Generic[Module]):
             manager.reset(map_location)
         return manager
 
-    def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> None:
+    def load_state_dict(self, state_dict: Mapping[str, Any], strict: bool = True, assign: bool = False):
         # load state dict elements
         assert "model" in state_dict, errors._raise(KeyError("The given dictionary does not have 'model' element."))
         assert "optimizer" in state_dict, errors._raise(KeyError("The given dictionary does not have 'optimizer' element."))
