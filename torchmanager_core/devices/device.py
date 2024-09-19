@@ -1,5 +1,5 @@
 import torch, warnings
-from typing import Any, Iterable, Optional, Type, TypeVar, Union, overload
+from typing import Any, Iterable, Optional, Type, TypeVar, Union, cast, overload
 
 from .protocols import DeviceMovable, DataParallelType
 
@@ -26,7 +26,7 @@ except:
     GPUS: list[torch.device] = []
 
 Module = TypeVar('Module', bound=torch.nn.Module)
-P = TypeVar('P', bound=torch.nn.parallel.DataParallel)
+P = TypeVar('P', bound=DataParallelType)
 
 
 @overload
@@ -35,7 +35,7 @@ def data_parallel(raw_model: P, /, devices: list[torch.device] = GPUS, *, output
 
 
 @overload
-def data_parallel(raw_model: Module, /, devices: list[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type[P] = torch.nn.parallel.DataParallel) -> tuple[Union[Module, P], bool]:
+def data_parallel(raw_model: Union[Module, P], /, devices: list[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type[P] = torch.nn.parallel.DataParallel) -> tuple[Union[Module, P], bool]:
     ...
 
 
@@ -51,13 +51,15 @@ def data_parallel(raw_model: Union[Module, P], /, devices: list[torch.device] = 
     - Returns: A `tuple` of either data paralleled `torch.nn.parallel.DataParallel` model if CUDA is available or a raw model if not, and a `bool` flag of if the model data paralleled successfuly.
     """
     if isinstance(raw_model, parallel_type):
+        raw_model = cast(P, raw_model)
         return raw_model, True
-    elif GPU is not NotImplemented:
+    elif GPU is not NotImplemented and not isinstance(raw_model, parallel_type):
         device_ids = [d.index for d in devices]
         model = parallel_type(raw_model, device_ids=device_ids, output_device=output_device)
         return model, True
     else:
         warnings.warn(f"CUDA is not available, unable to use multi-GPUs.", ResourceWarning)
+        raw_model = cast(Module, raw_model)
         return raw_model, False
 
 
