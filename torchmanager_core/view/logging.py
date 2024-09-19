@@ -13,7 +13,7 @@ def add_console(console: StreamHandler = StreamHandler(), formatter = Formatter(
     """
     # check if console handler exists
     handlers = logger.handlers
-    contains_console = any(isinstance(handler, StreamHandler) for handler in handlers)
+    contains_console = any(type(handler) is StreamHandler for handler in handlers)
 
     # add console handler
     if not contains_console:
