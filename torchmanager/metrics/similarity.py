@@ -6,6 +6,12 @@ from torchmanager_core.version.version import Version
 from .metric import Metric
 
 
+class CosineSimilarity(Metric):
+    """The Cosine Similarity metric"""
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        return torch.nn.functional.cosine_similarity(input, target, dim=1).mean()
+
+
 class PSNR(Metric):
     """
     The Peak Signal-to-Noise Ratio metric
