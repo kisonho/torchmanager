@@ -125,40 +125,6 @@ class BaseManager(Generic[Module]):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} (version={self.version})"
 
-    def _compile(self, optimizer: Optional[Optimizer] = None, loss_fn: Optional[Union[Loss, dict[str, Loss]]] = None, metrics: dict[str, Metric] = {}) -> None:
-        """
-        Compiles the manager
-
-        - Parameters:
-            - loss_fn: An optional `Loss` object to calculate the loss for single loss or a `dict` of losses in `Loss` with their names in `str` to calculate multiple losses
-            - metrics: An optional `dict` of metrics with a name in `str` and a `Metric` object to calculate the metric
-            - optimizer: An optional `Optimizer` to train the model
-        """
-        # initialize loss
-        if isinstance(loss_fn, dict):
-            loss_fn_mapping: dict[str, Loss] = {f"{name}_loss": fn for name, fn in loss_fn.items()}
-            self.metric_fns.update(loss_fn_mapping)
-            loss_fn = MultiLosses([l for l in loss_fn_mapping.values()])
-        self.loss_fn = loss_fn
-
-        # initialize metrics
-        for name, fn in metrics.items():
-            self.metric_fns[name] = fn
-
-        # initialize optimizer
-        self.optimizer = optimizer
-
-    def compile(self, optimizer: Optimizer, loss_fn: Union[Loss, dict[str, Loss]], metrics: dict[str, Metric] = {}) -> None:
-        """
-        Recompiles the manager with optimizer loss function and metrics
-
-        - Parameters:
-            - loss_fn: A `Loss` object to calculate the loss for single loss or a `dict` of losses in `Loss` with their names in `str` to calculate multiple losses
-            - metrics: A `dict` of metrics with a name in `str` and a `Metric` object to calculate the metric
-            - optimizer: A `Optimizer` to train the model
-        """
-        self._compile(optimizer, loss_fn, metrics)
-
     def convert(self) -> None:
         """
         Convert from a version to current version
