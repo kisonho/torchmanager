@@ -1,4 +1,5 @@
 from torch.utils.data import DataLoader
+from torch.optim.optimizer import Optimizer
 from torchmanager_core import devices, errors, math, torch, view, _raise
 from torchmanager_core.checkpoint import Checkpoint
 from torchmanager_core.protocols import Resulting
@@ -52,11 +53,11 @@ class Manager(_Manager[Module]):
         return self.loss_fn
 
     @property
-    def compiled_optimizer(self) -> torch.optim.Optimizer:
+    def compiled_optimizer(self) -> Optimizer:
         assert self.optimizer is not None, errors._raise(NotImplementedError("The manager is not compiled properly, `optimizer` is missing."))
         return self.optimizer
 
-    def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, dict[str, Loss]]] = None, metrics: dict[str, Metric] = {}) -> None:
+    def __init__(self, model: Module, optimizer: Optional[Optimizer] = None, loss_fn: Optional[Union[Loss, dict[str, Loss]]] = None, metrics: dict[str, Metric] = {}) -> None:
         super().__init__(model, optimizer, loss_fn, metrics)
         self.__current_epoch = 0
 

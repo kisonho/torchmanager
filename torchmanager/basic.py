@@ -1,3 +1,4 @@
+from torch.optim.optimizer import Optimizer
 from torchmanager_core import checkpoint, devices, errors, torch, Version, deprecated, API_VERSION
 from torchmanager_core.protocols import Resulting
 from torchmanager_core.typing import Any, Collection, Generic, Module, Optional, OrderedDict, Self, Union, cast
@@ -48,7 +49,7 @@ class BaseManager(Generic[Module]):
     metric_fns: dict[str, Resulting]
     """A `dict` of the metric functions with names as keys in `str` and metric functions as values in `torch.metrics.Metric`"""
     model: Union[Module, torch.nn.DataParallel]
-    optimizer: Optional[torch.optim.Optimizer]
+    optimizer: Optional[Optimizer]
     version: Version
 
     @property
@@ -92,7 +93,7 @@ class BaseManager(Generic[Module]):
         """The `Module` controlled by this manager without `torch.nn.DataParallel` wrap"""
         return cast(Module, self.model.module) if isinstance(self.model, torch.nn.DataParallel) else self.model
 
-    def __init__(self, model: Module, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, dict[str, Loss]]] = None, metrics: dict[str, Metric] = {}) -> None:
+    def __init__(self, model: Module, optimizer: Optional[Optimizer] = None, loss_fn: Optional[Union[Loss, dict[str, Loss]]] = None, metrics: dict[str, Metric] = {}) -> None:
         """
         Constructor
 
@@ -126,7 +127,7 @@ class BaseManager(Generic[Module]):
         return f"{self.__class__.__name__} (version={self.version})"
 
     @deprecated('v1.3', 'v1.4')
-    def _compile(self, optimizer: Optional[torch.optim.Optimizer] = None, loss_fn: Optional[Union[Loss, dict[str, Loss]]] = None, metrics: dict[str, Metric] = {}) -> None:
+    def _compile(self, optimizer: Optional[Optimizer] = None, loss_fn: Optional[Union[Loss, dict[str, Loss]]] = None, metrics: dict[str, Metric] = {}) -> None:
         """
         Compiles the manager
 
@@ -150,7 +151,7 @@ class BaseManager(Generic[Module]):
         self.optimizer = optimizer
 
     @deprecated('v1.3', 'v1.4')
-    def compile(self, optimizer: torch.optim.Optimizer, loss_fn: Union[Loss, dict[str, Loss]], metrics: dict[str, Metric] = {}) -> None:
+    def compile(self, optimizer: Optimizer, loss_fn: Union[Loss, dict[str, Loss]], metrics: dict[str, Metric] = {}) -> None:
         """
         Recompiles the manager with optimizer loss function and metrics
 
@@ -245,7 +246,7 @@ class BaseManager(Generic[Module]):
 
         # recover model to manager
         if isinstance(ckpt.model, torch.nn.Module):
-            manager = cls(ckpt.model, ckpt.optimizer, loss_fn=cast(Optional[Loss], ckpt.loss_fn), metrics=cast(dict[str, Metric], ckpt.metrics))
+            manager = cls(ckpt.model, ckpt.optimizer, loss_fn=cast(Optional[Loss], ckpt.loss_fn), metrics=cast(dict[str, Metric], ckpt.metrics))  # type: ignore
         elif isinstance(ckpt.model, BaseManager):
             manager = ckpt.model
             if isinstance(manager.model, torch.nn.parallel.DataParallel):
