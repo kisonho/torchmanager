@@ -63,7 +63,7 @@ class SSIM(Metric):
     def window_size(self) -> int:
         return self.window.shape[-1]
 
-    def __init__(self, channels: int, /, sigma: float = 1.5, window_size: int = 11, *, denormalize_fn: Optional[Callable[[torch.Tensor], torch.Tensor]] = None, pixel_range: float = 255):
+    def __init__(self, channels: int, /, sigma: float = 1.5, window_size: int = 11, *, denormalize_fn: Optional[Callable[[torch.Tensor], torch.Tensor]] = None, pixel_range: float = 255, target: Optional[str] = None) -> None:
         """
         Constructor
 
@@ -73,7 +73,7 @@ class SSIM(Metric):
             - window_size: An `int` of the window size
             - pixel_range: A `float` of the pixel range
         """
-        super(SSIM, self).__init__()
+        super(SSIM, self).__init__(target=target)
         gauss = torch.Tensor(
             [torch.exp(torch.tensor(-((x - window_size // 2) ** 2) / (2 * sigma ** 2))) for x in range(window_size)]
         )
