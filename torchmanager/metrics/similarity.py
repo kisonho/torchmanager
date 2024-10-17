@@ -13,18 +13,30 @@ class PSNR(Metric):
     - Properties:
         - denormalize_fn: An optional `Callable` function to denormalize the images
     """
+    __max_value: Optional[float]
     denormalize_fn: Optional[Callable[[torch.Tensor], torch.Tensor]]
 
-    def __init__(self, *, denormalize_fn: Optional[Callable[[torch.Tensor], torch.Tensor]] = None, target: Optional[str] = None) -> None:
+    @property
+    def max_value(self) -> Optional[float]:
+        return self.__max_value if hasattr(self, "_PSNR__max_value") else 1
+
+    @max_value.setter
+    def max_value(self, value: Optional[float]) -> None:
+        assert value is None or value > 0, _raise(ValueError("Max value must be positive."))
+        self.__max_value = value
+
+    def __init__(self, *, denormalize_fn: Optional[Callable[[torch.Tensor], torch.Tensor]] = None, max_value: Optional[float] = 1, target: Optional[str] = None) -> None:
         """
         Constructor
 
         - Parameters:
             - denormalize_fn: An optional `Callable` function to denormalize the images
+            - max_value: An optional `float` of the maximum value
             - target: An optional `str` of the target name
         """
         super().__init__(target=target)
         self.denormalize_fn = denormalize_fn
+        self.max_value = max_value
 
     @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
@@ -35,7 +47,8 @@ class PSNR(Metric):
 
         # calculate psnr with denomalized input and target
         mse = F.mse_loss(input, target)
-        return 10 * torch.log10(input.max() ** 2 / mse)
+        max_value = input.max() if self.max_value is None else self.max_value
+        return 10 * torch.log10(max_value ** 2 / mse)
 
 
 class SSIM(Metric):
