@@ -15,15 +15,15 @@ class PSNR(Metric):
     """
     denormalize_fn: Optional[Callable[[torch.Tensor], torch.Tensor]]
 
-    def __init__(self, *, denormalize_fn: Optional[Callable[[torch.Tensor], torch.Tensor]] = None) -> None:
+    def __init__(self, *, denormalize_fn: Optional[Callable[[torch.Tensor], torch.Tensor]] = None, target: Optional[str] = None) -> None:
         """
         Constructor
 
         - Parameters:
-            - max_val: A `float` of the maximum value of the input
             - denormalize_fn: An optional `Callable` function to denormalize the images
+            - target: An optional `str` of the target name
         """
-        super().__init__()
+        super().__init__(target=target)
         self.denormalize_fn = denormalize_fn
 
     @torch.no_grad()
