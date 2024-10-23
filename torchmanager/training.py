@@ -125,8 +125,16 @@ class Manager(_Manager[Module]):
         # forward metrics
         if self.model.training:
             for name, fn in self.compiled_metrics.items():
-                if (not name.startswith("val_") and self.model.training) and "loss" not in name:
+                # skip for validation val
+                if name.startswith("val_") or "loss" in name:
+                    continue
+
+                # calculate metrics
+                try:
                     _ = fn(input, target)
+                except Exception as metric_error:
+                    runtime_error = errors.MetricError(name)
+                    raise runtime_error from metric_error
             return self.summary
         else:
             return super().eval(input, target)
