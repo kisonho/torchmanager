@@ -19,18 +19,30 @@ class PSNR(Metric):
     - Properties:
         - denormalize_fn: An optional `Callable` function to denormalize the images
     """
+    __max_value: Optional[float]
     denormalize_fn: Optional[Callable[[torch.Tensor], torch.Tensor]]
 
-    def __init__(self, *, denormalize_fn: Optional[Callable[[torch.Tensor], torch.Tensor]] = None) -> None:
+    @property
+    def max_value(self) -> Optional[float]:
+        return self.__max_value if hasattr(self, "_PSNR__max_value") else 1
+
+    @max_value.setter
+    def max_value(self, value: Optional[float]) -> None:
+        assert value is None or value > 0, _raise(ValueError("Max value must be positive."))
+        self.__max_value = value
+
+    def __init__(self, *, denormalize_fn: Optional[Callable[[torch.Tensor], torch.Tensor]] = None, max_value: Optional[float] = 1, target: Optional[str] = None) -> None:
         """
         Constructor
 
         - Parameters:
-            - max_val: A `float` of the maximum value of the input
             - denormalize_fn: An optional `Callable` function to denormalize the images
+            - max_value: An optional `float` of the maximum value
+            - target: An optional `str` of the target name
         """
-        super().__init__()
+        super().__init__(target=target)
         self.denormalize_fn = denormalize_fn
+        self.max_value = max_value
 
     @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
@@ -41,7 +53,8 @@ class PSNR(Metric):
 
         # calculate psnr with denomalized input and target
         mse = F.mse_loss(input, target)
-        return 10 * torch.log10(input.max() ** 2 / mse)
+        max_value = input.max() if self.max_value is None else self.max_value
+        return 10 * torch.log10(max_value ** 2 / mse)
 
 
 class SSIM(Metric):
@@ -69,7 +82,7 @@ class SSIM(Metric):
     def window_size(self) -> int:
         return self.window.shape[-1]
 
-    def __init__(self, channels: int, /, sigma: float = 1.5, window_size: int = 11, *, denormalize_fn: Optional[Callable[[torch.Tensor], torch.Tensor]] = None, pixel_range: float = 255):
+    def __init__(self, channels: int, /, sigma: float = 1.5, window_size: int = 11, *, denormalize_fn: Optional[Callable[[torch.Tensor], torch.Tensor]] = None, pixel_range: float = 255, target: Optional[str] = None) -> None:
         """
         Constructor
 
@@ -79,7 +92,7 @@ class SSIM(Metric):
             - window_size: An `int` of the window size
             - pixel_range: A `float` of the pixel range
         """
-        super(SSIM, self).__init__()
+        super(SSIM, self).__init__(target=target)
         gauss = torch.Tensor(
             [torch.exp(torch.tensor(-((x - window_size // 2) ** 2) / (2 * sigma ** 2))) for x in range(window_size)]
         )
