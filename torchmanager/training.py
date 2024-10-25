@@ -1,6 +1,5 @@
 from torch.optim.optimizer import Optimizer
 from torch.utils.data import DataLoader
-from torch.optim.optimizer import Optimizer
 from torchmanager_core import devices, errors, math, torch, view, _raise
 from torchmanager_core.checkpoint import Checkpoint
 from torchmanager_core.protocols import Resulting
