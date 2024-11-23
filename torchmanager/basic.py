@@ -44,6 +44,7 @@ class BaseManager(Generic[Module]):
         - raw_model: A non-paralleled target `torch.nn.Module` model
     """
     # properties
+    __device: torch.device
     loss_fn: Optional[Resulting]
     """The optional main loss function in `Resulting`"""
     metric_fns: dict[str, Resulting]
@@ -56,6 +57,16 @@ class BaseManager(Generic[Module]):
     def compiled(self) -> bool:
         """The `bool` flag of if this manager has been compiled for training"""
         return True if self.loss_fn is not None and self.optimizer is not None else False
+
+    @property
+    def device(self) -> torch.device:
+        """The current device of the manager"""
+        return self.__device
+
+    @device.setter
+    def device(self, device: Union[str, torch.device]) -> None:
+        """Set the device for the manager"""
+        self.__device = torch.device(device)
 
     @property
     def loss_dict(self) -> dict[str, Resulting]:
@@ -121,6 +132,13 @@ class BaseManager(Generic[Module]):
 
         # initialize optimizer
         self.optimizer = optimizer
+
+    def __enter__(self) -> Self:
+        self.to(self.device)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        self.reset()
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} (version={self.version})"
@@ -314,3 +332,34 @@ class BaseManager(Generic[Module]):
             return (x, y) if not isinstance(data, dict) else (data[x], data[y])
         else:
             return NotImplemented
+
+    def use(self, device: Optional[Union[torch.device, list[torch.device]]]) -> Self:
+        """
+        Tell the manager to use given device, auto find available device if not given
+
+        * Use with `with` statement to set the device for the manager:
+        >>> with manager.use(device):
+        ...     # do something with device
+        >>> # do something else with CPU
+
+        * Equivalent to:
+        >>> manager.use(device)
+        >>> manager.to(manager.device)
+        ...     # do something with device
+        >>> manager.reset()
+        >>> # do something else with CPU
+
+        - Parameters:
+            - device: An optional `torch.device` or a `list` of `torch.device` to use
+        """
+        # find available device
+        cpu, device, target_devices = devices.search(device)
+        if device.type == cpu or len(target_devices) < 2:
+            use_multi_gpus = False
+        devices.set_default(target_devices[0])
+        self.device = device
+
+        # multi-gpus support
+        if use_multi_gpus:
+            use_multi_gpus = self.data_parallel(target_devices)
+        return self

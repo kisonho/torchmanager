@@ -149,12 +149,6 @@ class Manager(BaseManager[Module]):
             - show_verbose: A `bool` flag to show the progress bar during testing
         - Returns: A `dict` of validation summary
         """
-        # find available device
-        cpu, device, target_devices = devices.search(device)
-        if device == cpu or len(target_devices) < 2:
-            use_multi_gpus = False
-        devices.set_default(target_devices[0])
-
         # initialize dataset length
         if len(dataset) == 0:
             return {}
@@ -166,6 +160,11 @@ class Manager(BaseManager[Module]):
         # initialize progress bar
         progress_bar = view.tqdm(total=dataset_len, disable=not show_verbose)
 
+        # initialize devices
+        if not use_multi_gpus and isinstance(device, list) and len(device) > 1:
+            view.warnings.warn("Multi-GPUs are not used, only the first device will be used.")
+            device = device[0]
+
         # reset loss function and metrics
         if self.loss_fn is not None:
             self.loss_fn.eval().reset()
@@ -174,9 +173,8 @@ class Manager(BaseManager[Module]):
 
         try:
             # move to device
-            if use_multi_gpus:
-                use_multi_gpus = self.data_parallel(target_devices)
-            self.to(device)
+            self.use(device)
+            self.to(self.device)
             self.model.eval()
 
             # batch loop
@@ -184,8 +182,8 @@ class Manager(BaseManager[Module]):
                 # move x_test, y_test to device
                 x_test, y_test = self.unpack_data(data)
                 if use_multi_gpus is not True:
-                    x_test = devices.move_to_device(x_test, device)
-                y_test = devices.move_to_device(y_test, device)
+                    x_test = devices.move_to_device(x_test, self.device)
+                y_test = devices.move_to_device(y_test, self.device)
 
                 # test for one step
                 step_summary = self.test_step(x_test, y_test)
@@ -209,7 +207,7 @@ class Manager(BaseManager[Module]):
 
             # empty cache
             if empty_cache:
-                self.reset(cpu)
+                self.reset(devices.CPU)
 
     def test_step(self, x_test: Any, y_test: Any) -> dict[str, float]:
         """
