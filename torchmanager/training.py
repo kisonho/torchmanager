@@ -188,18 +188,17 @@ class Manager(_Manager[Module]):
         else:
             initial_epoch = self.current_epoch
 
+        # initialize devices
+        if not use_multi_gpus and isinstance(device, list) and len(device) > 1:
+            view.warnings.warn("Multi-GPUs are not used, only the first device will be used.")
+            device = device[0]
+
         # add console
         view.logging.add_console()
 
         # add progress bar to callbacks
         if show_verbose:
             callbacks_list.append(ProgressBar(dataset_len, verbose_type=verbose_type))
-
-        # find available device
-        cpu, device, target_devices = devices.search(device)
-        if device.type == cpu or len(target_devices) < 2:
-            use_multi_gpus = False
-        devices.set_default(target_devices[0])
 
         # initialize summary
         summary: dict[str, float] = {}
@@ -209,53 +208,49 @@ class Manager(_Manager[Module]):
             callback.on_train_start(initial_epoch)
 
         try:
-            # move to device
-            if use_multi_gpus:
-                use_multi_gpus = self.data_parallel(target_devices)
-            self.to(device)
+            with self.use(device):
+                # epoch loop
+                for self.current_epoch in range(initial_epoch, epochs):
+                    # calculate batch iterations
+                    if iterations is not None:
+                        batch_iterations = iterations if dataset_len < iterations else iterations
+                    else:
+                        batch_iterations = None
 
-            # epoch loop
-            for self.current_epoch in range(initial_epoch, epochs):
-                # calculate batch iterations
-                if iterations is not None:
-                    batch_iterations = iterations if dataset_len < iterations else iterations
-                else:
-                    batch_iterations = None
+                    # calculate iterations per epoch
+                    iterations_per_epoch = dataset_len if batch_iterations is None else batch_iterations
 
-                # calculate iterations per epoch
-                iterations_per_epoch = dataset_len if batch_iterations is None else batch_iterations
+                    # initialize epoch
+                    view.logger.info(f"Training epoch {self.current_epoch + 1}/{epochs}")
 
-                # initialize epoch
-                view.logger.info(f"Training epoch {self.current_epoch + 1}/{epochs}")
+                    # on epoch start
+                    for callback in callbacks_list:
+                        if isinstance(callback, ProgressBar) and iterations_per_epoch != callback.iterations_per_epoch:
+                            callback.iterations_per_epoch = iterations_per_epoch
+                        callback.on_epoch_start(self.current_epoch)
 
-                # on epoch start
-                for callback in callbacks_list:
-                    if isinstance(callback, ProgressBar) and iterations_per_epoch != callback.iterations_per_epoch:
-                        callback.iterations_per_epoch = iterations_per_epoch
-                    callback.on_epoch_start(self.current_epoch)
+                    # train for one epoch
+                    training_summary = self._train(training_dataset, iterations=batch_iterations, device=self.device, use_multi_gpus=use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
+                    summary |= training_summary
+                    if iterations is not None and batch_iterations is not None:
+                        iterations -= batch_iterations
 
-                # train for one epoch
-                training_summary = self._train(training_dataset, iterations=batch_iterations, device=device, use_multi_gpus=use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
-                summary |= training_summary
-                if iterations is not None and batch_iterations is not None:
-                    iterations -= batch_iterations
+                    # validate
+                    val_summary = self.test(val_dataset, device=device, use_multi_gpus=use_multi_gpus, empty_cache=False) if val_dataset is not None else None
 
-                # validate
-                val_summary = self.test(val_dataset, device=device, use_multi_gpus=use_multi_gpus, empty_cache=False) if val_dataset is not None else None
+                    # on epoch end
+                    for callback in callbacks_list:
+                        callback.on_epoch_end(self.current_epoch, summary=training_summary, val_summary=val_summary)
 
-                # on epoch end
-                for callback in callbacks_list:
-                    callback.on_epoch_end(self.current_epoch, summary=training_summary, val_summary=val_summary)
-
-                # print summary info
-                val_message = f"Epoch {self.current_epoch + 1}/{epochs}: "
-                if val_summary is not None:
-                    summary |= {f"val_{name}": value for name, value in val_summary.items()}
-                for i, (name, value) in enumerate(summary.items()):
-                    if i > 0:
-                        val_message += ", "
-                    val_message += f"{name}={value:.4f}"
-                view.logger.info(val_message)
+                    # print summary info
+                    val_message = f"Epoch {self.current_epoch + 1}/{epochs}: "
+                    if val_summary is not None:
+                        summary |= {f"val_{name}": value for name, value in val_summary.items()}
+                    for i, (name, value) in enumerate(summary.items()):
+                        if i > 0:
+                            val_message += ", "
+                        val_message += f"{name}={value:.4f}"
+                    view.logger.info(val_message)
         except errors.StopTraining as error:
             pass
         except KeyboardInterrupt:
@@ -273,9 +268,6 @@ class Manager(_Manager[Module]):
             # remove added progress bar
             if show_verbose:
                 callbacks_list.pop()
-
-            # reset model
-            self.reset(cpu)
         return (self.raw_model, summary) if return_summary else self.raw_model
 
     def train_step(self, x_train: Any, y_train: Any) -> dict[str, float]:
