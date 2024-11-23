@@ -251,6 +251,8 @@ class BaseManager(Generic[Module]):
         # reset if map location is given
         if map_location is not None:
             manager.reset(map_location)
+        else:
+            manager.reset()
         return manager
 
     def load_state_dict(self, state_dict: Mapping[str, Any], strict: bool = True, assign: bool = False):
@@ -284,6 +286,7 @@ class BaseManager(Generic[Module]):
         - Parameters:
             - cpu: The CPU in `torch.device`
         """
+        self.device = cpu
         self.model = self.raw_model.to(cpu)
         self.loss_fn = self.raw_loss_fn.to(cpu) if self.raw_loss_fn is not None else self.raw_loss_fn
         devices.empty_cache()

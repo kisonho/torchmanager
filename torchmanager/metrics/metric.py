@@ -1,6 +1,5 @@
-from torchmanager_core import torch, Version, _raise
-from torchmanager_core.protocols import Reduction
-from torchmanager_core.typing import Any, Callable, Optional
+from torchmanager_core import torch, API_VERSION, Version, _raise
+from torchmanager_core.typing import Any, Callable, Optional, Union
 
 
 class Metric(torch.nn.Module):
@@ -15,6 +14,7 @@ class Metric(torch.nn.Module):
         - result: The `torch.Tensor` of average metric results
         - results: An optional `torch.Tensor` of all metric results
     """
+    __result: Union[torch.Tensor, float]
     _metric_fn: Optional[Callable[[Any, Any], torch.Tensor]]
     _results: list[torch.Tensor]
     _target: Optional[str]
@@ -22,7 +22,7 @@ class Metric(torch.nn.Module):
     @property
     def result(self) -> torch.Tensor:
         if len(self._results) > 0:
-            return torch.cat(self._results).mean()
+            return torch.tensor(self.__result / len(self._results))
         else:
             return torch.tensor(torch.nan)
 
@@ -42,6 +42,7 @@ class Metric(torch.nn.Module):
             - target: A `str` of target name in `input` and `target` during direct calling
         """
         super().__init__()
+        self.__result = 0
         self._metric_fn = metric_fn
         self._results = []
         self._target = target
@@ -54,9 +55,12 @@ class Metric(torch.nn.Module):
         # call
         m: torch.Tensor = super().__call__(input, target)
         self._results.append(m.unsqueeze(0).cpu().detach())
+        self.__result += self._results[-1]
         return m
 
     def convert(self, from_version: Version) -> None:
+        if from_version < API_VERSION:
+            self.__result = 0
         pass
 
     def forward(self, input: Any, target: Any) -> torch.Tensor:
@@ -76,6 +80,7 @@ class Metric(torch.nn.Module):
 
     def reset(self) -> None:
         """Reset the current results list"""
+        self.__result = 0
         self._results.clear()
 
 
