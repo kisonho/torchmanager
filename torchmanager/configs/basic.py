@@ -1,6 +1,5 @@
-from torchmanager_core import argparse, abc, errors, os, shutil, torch, view, _raise
+from torchmanager_core import argparse, abc, errors, os, platform, shutil, torch, view, _raise, DESCRIPTION
 from torchmanager_core.typing import Optional, Union, overload
-from torchmanager_core import DESCRIPTION
 
 
 class Configs(argparse.Namespace, abc.ABC):
@@ -11,6 +10,7 @@ class Configs(argparse.Namespace, abc.ABC):
     * Abstract class
 
     - Properties:
+        - comments: The comments of this experiment
         - experiment: The name in `str` of the experiment
         - replace_experiment: A `bool` flag of if replace the old experiment folder if exists
 
@@ -138,6 +138,7 @@ class Configs(argparse.Namespace, abc.ABC):
         """
         view.logger.info(description)
         view.logger.info(f"torch={torch.__version__}")
+        view.logger.info(f"platform={platform.platform()}")
 
     @abc.abstractmethod
     def show_settings(self) -> None:
