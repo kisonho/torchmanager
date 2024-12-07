@@ -35,6 +35,7 @@ class BaseManager(Generic[Module]):
 
     - Properties:
         - compiled: A `bool` flag of if the manager has been compiled
+        - device: A `torch.device` of the current running device
         - loss_dict: A `dict` of loss functions with their names in `str`
         - loss_fn: An optional `Loss` for the objective function
         - metrics: A `dict` of metrics with a name in `str` as keys and a `Metric` as values
@@ -137,7 +138,7 @@ class BaseManager(Generic[Module]):
         self.to(self.device)
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(self, *args, **kwargs) -> None:
         self.reset()
 
     def __repr__(self) -> str:
