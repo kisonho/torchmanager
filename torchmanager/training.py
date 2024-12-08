@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 from torchmanager_core import devices, errors, math, torch, view, _raise
 from torchmanager_core.checkpoint import Checkpoint
 from torchmanager_core.protocols import Resulting
-from torchmanager_core.typing import Any, Collection, Module, Optional, Self, Union, overload
+from torchmanager_core.typing import Any, Collection, Module, Self, overload
 
 from .callbacks import Callback, ProgressBar
 from .data import Dataset
@@ -57,11 +57,11 @@ class Manager(_Manager[Module]):
         assert self.optimizer is not None, errors._raise(NotImplementedError("The manager is not compiled properly, `optimizer` is missing."))
         return self.optimizer
 
-    def __init__(self, model: Module, optimizer: Optional[Optimizer] = None, loss_fn: Optional[Union[Loss, dict[str, Loss]]] = None, metrics: dict[str, Metric] = {}) -> None:
+    def __init__(self, model: Module, optimizer: Optimizer | None = None, loss_fn: Loss | dict[str, Loss] | None = None, metrics: dict[str, Metric] = {}) -> None:
         super().__init__(model, optimizer, loss_fn, metrics)
         self.__current_epoch = 0
 
-    def _train(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection[Any]], /, iterations: Optional[int] = None, *, device: torch.device = devices.CPU, use_multi_gpus: bool = False, callbacks_list: list[Callback] = [], **kwargs: Any) -> dict[str, float]:
+    def _train(self, dataset: DataLoader[Any] | Dataset[Any] | Collection[Any], /, iterations: int | None = None, *, device: torch.device = devices.CPU, use_multi_gpus: bool = False, callbacks_list: list[Callback] = [], **kwargs: Any) -> dict[str, float]:
         """
         The single training step for an epoch
 
@@ -140,22 +140,22 @@ class Manager(_Manager[Module]):
             return super().eval(input, target)
 
     @overload
-    def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any], Collection[Any]], /, epochs: int, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any], Collection[Any]]] = None, callbacks_list: list[Callback] = [], *, iterations: None = None, initial_epoch: Optional[int] = None, return_summary: bool = False, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, **kwargs) -> Module:
+    def fit(self, training_dataset: DataLoader[Any] | Dataset[Any] | Collection[Any], /, epochs: int, val_dataset: DataLoader[Any] | Dataset[Any] | Collection[Any] | None = None, callbacks_list: list[Callback] = [], *, iterations: None = None, initial_epoch: int | None = None, return_summary: bool = False, device: torch.device | list[torch.device] | None = None, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, **kwargs) -> Module:
         ...
 
     @overload
-    def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any], Collection[Any]], /, epochs: None = None, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any], Collection[Any]]] = None, callbacks_list: list[Callback] = [], *, iterations: int, initial_epoch: Optional[int] = None, return_summary: bool = False, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, **kwargs) -> Module:
+    def fit(self, training_dataset: DataLoader[Any] | Dataset[Any] | Collection[Any], /, epochs: None = None, val_dataset: DataLoader[Any] | Dataset[Any] | Collection[Any] | None = None, callbacks_list: list[Callback] = [], *, iterations: int, initial_epoch: int | None = None, return_summary: bool = False, device: torch.device | list[torch.device] | None = None, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, **kwargs) -> Module:
         ...
 
     @overload
-    def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any], Collection[Any]], /, epochs: int, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any], Collection[Any]]] = None, callbacks_list: list[Callback] = [], *, iterations: None = None, initial_epoch: Optional[int] = None, return_summary: bool = True, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, **kwargs) -> tuple[Module, dict[str, float]]:
+    def fit(self, training_dataset: DataLoader[Any] | Dataset[Any] | Collection[Any], /, epochs: int, val_dataset: DataLoader[Any] | Dataset[Any] | Collection[Any] | None = None, callbacks_list: list[Callback] = [], *, iterations: None = None, initial_epoch: int | None = None, return_summary: bool = True, device: torch.device | list[torch.device] | None = None, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, **kwargs) -> tuple[Module, dict[str, float]]:
         ...
 
     @overload
-    def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any], Collection[Any]], /, epochs: None = None, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any], Collection[Any]]] = None, callbacks_list: list[Callback] = [], *, iterations: int, initial_epoch: Optional[int] = None, return_summary: bool = True, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, **kwargs) -> tuple[Module, dict[str, float]]:
+    def fit(self, training_dataset: DataLoader[Any] | Dataset[Any] | Collection[Any], /, epochs: None = None, val_dataset: DataLoader[Any] | Dataset[Any] | Collection[Any] | None = None, callbacks_list: list[Callback] = [], *, iterations: int, initial_epoch: int | None = None, return_summary: bool = True, device: torch.device | list[torch.device] | None = None, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, **kwargs) -> tuple[Module, dict[str, float]]:
         ...
 
-    def fit(self, training_dataset: Union[DataLoader[Any], Dataset[Any], Collection[Any]], /, epochs: Optional[int] = None, val_dataset: Optional[Union[DataLoader[Any], Dataset[Any], Collection[Any]]] = None, callbacks_list: list[Callback] = [], *, iterations: Optional[int] = None, initial_epoch: Optional[int] = None, return_summary: bool = False, device: Optional[Union[torch.device, list[torch.device]]] = None, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, **kwargs) -> Union[Module, tuple[Module, dict[str, float]]]:
+    def fit(self, training_dataset: DataLoader[Any] | Dataset[Any] | Collection[Any], /, epochs: int | None = None, val_dataset: DataLoader[Any] | Dataset[Any] | Collection[Any] | None = None, callbacks_list: list[Callback] = [], *, iterations: int | None = None, initial_epoch: int | None = None, return_summary: bool = False, device: torch.device | list[torch.device] | None = None, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, **kwargs) -> Module | tuple[Module, dict[str, float]]:
         """
         Training algorithm
 

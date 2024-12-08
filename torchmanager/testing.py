@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader
 from torchmanager_core import devices, errors, torch, view
 from torchmanager_core.protocols import Resulting
-from torchmanager_core.typing import Any, Collection, Module, Optional, Union
+from torchmanager_core.typing import Any, Collection, Module
 
 from .basic import BaseManager
 from .data import Dataset
@@ -71,7 +71,7 @@ class Manager(BaseManager[Module]):
         return self.summary
 
     @torch.no_grad()
-    def predict(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection[Any]], /, *, device: Optional[Union[torch.device, list[torch.device]]] = None, empty_cache: bool = True, use_multi_gpus: bool = False, show_verbose: bool = False) -> list[Any]:
+    def predict(self, dataset: DataLoader[Any] | Dataset[Any] | Collection[Any], /, *, device: torch.device | list[torch.device] | None = None, empty_cache: bool = True, use_multi_gpus: bool = False, show_verbose: bool = False) -> list[Any]:
         '''
         Predict the whole dataset
 
@@ -137,7 +137,7 @@ class Manager(BaseManager[Module]):
                 self.reset(cpu)
 
     @torch.no_grad()
-    def test(self, dataset: Union[DataLoader[Any], Dataset[Any], Collection[Any]], /, *, device: Optional[Union[torch.device, list[torch.device]]] = None, empty_cache: bool = True, use_multi_gpus: bool = False, show_verbose: bool = False) -> dict[str, float]:
+    def test(self, dataset: DataLoader[Any] | Dataset[Any] | Collection[Any], /, *, device: torch.device | list[torch.device] | None = None, empty_cache: bool = True, use_multi_gpus: bool = False, show_verbose: bool = False) -> dict[str, float]:
         """
         Test target model
 

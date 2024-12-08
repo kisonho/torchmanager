@@ -1,7 +1,7 @@
 from torch.optim.optimizer import Optimizer
 from torchmanager_core import checkpoint, devices, errors, torch, Version, API_VERSION
 from torchmanager_core.protocols import Resulting
-from torchmanager_core.typing import Any, Collection, Generic, Mapping, Module, Optional, OrderedDict, Self, Union, cast
+from torchmanager_core.typing import Any, Collection, Generic, Mapping, Module, OrderedDict, Self, cast
 
 from .losses import Loss, MultiLosses, ParallelLoss
 from .metrics import Metric
@@ -46,12 +46,12 @@ class BaseManager(Generic[Module]):
     """
     # properties
     __device: torch.device
-    loss_fn: Optional[Resulting]
+    loss_fn: Resulting | None
     """The optional main loss function in `Resulting`"""
     metric_fns: dict[str, Resulting]
     """A `dict` of the metric functions with names as keys in `str` and metric functions as values in `torch.metrics.Metric`"""
-    model: Union[Module, torch.nn.DataParallel]
-    optimizer: Optional[Optimizer]
+    model: Module | torch.nn.DataParallel
+    optimizer: Optimizer | None
     version: Version
 
     @property
@@ -65,7 +65,7 @@ class BaseManager(Generic[Module]):
         return self.__device
 
     @device.setter
-    def device(self, device: Union[str, torch.device]) -> None:
+    def device(self, device: str | torch.device) -> None:
         """Set the device for the manager"""
         self.__device = torch.device(device)
 
@@ -87,7 +87,7 @@ class BaseManager(Generic[Module]):
         self.loss_fn = loss_fn
 
     @property
-    def raw_loss_fn(self) -> Optional[Resulting]:
+    def raw_loss_fn(self) -> Resulting | None:
         """The `torchmanager.losses.Loss` controlled by this manager without `torch.nn.DataParallel` wrap"""
         if self.loss_fn is None:
             return self.loss_fn
@@ -104,7 +104,7 @@ class BaseManager(Generic[Module]):
         """The `Module` controlled by this manager without `torch.nn.DataParallel` wrap"""
         return cast(Module, self.model.module) if isinstance(self.model, torch.nn.DataParallel) else self.model
 
-    def __init__(self, model: Module, optimizer: Optional[Optimizer] = None, loss_fn: Optional[Union[Loss, dict[str, Loss]]] = None, metrics: dict[str, Metric] = {}) -> None:
+    def __init__(self, model: Module, optimizer: Optimizer | None = None, loss_fn: Loss | dict[str, Loss] | None = None, metrics: dict[str, Metric] = {}) -> None:
         """
         Constructor
 
@@ -186,7 +186,7 @@ class BaseManager(Generic[Module]):
         self.model, use_multi_gpus = devices.data_parallel(self.raw_model, devices=target_devices)
         return use_multi_gpus
 
-    def forward(self, input: Any, target: Optional[Any] = None, /) -> tuple[Any, Optional[torch.Tensor]]:
+    def forward(self, input: Any, target: Any = None, /) -> tuple[Any, torch.Tensor | None]:
         """
         Forward pass function
 
@@ -209,7 +209,7 @@ class BaseManager(Generic[Module]):
         return y, loss
 
     @classmethod
-    def from_checkpoint(cls, ckpt: Union[checkpoint.Checkpoint[Any], str], experiment: Optional[str] = None, *, map_location: Optional[torch.device] = None):
+    def from_checkpoint(cls, ckpt: checkpoint.Checkpoint[Any] | str, experiment: str | None = None, *, map_location: torch.device | None = None):
         """
         Method to load a manager from a saved `Checkpoint`. The manager will not be compiled with a loss function and its metrics.
 
@@ -228,7 +228,7 @@ class BaseManager(Generic[Module]):
 
         # recover model to manager
         if isinstance(ckpt.model, torch.nn.Module):
-            manager = cls(cast(Module, ckpt.model), ckpt.optimizer, loss_fn=cast(Optional[Loss], ckpt.loss_fn), metrics=cast(dict[str, Metric], ckpt.metrics))
+            manager = cls(cast(Module, ckpt.model), ckpt.optimizer, loss_fn=cast(Loss | None, ckpt.loss_fn), metrics=cast(dict[str, Metric], ckpt.metrics))
         elif isinstance(ckpt.model, BaseManager):
             manager = ckpt.model
             if isinstance(manager.model, torch.nn.parallel.DataParallel):
@@ -263,8 +263,8 @@ class BaseManager(Generic[Module]):
         assert "loss_fn" in state_dict, errors._raise(KeyError("The given dictionary does not have 'loss_fn' element."))
         assert "metrics" in state_dict, errors._raise(KeyError("The given dictionary does not have 'metrics' element."))
         model: OrderedDict[str, Any] = state_dict["model"]
-        optimizer: Optional[dict[str, Any]] = state_dict["optimizer"]
-        loss_fn: Optional[OrderedDict[str, Any]] = state_dict["loss_fn"]
+        optimizer: dict[str, Any] | None = state_dict["optimizer"]
+        loss_fn: OrderedDict[str, Any] | None = state_dict["loss_fn"]
         metrics: dict[str, OrderedDict[str, Any]] = state_dict["metrics"]
 
         # load state dict to current model, optimizer, loss_fn, and metrics
@@ -337,7 +337,7 @@ class BaseManager(Generic[Module]):
         else:
             return NotImplemented
 
-    def use(self, device: Optional[Union[torch.device, list[torch.device]]]) -> Self:
+    def use(self, device: torch.device | list[torch.device] | None) -> Self:
         """
         Tell the manager to use given device, auto find available device if not given
 
