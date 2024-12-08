@@ -7,14 +7,14 @@ class StateDictLoadable(Protocol):
     """An object that can load state dict"""
 
     @overload
-    def load_state_dict(self, *, state_dict: OrderedDict[str, Any], strict: bool = True) -> Any:
+    def load_state_dict(self, *, state_dict: OrderedDict[str, Any]) -> Any:
         ...
 
     @overload
-    def load_state_dict(self, state_dict: Mapping[str, Any], strict: bool = True, assign: bool = False) -> Any:
+    def load_state_dict(self, state_dict: Mapping[str, Any], strict: bool = True) -> Any:
         ...
 
-    def load_state_dict(self, state_dict: Mapping[str, Any], strict: bool = True, assign: bool = False):
+    def load_state_dict(self, state_dict: Mapping[str, Any], strict: bool = True):
         ...
 
     def state_dict(self, *, prefix: str = "", keep_vars: bool = False) -> dict[str, Any]:

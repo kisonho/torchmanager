@@ -11,8 +11,8 @@ packages = [
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.9"
-packaging = ">=16.8"
+python = "^3.10"
+packaging = "^16.8"
 torch = "*"
 tqdm = "*"
 
