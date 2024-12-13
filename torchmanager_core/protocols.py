@@ -36,7 +36,13 @@ class MonitorType(Enum):
             raise TypeError(f"Monitor type {self} is not supported.")
 
 
-class LrSteping(Protocol):
+class Steppable(Protocol):
+    """An object that can step"""
+    def step(self, *args, **kwargs) -> None:
+        ...
+
+
+class LrSteping(Steppable):
     def get_last_lr(self) -> list[float]:
         ...
 

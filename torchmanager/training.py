@@ -2,7 +2,7 @@ from torch.optim.optimizer import Optimizer
 from torch.utils.data import DataLoader
 from torchmanager_core import devices, errors, math, torch, view, _raise
 from torchmanager_core.checkpoint import Checkpoint
-from torchmanager_core.protocols import Resulting
+from torchmanager_core.protocols import Resulting, Steppable
 from torchmanager_core.typing import Any, Collection, Module, Self, overload
 
 from .callbacks import Callback, ProgressBar
@@ -112,7 +112,7 @@ class Manager(_Manager[Module]):
                 break
         return self.summary
 
-    def backward(self, loss: torch.Tensor, /) -> None:
+    def backward(self, loss: torch.Tensor, /) -> Steppable | None:
         """
         Backward function to calculate the gradients
         
@@ -120,6 +120,7 @@ class Manager(_Manager[Module]):
             - loss: A `torch.Tensor` of loss value
         """
         loss.backward()
+        return self.compiled_optimizer
 
     def eval(self, input: Any, target: Any, /) -> dict[str, float]:
         # forward metrics
@@ -303,8 +304,9 @@ class Manager(_Manager[Module]):
 
         # backward pass
         self.compiled_optimizer.zero_grad()
-        self.backward(loss)
-        self.compiled_optimizer.step()
+        optimizer = self.backward(loss)
+        optimizer = self.compiled_optimizer if optimizer is None else optimizer
+        optimizer.step()
 
         # training evaluation
         return self.eval(y, y_train)
