@@ -65,6 +65,7 @@ class FrequencyCallback(Callback, abc.ABC):
 
     * extends: `Callbacks`
     * abstract class that needs implementation of `step` method
+    * implements: `torchmanager_core.protocols.Steppable`
 
     - Properties:
         - current_step: An `int` of the current step index

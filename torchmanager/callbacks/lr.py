@@ -19,6 +19,7 @@ class LrSchedueler(FrequencyCallback, Generic[Scheduler]):
     The callback to step learning rate scheduler
 
     * extends: `FrequencyCallback`
+    * implements: `torchmanager_core.protocols.LrStepping`
 
     - Parameters:
         - freq: An `..train.learning_rate.LrScheduleFreq` of the frequency to update learning rate
