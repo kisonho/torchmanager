@@ -38,7 +38,7 @@ class MonitorType(Enum):
 
 class Steppable(Protocol):
     """An object that can step"""
-    def step(self, *args, **kwargs) -> None:
+    def step(self, *args, **kwargs) -> Any:
         ...
 
 
