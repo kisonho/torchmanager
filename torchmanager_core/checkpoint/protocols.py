@@ -11,10 +11,10 @@ class StateDictLoadable(Protocol):
         ...
 
     @overload
-    def load_state_dict(self, state_dict: Mapping[str, Any], strict: bool = True) -> Any:
+    def load_state_dict(self, state_dict: Mapping[str, Any], strict: bool = True, assign: bool = False) -> Any:
         ...
 
-    def load_state_dict(self, state_dict: Mapping[str, Any], strict: bool = True):
+    def load_state_dict(self, state_dict: Mapping[str, Any], strict: bool = True, assign: bool = False) -> Any:
         ...
 
     def state_dict(self, *, prefix: str = "", keep_vars: bool = False) -> dict[str, Any]:

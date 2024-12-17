@@ -241,7 +241,7 @@ class BaseManager(Generic[Module]):
             manager.reset()
         return manager
 
-    def load_state_dict(self, state_dict: Mapping[str, Any], strict: bool = True, assign: bool = False):
+    def load_state_dict(self, state_dict: Mapping[str, Any], *args, **kwargs) -> None:
         # load state dict elements
         assert "model" in state_dict, errors._raise(KeyError("The given dictionary does not have 'model' element."))
         assert "optimizer" in state_dict, errors._raise(KeyError("The given dictionary does not have 'optimizer' element."))
@@ -253,17 +253,17 @@ class BaseManager(Generic[Module]):
         metrics: dict[str, OrderedDict[str, Any]] = state_dict["metrics"]
 
         # load state dict to current model, optimizer, loss_fn, and metrics
-        self.model.load_state_dict(model, strict=strict)
+        self.model.load_state_dict(model, *args, **kwargs)
         if optimizer is not None:
             assert self.optimizer is not None, errors._raise(ValueError("The manager has not been compiled with 'optimizer' given."))
             self.optimizer.load_state_dict(optimizer)
         if loss_fn is not None:
             assert self.loss_fn is not None, errors._raise(ValueError("The manager has not been compiled with 'loss_fn' given."))
-            self.loss_fn.load_state_dict(state_dict=loss_fn)
+            self.loss_fn.load_state_dict(state_dict=loss_fn, *args, **kwargs)
         assert metrics is not None, errors._raise(ValueError("The given dictionary must have 'metrics' element not to be None."))
         for k, m in metrics.items():
             assert k in self.metric_fns, errors._raise(KeyError(f"The manager does not have a metric named '{k}'."))
-            self.metric_fns[k].load_state_dict(state_dict=m)
+            self.metric_fns[k].load_state_dict(state_dict=m, *args, **kwargs)
 
     def reset(self, cpu: torch.device = devices.CPU) -> None:
         """
