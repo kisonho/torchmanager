@@ -2,9 +2,8 @@ from torch.optim.optimizer import Optimizer
 from torch.utils.data import DataLoader
 from torchmanager_core import devices, errors, math, torch, view, _raise
 from torchmanager_core.checkpoint import Checkpoint
-from torchmanager_core.devices.device import CPU
-from torchmanager_core.protocols import Resulting, Steppable
-from torchmanager_core.typing import Any, Callable, Collection, Module, Self, overload
+from torchmanager_core.protocols import Resulting
+from torchmanager_core.typing import Any, Collection, Module, Self, overload
 
 from .callbacks import Callback, ProgressBar
 from .data import Dataset
