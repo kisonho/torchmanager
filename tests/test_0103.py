@@ -52,9 +52,9 @@ class Test0103(TestCase):
     def test_psnr(self) -> None:
         from torchmanager.metrics import PSNR
 
-        # initialize
-        x = torch.randn((1, 3, 256, 256))
-        y = torch.randn_like(x)
+        # initialize random data, limit from 0 to 1
+        x = torch.rand((1, 3, 256, 256))
+        y = torch.rand_like(x)
         psnr_fn = PSNR()
 
         # calculate psnr
