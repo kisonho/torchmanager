@@ -1,7 +1,6 @@
 import torch.nn.functional as F
-from torchmanager_core import torch, _raise
+from torchmanager_core import torch, Version, _raise
 from torchmanager_core.typing import Callable, Optional
-from torchmanager_core.version.version import Version
 
 from .metric import Metric
 

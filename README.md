@@ -22,7 +22,7 @@ To use this framework, simply initialize a `Manager` object. The `Manager` class
 
 ## Installation
 * PyPi: `pip install torchmanager`
-* Conda: `conda install torchmanager`
+* Conda: `conda install torchmanager -c conda-forge`
 
 ## Start from Configurations
 The `Configs` class is designed to be inherited to define necessary configurations. It also provides a method to get configurations from terminal arguments.

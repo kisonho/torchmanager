@@ -123,6 +123,9 @@ class BaseManager(Generic[Module]):
         # initialize optimizer
         self.optimizer = optimizer
 
+        # reset to CPU
+        self.reset()
+
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} (version={self.version})"
 

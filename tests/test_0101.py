@@ -7,6 +7,7 @@ from unittest import TestCase
 class Test0101(TestCase):
     def test_dice_loss(self) -> None:
         # initialize
+        print("Testing Dice Loss")
         loss_fn = losses.Dice()
         y = torch.randn((4, 4, 224, 224))
         y_test = torch.randn_like(y).argmax(1)

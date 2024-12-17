@@ -96,7 +96,8 @@ class Version(_Version):
             raise ValueError(f"The given version '{v}' is not in valid version format.") from e
 
     def __eq__(self, other: Any) -> bool:
-        other = Version(str(other))
+        if not isinstance(other, Version):
+            other = Version(str(other))
         return super().__eq__(other)
 
     def __ge__(self, other: Any) -> bool:
