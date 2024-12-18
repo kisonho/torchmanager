@@ -61,7 +61,7 @@ class Manager(_Manager[Module]):
         super().__init__(model, optimizer, loss_fn, metrics)
         self.__current_epoch = 0
 
-    def _train(self, dataset: DataLoader[Any] | Dataset[Any] | Collection[Any], /, iterations: int | None = None, *, device: torch.device = devices.CPU, use_multi_gpus: bool = False, callbacks_list: list[Callback] = [], **kwargs: Any) -> dict[str, float]:
+    def _train(self, dataset: DataLoader[Any] | Dataset[Any] | Collection[Any], /, iterations: int | None = None, *args, device: torch.device = devices.CPU, use_multi_gpus: bool = False, callbacks_list: list[Callback] = [], **kwargs) -> dict[str, float]:
         """
         The single training step for an epoch
 
@@ -155,7 +155,7 @@ class Manager(_Manager[Module]):
     def fit(self, training_dataset: DataLoader[Any] | Dataset[Any] | Collection[Any], /, epochs: None = None, val_dataset: DataLoader[Any] | Dataset[Any] | Collection[Any] | None = None, callbacks_list: list[Callback] = [], *, iterations: int, initial_epoch: int | None = None, return_summary: bool = True, device: torch.device | list[torch.device] | None = None, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, **kwargs) -> tuple[Module, dict[str, float]]:
         ...
 
-    def fit(self, training_dataset: DataLoader[Any] | Dataset[Any] | Collection[Any], /, epochs: int | None = None, val_dataset: DataLoader[Any] | Dataset[Any] | Collection[Any] | None = None, callbacks_list: list[Callback] = [], *, iterations: int | None = None, initial_epoch: int | None = None, return_summary: bool = False, device: torch.device | list[torch.device] | None = None, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, **kwargs) -> Module | tuple[Module, dict[str, float]]:
+    def fit(self, training_dataset: DataLoader[Any] | Dataset[Any] | Collection[Any], /, epochs: int | None = None, val_dataset: DataLoader[Any] | Dataset[Any] | Collection[Any] | None = None, callbacks_list: list[Callback] = [], *args, iterations: int | None = None, initial_epoch: int | None = None, return_summary: bool = False, device: torch.device | list[torch.device] | None = None, use_multi_gpus: bool = False, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, **kwargs) -> Module | tuple[Module, dict[str, float]]:
         """
         Training algorithm
 
@@ -171,7 +171,7 @@ class Manager(_Manager[Module]):
             - use_multi_gpus: A `bool` flag of if using multi gpus
             - show_verbose: A `bool` flag to show the progress bar during training
             - verbose_type: A `VerboseType` of the summary to show
-            - **kwargs: Additional keyword arguments that will be passed to `train` method.
+            - *args and **kwargs: Additional keyword arguments that will be passed to `train` method.
         - Returns: A trained `torch.nn.Module` or a `tuple` of the trained `torch.nn.Module` and a summary of `dict` with keys as `str` and values as `float`
         """
         # arguments checking
@@ -245,7 +245,7 @@ class Manager(_Manager[Module]):
                     callback.on_epoch_start(self.current_epoch)
 
                 # train for one epoch
-                training_summary = self._train(training_dataset, iterations=batch_iterations, device=device, use_multi_gpus=use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
+                training_summary = self._train(training_dataset, iterations=batch_iterations, *args, device=device, use_multi_gpus=use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
                 summary |= training_summary
                 if iterations is not None and batch_iterations is not None:
                     iterations -= batch_iterations
