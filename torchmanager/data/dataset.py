@@ -1,4 +1,4 @@
-from torch.utils.data import Dataset as _Dataset, DataLoader
+from torch.utils.data import Dataset as _Dataset, DataLoader, Sampler
 from torchmanager_core import abc, devices, errors, math, os, torch, _raise
 from torchmanager_core.typing import Any, Callable, Iterable, Iterator, Optional, Sequence, TypeVar, cast
 
@@ -39,6 +39,7 @@ class Dataset(_Dataset[T], abc.ABC):
     __device: torch.device
     drop_last: bool
     num_workers: int
+    sampler: Sampler[list[T]] | Iterable[list[T]] | None
     shuffle: bool
 
     @property
@@ -69,7 +70,7 @@ class Dataset(_Dataset[T], abc.ABC):
         else:
             return math.ceil(self.unbatched_len / self.batch_size)
 
-    def __init__(self, batch_size: int, /, *, device: torch.device = devices.CPU, drop_last: bool = False, num_workers: Optional[int] = os.cpu_count(), shuffle: bool = False) -> None:
+    def __init__(self, batch_size: int, /, *, device: torch.device = devices.CPU, drop_last: bool = False, num_workers: Optional[int] = os.cpu_count(), sampler: Sampler[list[T]] | Iterable[list[T]] | None = None, shuffle: bool = False) -> None:
         """
         Constructor
 
@@ -78,12 +79,14 @@ class Dataset(_Dataset[T], abc.ABC):
             - device: A `torch.device` for the data to be pinned during iteration
             - drop_last: A `bool` flag of if drop the last data that not enought for the batch size
             - num_workers: An optional `int` of the number of cpus to load the data
+            - sampler: An optional `torch.utils.data.Sampler` or `Iterable` of `list` of indices
             - shuffle: A `bool` flag of if shuffling the data
         """
         super().__init__()
         self.__device = device
         self.batch_size = batch_size
         self.drop_last = drop_last
+        self.sampler = sampler
         self.shuffle = shuffle
 
         # initialize num workers
@@ -107,9 +110,9 @@ class Dataset(_Dataset[T], abc.ABC):
     def __iter__(self) -> Iterator[tuple[T, T]]:
         # initialize loader
         if self.device != devices.CPU:
-            data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=self.num_workers, pin_memory=True, pin_memory_device=str(self.device))
+            data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=self.num_workers, pin_memory=True, pin_memory_device=str(self.device), sampler=self.sampler)
         else:
-            data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=self.num_workers)
+            data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=self.num_workers, sampler=self.sampler)
 
         # yield data
         for data in data_loader:
