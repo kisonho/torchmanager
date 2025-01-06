@@ -1,6 +1,6 @@
 import os, torch, warnings
 from torch.optim.optimizer import Optimizer
-from typing import Any, Generic, Optional, OrderedDict, TypeVar
+from typing import Any, Generic, OrderedDict, TypeVar
 
 from .protocols import ModelContainer, StateDictLoadable, WrappedFn
 
@@ -21,13 +21,13 @@ class Checkpoint(Generic[T]):
     """
 
     last_epoch: int
-    loss_fn: Optional[StateDictLoadable]
+    loss_fn: StateDictLoadable | None
     metrics: dict[str, StateDictLoadable]
     model: T
-    optimizer: Optional[Optimizer]
+    optimizer: Optimizer | None
     save_weights_only: bool
 
-    def __init__(self, model: T, last_epoch: int = 0, optimizer: Optional[Optimizer] = None, loss_fn: Optional[StateDictLoadable] = None, metrics: Optional[dict[str, StateDictLoadable]] = None, save_weights_only: bool = False) -> None:
+    def __init__(self, model: T, last_epoch: int = 0, optimizer: Optimizer | None = None, loss_fn: StateDictLoadable | None = None, metrics: dict[str, StateDictLoadable] | None = None, save_weights_only: bool = False) -> None:
         """
         Constructor
 
@@ -50,7 +50,7 @@ class Checkpoint(Generic[T]):
             # check if loss function is wrapped
             if isinstance(model.loss_fn, WrappedFn):
                 warnings.warn("Loss function is wrapped and is not supported by checkpoint, use `losses.Loss` instead.")
-            
+
             # check if metrics is wrapped
             for name, metric in model.metric_fns.items():
                 if isinstance(metric, WrappedFn):
@@ -74,7 +74,7 @@ class Checkpoint(Generic[T]):
                     self.metrics[name] = metric
 
     @classmethod
-    def from_saved(cls, ckpt_path: str, map_location: Optional[torch.device] = None, model: Optional[StateDictLoadable] = None):
+    def from_saved(cls, ckpt_path: str, map_location: torch.device | None = None, model: StateDictLoadable | None = None):
         """
         Load checkpoint from a saved checkpoint file
 

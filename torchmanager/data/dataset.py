@@ -97,12 +97,6 @@ class Dataset(_Dataset[T], abc.ABC):
         else:
             self.num_workers = num_workers
 
-        # initialize loader
-        if self.device != devices.CPU:
-            self.data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=self.num_workers, pin_memory=True, pin_memory_device=str(self.device), sampler=self.sampler)
-        else:
-            self.data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=self.num_workers, sampler=self.sampler)
-
     def __contains__(self, value: Any) -> bool:
         for i in range(len(self)):
             if self[i] == value:
@@ -115,9 +109,16 @@ class Dataset(_Dataset[T], abc.ABC):
         return NotImplemented
 
     def __iter__(self) -> Iterator[tuple[T, T]]:
+        # initialize loader
+        if self.device != devices.CPU:
+            data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=self.num_workers, pin_memory=True, pin_memory_device=str(self.device), sampler=self.sampler)
+        else:
+            data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=self.num_workers, sampler=self.sampler)
+
         # yield data
-        for data in self.data_loader:
+        for data in data_loader:
             yield self.unpack_data(data)
+        del data_loader
 
     def __len__(self) -> int:
         """Returns the unbatched length"""
