@@ -90,19 +90,18 @@ class Dataset(_Dataset[T], abc.ABC):
         self.sampler = sampler
         self.shuffle = shuffle
 
-        # initialize loader
-        if self.device != devices.CPU:
-            self.data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=self.num_workers, pin_memory=True, pin_memory_device=str(self.device), sampler=self.sampler)
-        else:
-            self.data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=self.num_workers, sampler=self.sampler)
-
-
         # initialize num workers
         if num_workers is None:
             cpu_count = os.cpu_count()
             self.num_workers = 0 if cpu_count is None else cpu_count
         else:
             self.num_workers = num_workers
+
+        # initialize loader
+        if self.device != devices.CPU:
+            self.data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=self.num_workers, pin_memory=True, pin_memory_device=str(self.device), sampler=self.sampler)
+        else:
+            self.data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=self.num_workers, sampler=self.sampler)
 
     def __contains__(self, value: Any) -> bool:
         for i in range(len(self)):
