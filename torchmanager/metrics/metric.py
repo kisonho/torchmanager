@@ -1,8 +1,11 @@
 from torchmanager_core import torch, API_VERSION, Version, _raise
-from torchmanager_core.typing import Any, Callable, Optional, Union
+from torchmanager_core.typing import Any, Callable, Generic, TypeVar
 
 
-class Metric(torch.nn.Module):
+M = TypeVar("M", bound=Callable[[Any, Any], torch.Tensor] | None)
+
+
+class Metric(torch.nn.Module, Generic[M]):
     """
     The basic metric class
 
@@ -14,10 +17,10 @@ class Metric(torch.nn.Module):
         - result: The `torch.Tensor` of average metric results
         - results: An optional `torch.Tensor` of all metric results
     """
-    __result: Union[torch.Tensor, float]
-    _metric_fn: Optional[Callable[[Any, Any], torch.Tensor]]
+    __result: torch.Tensor | float
+    _metric_fn: M
     _results: list[torch.Tensor]
-    _target: Optional[str]
+    _target: str | None
 
     @property
     def result(self) -> torch.Tensor:
@@ -27,13 +30,13 @@ class Metric(torch.nn.Module):
             return torch.tensor(torch.nan)
 
     @property
-    def results(self) -> Optional[torch.Tensor]:
+    def results(self) -> torch.Tensor | None:
         if len(self._results) > 0:
             return torch.concat(self._results)
         else:
             return None
 
-    def __init__(self, metric_fn: Optional[Callable[[Any, Any], torch.Tensor]] = None, target: Optional[str] = None) -> None:
+    def __init__(self, metric_fn: M = None, target: str | None = None) -> None:
         """
         Constructor
 
@@ -84,13 +87,16 @@ class Metric(torch.nn.Module):
         self._results.clear()
 
 
-class _WrappedMetric(Metric):
+WRAPPED_M = TypeVar("WRAPPED_M", bound=Callable[[Any, Any], torch.Tensor])
+
+
+class _WrappedMetric(Metric[WRAPPED_M]):
     @property
-    def wrapped_metric_fn(self) -> Callable[[Any, Any], torch.Tensor]:
+    def wrapped_metric_fn(self) -> WRAPPED_M:
         assert self._metric_fn is not None, _raise(AttributeError("Metric function is not given."))
         return self._metric_fn
 
-    def __init__(self, metric_fn: Callable[[Any, Any], torch.Tensor], target: Optional[str] = None) -> None:
+    def __init__(self, metric_fn: WRAPPED_M, target: str | None = None) -> None:
         super().__init__(metric_fn, target)
 
     @torch.no_grad()
@@ -112,7 +118,7 @@ def metric(fn: Callable[[Any, Any], torch.Tensor]) -> _WrappedMetric:
     return _WrappedMetric(fn)
 
 
-def metric_fn(target: Optional[str] = None) -> Callable[[Callable[[Any, Any], torch.Tensor]], _WrappedMetric]:
+def metric_fn(target: str | None = None) -> Callable[[Callable[[Any, Any], torch.Tensor]], _WrappedMetric]:
     """
     The loss wrapping function that wrap a function with target and weight given into a loss
 

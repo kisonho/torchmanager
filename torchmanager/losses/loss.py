@@ -1,5 +1,5 @@
-from torchmanager_core import torch, _raise
-from torchmanager_core.typing import Any, Callable, Optional
+from torchmanager_core import devices, torch, _raise
+from torchmanager_core.typing import Any, Callable, Generic, TypeVar
 from torchmanager_core.view import warnings
 
 from ..metrics import Metric
@@ -41,7 +41,7 @@ class Loss(Metric):
         assert w >= 0, f"Weight must be a non-negative number, got {w}."
         self.__weight = w
 
-    def __init__(self, loss_fn: Optional[Callable[[Any, Any], torch.Tensor]] = None, target: Optional[str] = None, weight: float = 1) -> None:
+    def __init__(self, loss_fn: Callable[[Any, Any], torch.Tensor] | None = None, target: str | None = None, weight: float = 1) -> None:
         """
         Constructor
 
@@ -86,7 +86,7 @@ class MultiLosses(Loss):
     def losses(self) -> torch.nn.ModuleList:
         return self.__losses
 
-    def __init__(self, losses: list[Loss], target: Optional[str] = None, weight: float = 1) -> None:
+    def __init__(self, losses: list[Loss], target: str | None = None, weight: float = 1) -> None:
         """
         Constructor
 
@@ -119,7 +119,11 @@ class MultiLosses(Loss):
         return super().reset()
 
 
-class ParallelLoss(Loss):
+L = TypeVar("L", bound=Loss)
+P = TypeVar("P", bound=torch.nn.DataParallel)
+
+
+class ParallelLoss(Loss, Generic[L, P]):
     """
     A data parallel loss function
 
@@ -129,14 +133,16 @@ class ParallelLoss(Loss):
     - Properties:
         - module: A `torch.nn.Module` of the loss function
     """
-    _metric_fn: torch.nn.DataParallel
-    module: Loss
+    _metric_fn: P
+    module: L
 
-    def __init__(self, module: Loss, device_ids: Optional[list[int]] = None, output_device: Optional[torch.device] = None, dim: int = 0) -> None:
-        super().__init__(torch.nn.DataParallel(module, device_ids, output_device, dim=dim))
+    def __init__(self, module: L, device_ids: list[int] | None = None, output_device: torch.device | None = None, dim: int = 0, *, parallel_type: type[P] = torch.nn.DataParallel) -> None:
+        super().__init__(parallel_type(module, device_ids, output_device, dim=dim))
         self.module = module
 
     def forward(self, input: Any, target: Any) -> torch.Tensor:
+        input = devices.move_to_device(input, devices.CPU)
+        target = devices.move_to_device(target, devices.CPU)
         loss: torch.Tensor = super().forward(input, target)
         return loss.mean()
 
@@ -145,6 +151,16 @@ class ParallelLoss(Loss):
         self.module.reset()
         super().reset()
 
+    def to(self, device: torch.device) -> "ParallelLoss":
+        """
+        Move the loss to a specific device
+
+        - Parameters:
+            - device: A `torch.device` to move the loss to
+        """
+        self.module = self.module.to(device)
+        return self
+
 
 class _WrappedLoss(Loss):
     @property
@@ -152,7 +168,7 @@ class _WrappedLoss(Loss):
         assert self._metric_fn is not None, _raise(AttributeError("Metric function is not given."))
         return self._metric_fn
 
-    def __init__(self, loss_fn: Callable[[Any, Any], torch.Tensor], target: Optional[str] = None, weight: float = 1) -> None:
+    def __init__(self, loss_fn: Callable[[Any, Any], torch.Tensor], target: str | None = None, weight: float = 1) -> None:
         super().__init__(loss_fn, target, weight)
 
     def forward(self, input: Any, target: Any) -> torch.Tensor:
@@ -173,7 +189,7 @@ def loss(fn: Callable[[Any, Any], torch.Tensor]) -> _WrappedLoss:
     return _WrappedLoss(fn)
 
 
-def loss_fn(target: Optional[str] = None, weight: float = 1) -> Callable[[Callable[[Any, Any], torch.Tensor]], _WrappedLoss]:
+def loss_fn(target: str | None = None, weight: float = 1) -> Callable[[Callable[[Any, Any], torch.Tensor]], _WrappedLoss]:
     """
     The loss wrapping function that wrap a function with target and weight given into a loss
 

@@ -1,5 +1,5 @@
 from torchmanager_core import functional as F, torch, Version, _raise
-from torchmanager_core.typing import Any, Optional
+from torchmanager_core.typing import Any
 
 from .dice import Dice
 from .loss import Loss
@@ -12,7 +12,7 @@ class CrossEntropy(Loss):
     * extends: `.loss.Loss`
     """
 
-    def __init__(self, *args: Any, target: Optional[str] = None, weight: float = 1, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, target: str | None = None, weight: float = 1, **kwargs: Any) -> None:
         loss_fn = torch.nn.CrossEntropyLoss(*args, **kwargs)
         super().__init__(loss_fn, target=target, weight=weight)
 
@@ -54,7 +54,7 @@ class DiceCE(CrossEntropy, Dice):
         assert value >= 0, _raise(ValueError(f"Dice lambda must be a non-negative number, got {value}."))
         self.__dice_lambda = value
 
-    def __init__(self, *args, ce_lambda: float = 1, dice_lambda: float = 1, smooth: int = 1, target: Optional[str] = None, weight: float = 1, **kwargs) -> None:
+    def __init__(self, *args, ce_lambda: float = 1, dice_lambda: float = 1, smooth: int = 1, target: str | None = None, weight: float = 1, **kwargs) -> None:
         CrossEntropy.__init__(self, *args, target=target, weight=weight, **kwargs)
         Dice.__init__(self, smooth=smooth, target=target, weight=weight)
         self.ce_lambda = ce_lambda
@@ -145,9 +145,9 @@ class KLDiv(Loss):
         - log_target: A `bool` flag of if `target` is in log space
         - replace_nan: A `boolean` flag of if replacing nan results to zeros
     """
-    __t: Optional[float]
+    __t: float | None
     _metric_fn: torch.nn.KLDivLoss
-    _t: Optional[float]
+    _t: float | None
     replace_nan: bool
 
     @property
@@ -155,15 +155,15 @@ class KLDiv(Loss):
         return self._metric_fn.log_target
 
     @property
-    def softmax_temperature(self) -> Optional[float]:
+    def softmax_temperature(self) -> float | None:
         return self.__t
     
     @softmax_temperature.setter
-    def softmax_temperature(self, value: Optional[float]) -> None:
+    def softmax_temperature(self, value: float | None) -> None:
         assert value is None or value > 0, _raise(ValueError(f"A given temperature must be a positive number, got {value}."))
         self.__t = value
 
-    def __init__(self, *args: Any, replace_nan: bool = False, softmax_temperature: Optional[float] = None, target: Optional[str] = None, weight: float = 1, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, replace_nan: bool = False, softmax_temperature: float | None = None, target: str | None = None, weight: float = 1, **kwargs: Any) -> None:
         """
         Constructor
 

@@ -1,6 +1,6 @@
 from torchmanager_core import torch
 from torchmanager_core.protocols import Reduction
-from torchmanager_core.typing import Any, Callable, Optional
+from torchmanager_core.typing import Any, Callable
 
 from .loss import Loss
 
@@ -16,7 +16,7 @@ class _ReductableLoss(Loss):
     reduction: Reduction
     replace_nan: bool
 
-    def __init__(self, loss_fn: Optional[Callable[[Any, Any], torch.Tensor]] = None, *, reduction: Reduction = Reduction.MEAN, replace_nan: bool = False, target: Optional[str] = None, weight: float = 1) -> None:
+    def __init__(self, loss_fn: Callable[[Any, Any], torch.Tensor] | None = None, *, reduction: Reduction = Reduction.MEAN, replace_nan: bool = False, target: str | None = None, weight: float = 1) -> None:
         """
         Constructor
 
@@ -52,7 +52,7 @@ class MAE(_ReductableLoss):
     """
     The MSE loss
     """
-    def __init__(self, *, reduction: Reduction = Reduction.MEAN, replace_nan: bool = False, target: Optional[str] = None, weight: float = 1) -> None:
+    def __init__(self, *, reduction: Reduction = Reduction.MEAN, replace_nan: bool = False, target: str | None = None, weight: float = 1) -> None:
         """
         Constructor
 
@@ -70,7 +70,7 @@ class MSE(_ReductableLoss):
     """
     The MSE loss
     """
-    def __init__(self, *, reduction: Reduction = Reduction.MEAN, replace_nan: bool = False, target: Optional[str] = None, weight: float = 1) -> None:
+    def __init__(self, *, reduction: Reduction = Reduction.MEAN, replace_nan: bool = False, target: str | None = None, weight: float = 1) -> None:
         """
         Constructor
 

@@ -260,7 +260,6 @@ class BaseManager(Generic[Module]):
         if loss_fn is not None:
             assert self.loss_fn is not None, errors._raise(ValueError("The manager has not been compiled with 'loss_fn' given."))
             self.loss_fn.load_state_dict(state_dict=loss_fn, *args, **kwargs)
-        assert metrics is not None, errors._raise(ValueError("The given dictionary must have 'metrics' element not to be None."))
         for k, m in metrics.items():
             assert k in self.metric_fns, errors._raise(KeyError(f"The manager does not have a metric named '{k}'."))
             self.metric_fns[k].load_state_dict(state_dict=m, *args, **kwargs)

@@ -1,5 +1,5 @@
 from torchmanager_core import torch, view, _raise
-from torchmanager_core.typing import Any, Callable, Generic, Module, Optional
+from torchmanager_core.typing import Any, Callable, Generic, TypeVar
 
 from .metric import Metric
 
@@ -9,7 +9,11 @@ except ImportError:
     linalg = NotImplemented
 
 
-class FeatureMetric(Metric, Generic[Module]):
+M = TypeVar("M", bound=Callable[[Any, Any], torch.Tensor] | None)
+Module = TypeVar("Module", bound=torch.nn.Module | None)
+
+
+class FeatureMetric(Metric[M], Generic[M, Module]):
     """
     A metric that extracts inputs and targets with feature extractor and evaluates the extracted features instead of raw inputs
 
@@ -19,10 +23,10 @@ class FeatureMetric(Metric, Generic[Module]):
     - Parameters:
         - feature_extractor: A `Module` to extract the features
     """
-    feature_extractor: Optional[Module]
+    feature_extractor: Module
     """A `Module` to extract the features"""
 
-    def __init__(self, metric_fn: Optional[Callable[[Any, Any], torch.Tensor]] = None, feature_extractor: Optional[Module] = None, *, target: Optional[str] = None) -> None:
+    def __init__(self, metric_fn: M = None, feature_extractor: Module = None, *, target: str | None = None) -> None:
         """
         Constructor
 
@@ -69,7 +73,7 @@ class FeatureMetric(Metric, Generic[Module]):
         return self
 
 
-class ExtractorScore(FeatureMetric[Module]):
+class ExtractorScore(FeatureMetric[M, Module]):
     """
     A general feature score metric which can be used as `InceptionScore` by taking the `feature_extractor` as an InceptionV3 model
 
@@ -84,7 +88,7 @@ class ExtractorScore(FeatureMetric[Module]):
         return scores
 
 
-class FID(FeatureMetric[Module]):
+class FID(FeatureMetric[None, Module]):
     """
     Fréchet Inception Distance (FID) metric
 
@@ -97,7 +101,7 @@ class FID(FeatureMetric[Module]):
     use_linalg: bool
     """A `bool` flag of if use `scipy.linalg` package"""
 
-    def __init__(self, feature_extractor: Optional[Module] = None, *, use_linalg: bool = True, target: Optional[str] = None) -> None:
+    def __init__(self, feature_extractor: Module = None, *, use_linalg: bool = True, target: str | None = None) -> None:
         """
         Constructor
 

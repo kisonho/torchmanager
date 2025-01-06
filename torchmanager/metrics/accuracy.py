@@ -1,6 +1,5 @@
 from torchmanager_core import torch, Version, _raise
 from torchmanager_core.protocols import Reduction
-from torchmanager_core.typing import Optional
 
 from .conf_mat import BinaryConfusionMetric
 from .metric import Metric
@@ -18,7 +17,7 @@ class Accuracy(Metric):
     """
     reduction: Reduction
 
-    def __init__(self, *, reduction: Reduction = Reduction.MEAN, target: Optional[str] = None) -> None:
+    def __init__(self, *, reduction: Reduction = Reduction.MEAN, target: str | None = None) -> None:
         super().__init__(target=target)
         self.reduction = reduction
 
@@ -59,7 +58,7 @@ class SparseCategoricalAccuracy(Accuracy):
         assert value >= 0, _raise(ValueError(f"Dim must be a non-negative number, got {value}."))
         self.__dim = value
 
-    def __init__(self, dim: int = -1, *, target: Optional[str] = None) -> None:
+    def __init__(self, dim: int = -1, *, target: str | None = None) -> None:
         """
         Constructor
 
@@ -122,7 +121,7 @@ class Dice(Metric):
         assert value > 0, _raise(ValueError(f"Num classes must be a positive number, got {value}."))
         self.__num_classes = value
 
-    def __init__(self, num_classes: int, /, dim: int = 1, *, eps: float = 1e-7, target: Optional[str] = None) -> None:
+    def __init__(self, num_classes: int, /, dim: int = 1, *, eps: float = 1e-7, target: str | None = None) -> None:
         """
         Constructor
 
@@ -190,7 +189,7 @@ class MAE(Metric):
     """
     reduction: Reduction
 
-    def __init__(self, *, reduction: Reduction = Reduction.MEAN, target: Optional[str] = None) -> None:
+    def __init__(self, *, reduction: Reduction = Reduction.MEAN, target: str | None = None) -> None:
         """
         Constructor
 
@@ -225,7 +224,7 @@ class PartialDice(Dice):
     """
     class_idx: int
 
-    def __init__(self, c: int, /, dim: int = 1, *, eps: float = 1e-7, target:Optional[str] = None):
+    def __init__(self, c: int, /, dim: int = 1, *, eps: float = 1e-7, target:str | None = None):
         """
         Constructor
 

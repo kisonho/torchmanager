@@ -1,6 +1,6 @@
 import torch.nn.functional as F
 from torchmanager_core import torch, Version, _raise
-from torchmanager_core.typing import Callable, Optional
+from torchmanager_core.typing import Callable
 
 from .metric import Metric
 
@@ -18,19 +18,19 @@ class PSNR(Metric):
     - Properties:
         - denormalize_fn: An optional `Callable` function to denormalize the images
     """
-    __max_value: Optional[float]
-    denormalize_fn: Optional[Callable[[torch.Tensor], torch.Tensor]]
+    __max_value: float | None
+    denormalize_fn: Callable[[torch.Tensor], torch.Tensor] | None
 
     @property
-    def max_value(self) -> Optional[float]:
+    def max_value(self) -> float | None:
         return self.__max_value if hasattr(self, "_PSNR__max_value") else 1
 
     @max_value.setter
-    def max_value(self, value: Optional[float]) -> None:
+    def max_value(self, value: float | None) -> None:
         assert value is None or value > 0, _raise(ValueError("Max value must be positive."))
         self.__max_value = value
 
-    def __init__(self, *, denormalize_fn: Optional[Callable[[torch.Tensor], torch.Tensor]] = None, max_value: Optional[float] = 1, target: Optional[str] = None) -> None:
+    def __init__(self, *, denormalize_fn: Callable[[torch.Tensor], torch.Tensor] | None = None, max_value: float | None = 1, target: str | None = None) -> None:
         """
         Constructor
 
@@ -65,7 +65,7 @@ class SSIM(Metric):
         - window_size: An `int` of the window size
     """
     __pixel_range: float
-    denormalize_fn: Optional[Callable[[torch.Tensor], torch.Tensor]]
+    denormalize_fn: Callable[[torch.Tensor], torch.Tensor] | None
     window: torch.Tensor
 
     @property
@@ -81,7 +81,7 @@ class SSIM(Metric):
     def window_size(self) -> int:
         return self.window.shape[-1]
 
-    def __init__(self, channels: int, /, sigma: float = 1.5, window_size: int = 11, *, denormalize_fn: Optional[Callable[[torch.Tensor], torch.Tensor]] = None, pixel_range: float = 255, target: Optional[str] = None) -> None:
+    def __init__(self, channels: int, /, sigma: float = 1.5, window_size: int = 11, *, denormalize_fn: Callable[[torch.Tensor], torch.Tensor] | None = None, pixel_range: float = 255, target: str | None = None) -> None:
         """
         Constructor
 

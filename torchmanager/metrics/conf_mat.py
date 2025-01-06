@@ -1,5 +1,4 @@
 from torchmanager_core import Version, abc, torch, _raise
-from torchmanager_core.typing import Optional, Tuple
 
 from .metric import Metric
 
@@ -18,7 +17,7 @@ class BinaryConfusionMetric(Metric, abc.ABC):
     _dim: int
     _eps: float
 
-    def __init__(self, dim: int = 1, *, class_index: int = 1, eps: float=1e-7, target: Optional[str] = None):
+    def __init__(self, dim: int = 1, *, class_index: int = 1, eps: float=1e-7, target: str | None = None):
         """
         Constructor
 
@@ -49,7 +48,7 @@ class BinaryConfusionMetric(Metric, abc.ABC):
         tp, tn, fp, fn = self.forward_conf_met(input.float(), target.float())
         return self.forward_metric(tp, tn, fp, fn)
 
-    def forward_conf_met(self, input: torch.Tensor, target: torch.Tensor) -> Tuple[torch.Tensor, ...]:
+    def forward_conf_met(self, input: torch.Tensor, target: torch.Tensor) -> tuple[torch.Tensor, ...]:
         tp = torch.sum(target * input, dim=0).mean()
         tn = ((1 - target) * (1 - input)).sum(dim=0).mean()
         fp = torch.sum((1 - target) * input, dim=0).mean()
@@ -95,7 +94,7 @@ class ConfusionMatrix(Metric):
             conf_mat = torch.cat(self._results, dim=0).sum(dim=0)
             return conf_mat
 
-    def __init__(self, num_classes: int, /, *, target: Optional[str] = None) -> None:
+    def __init__(self, num_classes: int, /, *, target: str | None = None) -> None:
         """
         Constructor
 
