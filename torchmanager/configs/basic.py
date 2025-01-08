@@ -62,13 +62,10 @@ class Configs(argparse.Namespace, abc.ABC):
         os.makedirs(log_dir, exist_ok=True)
         log_file = os.path.basename(configs.experiment.replace(".exp", ".log"))
         log_path = os.path.join(log_dir, log_file)
-        formatter = view.set_log_path(log_path=log_path)
+        _ = view.set_log_path(log_path=log_path)
 
         # save configs
         configs.save()
-
-        # initialize console
-        view.add_console(formatter=formatter)
 
         # show configs summarize
         if show_summary:

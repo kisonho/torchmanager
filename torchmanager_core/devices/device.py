@@ -1,5 +1,5 @@
 import torch, warnings
-from typing import Any, Iterable, Optional, Type, TypeVar, Union, cast, overload
+from typing import Any, Iterable, Type, TypeVar, cast, overload
 
 from .protocols import DeviceMovable, DataParallelType
 
@@ -28,18 +28,15 @@ except:
 Module = TypeVar('Module', bound=torch.nn.Module)
 P = TypeVar('P', bound=DataParallelType)
 
-
 @overload
-def data_parallel(raw_model: P, /, devices: list[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type[P] = torch.nn.parallel.DataParallel) -> tuple[P, bool]:
+def data_parallel(raw_model: P, /, devices: list[torch.device] = GPUS, *, output_device: torch.device | None = None, parallel_type: Type[P] = torch.nn.parallel.DataParallel) -> tuple[P, bool]:
     ...
 
-
 @overload
-def data_parallel(raw_model: Union[Module, P], /, devices: list[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type[P] = torch.nn.parallel.DataParallel) -> tuple[Union[Module, P], bool]:
+def data_parallel(raw_model: Module | P, /, devices: list[torch.device] = GPUS, *, output_device: torch.device | None = None, parallel_type: Type[P] = torch.nn.parallel.DataParallel) -> tuple[Module | P, bool]:
     ...
 
-
-def data_parallel(raw_model: Union[Module, P], /, devices: list[torch.device] = GPUS, *, output_device: Optional[torch.device] = None, parallel_type: Type[P] = torch.nn.parallel.DataParallel) -> tuple[Union[Module, P], bool]:
+def data_parallel(raw_model: Module | P, /, devices: list[torch.device] = GPUS, *, output_device: torch.device | None = None, parallel_type: Type[P] = torch.nn.parallel.DataParallel) -> tuple[Module | P, bool]:
     """
     Make a `torch.nn.Module` data parallel
 
@@ -62,14 +59,12 @@ def data_parallel(raw_model: Union[Module, P], /, devices: list[torch.device] = 
         raw_model = cast(Module, raw_model)
         return raw_model, False
 
-
 def empty_cache() -> None:
     """Empty CUDA cache"""
     if GPU is not NotImplemented:
         torch.cuda.empty_cache()
 
-
-def search(specified: Optional[Union[torch.device, list[torch.device]]] = None) -> tuple[torch.device, torch.device, list[torch.device]]:
+def search(specified: torch.device | list[torch.device] | None = None) -> tuple[torch.device, torch.device, list[torch.device]]:
     """
     Find available devices
 
@@ -103,23 +98,9 @@ def search(specified: Optional[Union[torch.device, list[torch.device]]] = None) 
         raise SystemError("Specified device list must not be empty")
     return CPU, device, specified
 
+T = TypeVar('T', bound=DeviceMovable | dict[str, DeviceMovable | Any] | list[DeviceMovable | Any])
 
-@overload
-def move_to_device(target: DeviceMovable, /, device: torch.device, *, recursive: bool = False) -> DeviceMovable:
-    ...
-
-
-@overload
-def move_to_device(target: dict[str, Union[DeviceMovable, Any]], /, device: torch.device, *, recursive: bool = False) -> dict[str, Union[DeviceMovable, Any]]:
-    ...
-
-
-@overload
-def move_to_device(target: list[Union[DeviceMovable, Any]], /, device: torch.device, *, recursive: bool = False) -> list[Union[DeviceMovable, Any]]:
-    ...
-
-
-def move_to_device(target: Union[DeviceMovable,  dict[str, Union[DeviceMovable,  Any]], list[Union[DeviceMovable,  Any]]], /, device: torch.device, *, recursive: bool = False) -> Union[DeviceMovable,  dict[str, Union[DeviceMovable,  Any]], list[Union[DeviceMovable,  Any]]]:
+def move_to_device(target: T, /, device: torch.device, *, recursive: bool = False) -> T:
     """
     Recurrently move a target variable to device if elements perform to `DeviceMovable` protocol
 
@@ -132,11 +113,10 @@ def move_to_device(target: Union[DeviceMovable,  dict[str, Union[DeviceMovable, 
     if isinstance(target, DeviceMovable):
         target = target.to(device)
     elif isinstance(target, dict):
-        target = {k: move_to_device(t, device) if isinstance(t, DeviceMovable) or recursive else t for k, t in target.items()}
+        target = cast(T, {k: move_to_device(t, device) if isinstance(t, DeviceMovable) or recursive else t for k, t in target.items()})
     elif isinstance(target, Iterable):
-        target = [move_to_device(t, device) if isinstance(t, DeviceMovable) or recursive else t for t in target]
+        target = cast(T, [move_to_device(t, device) if isinstance(t, DeviceMovable) or recursive else t for t in target])
     return target
-
 
 def set_default(d: torch.device) -> None:
     if d.index is not None and d.type == "cuda":

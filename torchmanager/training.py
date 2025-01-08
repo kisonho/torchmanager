@@ -187,12 +187,12 @@ class Manager(_Manager[Module]):
         else:
             initial_epoch = self.current_epoch
 
-        # add console
-        view.logging.add_console()
-
         # add progress bar to callbacks
         if show_verbose:
             callbacks_list.append(ProgressBar(dataset_len, verbose_type=verbose_type))
+
+        # initialize summary
+        summary: dict[str, float] = {}
 
         # find available device
         cpu, device, target_devices = devices.search(device)
@@ -200,18 +200,15 @@ class Manager(_Manager[Module]):
             use_multi_gpus = False
         devices.set_default(target_devices[0])
 
-        # initialize summary
-        summary: dict[str, float] = {}
-
-        # on train start
-        for callback in callbacks_list:
-            callback.on_train_start(initial_epoch)
-
         try:
             # move to device
             if use_multi_gpus:
                 use_multi_gpus = self.data_parallel(target_devices)
             self.to(device)
+
+            # on train start
+            for callback in callbacks_list:
+                callback.on_train_start(initial_epoch)
 
             # epoch loop
             for self.current_epoch in range(initial_epoch, epochs):

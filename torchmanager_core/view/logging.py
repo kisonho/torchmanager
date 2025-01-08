@@ -1,6 +1,5 @@
 from logging import *  # type: ignore
 
-getLogger().handlers.clear()
 logger = getLogger('torchmanager')
 
 # initialize console
@@ -13,13 +12,20 @@ def add_console(console: StreamHandler = StreamHandler(), formatter = Formatter(
     """
     # check if console handler exists
     handlers = logger.handlers
-    contains_console = any(type(handler) is StreamHandler for handler in handlers)
+    contains_console = any(type(handler) is type(console) for handler in handlers)
+
+    # set console
+    console.setLevel(INFO)
+    console.setFormatter(formatter)
 
     # add console handler
     if not contains_console:
-        console.setLevel(INFO)
-        console.setFormatter(formatter)
         logger.addHandler(console)
+    else:
+        for i, handler in enumerate(logger.handlers):
+            if type(handler) is type(console):
+                logger.handlers[i] = console
+                break
 
 def set_log_path(log_path: str) -> Formatter:
     """
@@ -29,10 +35,13 @@ def set_log_path(log_path: str) -> Formatter:
         - log_path: A `str` of log file path
     - Returns: A `logging.Formatter` of log formatter with the log path
     """
-    logger.handlers.clear()
-    logger.setLevel(INFO)
-    file_handler = FileHandler(log_path)
-    formatter = Formatter("%(message)s")
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
+    for i, handler in enumerate(logger.handlers):
+        if isinstance(handler, FileHandler):
+            handler.baseFilename = log_path
+            formatter = Formatter("%(message)s")
+            handler.setFormatter(formatter)
+            logger.handlers[i] = handler
     return formatter
+
+getLogger().handlers.clear()
+add_console()
