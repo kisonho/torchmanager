@@ -73,17 +73,6 @@ class Manager(_Manager[Module]):
             - callbacks_list: A `list` of callbacks in `Callback`
         - Returns: A summary of `dict` with keys as `str` and values as `float`
         """
-        # initialize status
-        self.model = self.model.train()
-        self.loss_fn = self.compiled_losses.train()
-        for k, m in self.compiled_metrics.items():
-            self.compiled_metrics[k] = m.train()
-
-        # reset loss and metrics
-        self.compiled_losses.reset()
-        for m in self.metric_fns.values():
-            m.reset()
-
         # initialize iterations
         dataset_len = dataset.batched_len if isinstance(dataset, Dataset) else len(dataset)
         iterations = dataset_len if iterations is None else iterations
@@ -245,8 +234,13 @@ class Manager(_Manager[Module]):
                     callback.on_epoch_start(self.current_epoch)
 
                 # train for one epoch
-                training_summary = self._train(training_dataset, iterations=batch_iterations, *args, device=device, use_multi_gpus=use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
+                with self:
+                    training_summary = self._train(training_dataset, iterations=batch_iterations, *args, device=device, use_multi_gpus=use_multi_gpus, callbacks_list=callbacks_list, **kwargs)
+
+                # update summary
                 summary |= training_summary
+
+                # count iterations
                 if iterations is not None and batch_iterations is not None:
                     iterations -= batch_iterations
 

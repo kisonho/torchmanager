@@ -167,17 +167,13 @@ class Manager(BaseManager[Module]):
         progress_bar = view.tqdm(total=dataset_len, disable=not show_verbose)
 
         # reset loss function and metrics
-        if self.loss_fn is not None:
-            self.loss_fn.eval().reset()
-        for _, m in self.metric_fns.items():
-            m.eval().reset()
+        self.reset_metrics()
 
         try:
             # move to device
             if use_multi_gpus:
                 use_multi_gpus = self.data_parallel(target_devices)
             self.to(device)
-            self.model.eval()
 
             # batch loop
             for data in dataset:

@@ -126,6 +126,26 @@ class BaseManager(Generic[Module]):
         # reset to CPU
         self.reset()
 
+    def __enter__(self) -> Self:
+        """Enter the training mode"""
+        # initialize status
+        self.model = self.model.train()
+        if self.loss_fn is not None:
+            self.loss_fn = self.loss_fn.train()
+        for k, m in self.metric_fns.items():
+            self.metric_fns[k] = m.train()
+        self.reset_metrics()
+        return self
+
+    def __exit__(self, *args, **kwargs) -> None:
+        """Exit the training mode"""
+        # finalize status
+        self.model = self.model.eval()
+        if self.loss_fn is not None:
+            self.loss_fn = self.loss_fn.eval()
+        for k, m in self.metric_fns.items():
+            self.metric_fns[k] = m.eval()
+
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} (version={self.version})"
 
@@ -266,7 +286,7 @@ class BaseManager(Generic[Module]):
 
     def reset(self, cpu: torch.device = devices.CPU) -> None:
         """
-        Reset model and loss functions, move all to CPU and empty device cache
+        Reset model and loss functions, move all to CPU and empty device cache.
 
         - Parameters:
             - cpu: The CPU in `torch.device`
@@ -275,6 +295,17 @@ class BaseManager(Generic[Module]):
         self.model = self.raw_model.to(cpu)
         self.loss_fn = self.raw_loss_fn.to(cpu) if self.raw_loss_fn is not None else self.raw_loss_fn
         devices.empty_cache()
+        self.__exit__()
+
+    def reset_metrics(self) -> None:
+        """Reset all metrics, including loss function to initial state"""
+        # reset loss
+        if self.loss_fn is not None:
+            self.loss_fn.reset()
+
+        # reset metrics
+        for m in self.metric_fns.values():
+            m.reset()
 
     def state_dict(self, prefix: str = '', keep_vars: bool = False) -> OrderedDict[str, Any]:
         return OrderedDict({
