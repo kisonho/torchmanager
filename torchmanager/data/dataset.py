@@ -37,7 +37,6 @@ class Dataset(_Dataset[T], abc.ABC):
 
     __batch_size: int
     __device: torch.device
-    data_loader: DataLoader
     drop_last: bool
     num_workers: int
     sampler: Sampler[list[T]] | Iterable[list[T]] | None
