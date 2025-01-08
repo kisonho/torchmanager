@@ -1,5 +1,5 @@
 from torch.utils.data import Dataset as _Dataset, DataLoader, Sampler
-from torchmanager_core import abc, devices, errors, math, os, torch, _raise
+from torchmanager_core import abc, devices, errors, gc, math, os, torch, _raise
 from torchmanager_core.typing import Any, Callable, Iterable, Iterator, Optional, Sequence, TypeVar, cast
 
 T = TypeVar("T")
@@ -119,6 +119,7 @@ class Dataset(_Dataset[T], abc.ABC):
         for data in data_loader:
             yield self.unpack_data(data)
         del data_loader
+        gc.collect()
 
     def __len__(self) -> int:
         """Returns the unbatched length"""
