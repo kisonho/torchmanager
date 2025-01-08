@@ -12,7 +12,7 @@
 To use this framework, simply initialize a `Manager` object. The `Manager` class provides a generic training/testing loop for PyTorch models. It also provides some useful callbacks to use during training/testing.
 
 ## Pre-request
-* Python 3.9+
+* Python 3.10+
 * PyTorch
 * Packaging
 * tqdm
