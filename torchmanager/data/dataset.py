@@ -115,12 +115,8 @@ class Dataset(_Dataset[T], abc.ABC):
             data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=self.num_workers, sampler=self.sampler)
 
         # yield data
-        try:
-            for data in data_loader:
-                yield self.unpack_data(data)
-        finally:
-            del data_loader
-            gc.collect()
+        for data in data_loader:
+            yield self.unpack_data(data)
 
     def __len__(self) -> int:
         """Returns the unbatched length"""
