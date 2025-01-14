@@ -1,7 +1,8 @@
 from torch.utils.data import Dataset as _Dataset, DataLoader, Sampler
-from torchmanager_core import abc, devices, errors, gc, math, os, torch, _raise
+from torchmanager_core import abc, devices, errors, math, os, torch, _raise
 from torchmanager_core.typing import Any, Callable, Iterable, Iterator, Optional, Sequence, TypeVar, cast
 
+D = TypeVar("D", bound=DataLoader)
 T = TypeVar("T")
 
 
@@ -139,7 +140,7 @@ class Dataset(_Dataset[T], abc.ABC):
             return NotImplemented  # unknown type of dataset
 
 
-class PreprocessedDataset(Dataset, abc.ABC):
+class PreprocessedDataset(Dataset[T], abc.ABC):
     """
     A data with preprocessing method
 
@@ -174,7 +175,7 @@ class PreprocessedDataset(Dataset, abc.ABC):
     @abc.abstractmethod
     def load(self, index: Any) -> Any:
         """
-        The method to load an item by index without preprocessing
+        The method to load a raw item by index without preprocessing
 
         - Parameters:
             - index: `Any` kind of index object
@@ -183,7 +184,7 @@ class PreprocessedDataset(Dataset, abc.ABC):
         return NotImplemented
 
 
-def batched(fn: Callable[..., _Dataset]):
+def batched(fn: Callable[..., _Dataset], loader_type: type[D] = DataLoader) -> Callable[..., D]:
     """
     Wrap a loading PyTorch dataset function into a loading dataset function
 
@@ -207,9 +208,17 @@ def batched(fn: Callable[..., _Dataset]):
         - drop_last: A `bool` flag of if drop the last data that not enought for the batch size
         - shuffle: A `bool` flag of if shuffling the data
     - Returns: A wrapped function that accepts a loading function which returns `torch.utils.data.Dataset` and returns a loading function which returns `DataLoader`
+
+    Use with specific data loader type:
+    >>> from torch.utils.data import DataLoader
+    >>> class CustomizedDataLoader(DataLoader):
+    ...     ...
+    >>> @batched(loader_type=CustomizedDataLoader)
+    >>> def load_some_dataset(...) -> TorchDataset:
+    ...     ...
     """
     # wrap function
-    def wrapped_fn(*args: Any, batch_size: int = 1, device: torch.device = devices.CPU, drop_last: bool = False, num_workers: Optional[int] = None, shuffle: bool = False, **kwargs: Any) -> DataLoader:
+    def wrapped_fn(*args: Any, batch_size: int = 1, device: torch.device = devices.CPU, drop_last: bool = False, num_workers: Optional[int] = None, shuffle: bool = False, **kwargs: Any) -> D:
         # initialize devices
         if num_workers is None:
             cpu_count = os.cpu_count()
@@ -224,6 +233,6 @@ def batched(fn: Callable[..., _Dataset]):
         # load dataset
         loaded_dataset = fn(*args, **kwargs)
         assert not isinstance(loaded_dataset, Dataset), _raise(RuntimeError("The loaded dataset is a `torchmanager.data.Dataset` which has already been wrapped with batch loader during iteration."))
-        data_loader = DataLoader(loaded_dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last, num_workers=num_workers, pin_memory=pin_memory, pin_memory_device=f"{targeted_devices[0].type}:{targeted_devices.index}")
+        data_loader = loader_type(loaded_dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last, num_workers=num_workers, pin_memory=pin_memory, pin_memory_device=f"{targeted_devices[0].type}:{targeted_devices.index}")
         return data_loader
     return wrapped_fn
