@@ -1,6 +1,5 @@
 from torchmanager_core import devices, torch, _raise
 from torchmanager_core.typing import Any, Callable, Generic, TypeVar
-from torchmanager_core.view import warnings
 
 from ..metrics import Metric
 
