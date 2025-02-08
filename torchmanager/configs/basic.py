@@ -1,4 +1,4 @@
-from torchmanager_core import argparse, abc, errors, os, shutil, torch, view, _raise
+from torchmanager_core import argparse, abc, errors, os, shutil, sys, torch, view, _raise
 from torchmanager_core.typing import Optional, Union, overload
 from torchmanager_core import DESCRIPTION
 
@@ -137,6 +137,7 @@ class Configs(argparse.Namespace, abc.ABC):
             - description: A `str` to display the description of current app
         """
         view.logger.info(description)
+        view.logger.info(f"python={sys.version}")
         view.logger.info(f"torch={torch.__version__}")
 
     @abc.abstractmethod
