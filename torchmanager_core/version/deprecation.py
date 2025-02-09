@@ -1,9 +1,9 @@
 import functools, warnings
+from packaging.version import Version
 from typing import Optional, Union
 
 from .details import CURRENT
 from .errors import VersionError
-from .version import Version
 
 VersionType = Union[str, Version]
 
