@@ -35,10 +35,13 @@ def set_log_path(log_path: str) -> Formatter:
         - log_path: A `str` of log file path
     - Returns: A `logging.Formatter` of log formatter with the log path
     """
+    # initialize formatter
+    formatter = Formatter("%(message)s")
+
+    # loop through handlers
     for i, handler in enumerate(logger.handlers):
         if isinstance(handler, FileHandler):
             handler.baseFilename = log_path
-            formatter = Formatter("%(message)s")
             handler.setFormatter(formatter)
             logger.handlers[i] = handler
     return formatter
