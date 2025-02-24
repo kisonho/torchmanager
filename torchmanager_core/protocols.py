@@ -1,12 +1,20 @@
 import torch, sys
 from enum import Enum
-from typing import Any, Callable, Optional, Protocol
+from typing import Any, Callable, Optional, Protocol, runtime_checkable
 from typing_extensions import Self
 
+from .checkpoint import Checkpoint
 from .checkpoint.protocols import ModelContainer, StateDictLoadable, WrappedFn
 from .devices.protocols import DeviceMovable
 from .version import Version
 from .view.protocols import VerboseControllable
+
+
+@runtime_checkable
+class CkptConvertable(StateDictLoadable, Protocol):
+    """A protocol for object that can be converted to checkpoint"""
+    def to_checkpoint(self) -> Checkpoint[Self]:
+        ...
 
 
 class Frequency(Enum):
