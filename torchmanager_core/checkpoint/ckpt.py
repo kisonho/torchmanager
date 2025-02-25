@@ -1,10 +1,10 @@
 import os, torch, warnings
 from torch.optim.optimizer import Optimizer
-from typing import Any, Generic, OrderedDict, TypeVar
+from typing import Any, Generic, Mapping, OrderedDict, TypeVar
 
 from .protocols import ModelContainer, StateDictLoadable, WrappedFn
 
-T = TypeVar("T", bound=StateDictLoadable)
+T = TypeVar("T", bound=StateDictLoadable | Mapping[str, Any])
 
 
 class Checkpoint(Generic[T]):
@@ -120,6 +120,7 @@ class Checkpoint(Generic[T]):
 
         # check if save weights only
         if self.save_weights_only is True:
+            assert not isinstance(self.model, Mapping), "Model must be an object that perfomrs `StateDictLoadable` protocol to save weights only."
             model = self.model.module if isinstance(self.model, torch.nn.parallel.DataParallel) else self.model
             ckpt["model"] = model.state_dict()
 
