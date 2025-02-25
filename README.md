@@ -199,5 +199,6 @@ experiments
 ```
 
 ## Also checkout our projects implemented with torchmanager
+* [A-Bridge (SDE-BBDM)](https://github.com/kisonho/score-based-bbdm-a-bridge) - Score-Based Image-to-Image Brownian Bridge
 * [MAG-MS/MAGNET](https://github.com/kisonho/magnet) - Modality-Agnostic Learning for Medical Image Segmentation Using Multi-modality Self-distillation
 * [tlt](https://github.com/kisonho/tlt) - Transferring Lottery Tickets in Computer Vision Models: a Dynamic Pruning Approach
