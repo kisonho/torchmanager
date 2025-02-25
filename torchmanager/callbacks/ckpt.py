@@ -55,6 +55,7 @@ class _Checkpoint(Callback, Generic[T]):
         self.ckpt_path = os.path.normpath(ckpt_path)
 
     def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: Optional[dict[str, float]] = None) -> None:
+        self.checkpoint.last_epoch = epoch
         self.checkpoint.save(epoch, self.ckpt_path)
 
 
