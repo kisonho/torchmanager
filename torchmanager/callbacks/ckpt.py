@@ -1,7 +1,7 @@
 from torch.optim.optimizer import Optimizer
 from torchmanager_core import os, torch, view, _raise
 from torchmanager_core.checkpoint import Checkpoint as Ckpt
-from torchmanager_core.protocols import ModelContainer, MonitorType, StateDictLoadable
+from torchmanager_core.protocols import CkptConvertable, ModelContainer, MonitorType, StateDictLoadable
 from torchmanager_core.typing import Any, Generic, Optional, TypeVar, overload
 
 from .callback import Callback
@@ -46,15 +46,16 @@ class _Checkpoint(Callback, Generic[T]):
         Constructor
 
         - Parameters:
-            - model: Any type of model to be saved
+            - model: A `StateDictLoadable` model to be saved
             - ckpt_path: A `str` of the checkpoint path
             - **kwargs: Other arguments in `Checkpoint` constructor
         """
         super().__init__()
-        self.__checkpoint = Ckpt(model, **kwargs)
+        self.__checkpoint = model.to_checkpoint() if isinstance(model, CkptConvertable) else Ckpt(model, **kwargs)
         self.ckpt_path = os.path.normpath(ckpt_path)
 
     def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: Optional[dict[str, float]] = None) -> None:
+        self.checkpoint.last_epoch = epoch
         self.checkpoint.save(epoch, self.ckpt_path)
 
 

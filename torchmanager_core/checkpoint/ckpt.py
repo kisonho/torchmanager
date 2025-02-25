@@ -9,7 +9,7 @@ T = TypeVar("T", bound=StateDictLoadable)
 
 class Checkpoint(Generic[T]):
     """
-    The callback to save the latest checkpoint for each epoch
+    The checkpoint for model training
 
     - Properties:
         - last_epoch: An `int` of the last epoch index
@@ -174,7 +174,7 @@ def list_checkpoints(experiment_dir: str) -> list[str]:
     - Returns: A `list` of checkpoints name in the experiment
     """
     ckpt_dir = os.path.join(experiment_dir, "checkpoints")
-    return [file.replace(".model", "") for file in os.listdir(ckpt_dir) if file.endswith(".model")]
+    return [file for file in os.listdir(ckpt_dir) if file.endswith(".model")]
 
 
 def load(experiment_dir: str, ckpt_name: str) -> Checkpoint[Any]:
