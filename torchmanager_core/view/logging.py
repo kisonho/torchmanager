@@ -1,6 +1,7 @@
 from logging import *  # type: ignore
 
 logger = getLogger('torchmanager')
+logger.setLevel(INFO)
 
 # initialize console
 def add_console(console: StreamHandler = StreamHandler(), formatter = Formatter("%(message)s")) -> None:
@@ -45,6 +46,3 @@ def set_log_path(log_path: str) -> Formatter:
             handler.setFormatter(formatter)
             logger.handlers[i] = handler
     return formatter
-
-getLogger().handlers.clear()
-add_console()
