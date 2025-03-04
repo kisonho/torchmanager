@@ -29,12 +29,24 @@ class Manager(_Manager[Module]):
         - current_epoch: The `int` index of current training epoch
         - compiled_optimizer: The `Optimizer` that must be exist
     """
+    __current_batch: int
     __current_epoch: int
 
     @property
     def compiled(self) -> bool:
         """The `bool` flag of if this manager has been compiled for training"""
         return True if self.loss_fn is not None and self.optimizer is not None else False
+
+    @property
+    def current_batch(self) -> int:
+        return self.__current_batch
+
+    @current_batch.setter
+    def current_batch(self, b: int) -> None:
+        if b < 0:
+            raise ValueError(f"The batch index must be a non_negative integer, got {b}.")
+        else:
+            self.__current_batch = b
 
     @property
     def current_epoch(self) -> int:
@@ -76,12 +88,13 @@ class Manager(_Manager[Module]):
         # initialize iterations
         dataset_len = dataset.batched_len if isinstance(dataset, Dataset) else len(dataset)
         iterations = dataset_len if iterations is None else iterations
+        self.current_batch = 0
 
         # batch loop
-        for batch, data in enumerate(dataset):
+        for self.current_batch, data in enumerate(dataset):
             # on batch start
             for callback in callbacks_list:
-                callback.on_batch_start(batch)
+                callback.on_batch_start(self.current_batch)
 
             # move x_train and y_train to device
             x_train, y_train = self.unpack_data(data)
@@ -94,10 +107,10 @@ class Manager(_Manager[Module]):
 
             # on batch end
             for callback in callbacks_list:
-                callback.on_batch_end(batch, summary=summary)
+                callback.on_batch_end(self.current_batch, summary=summary)
 
             # check for iterations
-            if batch + 1 >= iterations:
+            if self.current_batch + 1 >= iterations:
                 break
         return self.summary
 
