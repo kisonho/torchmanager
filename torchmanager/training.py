@@ -282,6 +282,7 @@ class Manager(_Manager[Module]):
     def optimize(self) -> None:
         """Optimize the model with `compiled_optimizer`"""
         self.compiled_optimizer.step()
+        self.compiled_optimizer.zero_grad()
 
     def train_step(self, x_train: Any, y_train: Any) -> dict[str, float]:
         """
@@ -297,7 +298,6 @@ class Manager(_Manager[Module]):
         assert loss is not None, _raise(TypeError("Loss cannot be fetched."))
 
         # backward pass
-        self.compiled_optimizer.zero_grad()
         self.backward(loss)
         self.optimize()
 
