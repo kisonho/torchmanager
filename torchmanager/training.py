@@ -29,24 +29,12 @@ class Manager(_Manager[Module]):
         - current_epoch: The `int` index of current training epoch
         - compiled_optimizer: The `Optimizer` that must be exist
     """
-    __current_batch: int
     __current_epoch: int
 
     @property
     def compiled(self) -> bool:
         """The `bool` flag of if this manager has been compiled for training"""
         return True if self.loss_fn is not None and self.optimizer is not None else False
-
-    @property
-    def current_batch(self) -> int:
-        return self.__current_batch
-
-    @current_batch.setter
-    def current_batch(self, b: int) -> None:
-        if b < 0:
-            raise ValueError(f"The batch index must be a non_negative integer, got {b}.")
-        else:
-            self.__current_batch = b
 
     @property
     def current_epoch(self) -> int:
