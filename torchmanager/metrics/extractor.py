@@ -47,7 +47,7 @@ class FeatureMetric(Metric, Generic[Module]):
 
         # rewrap input and target
         if self._target is not None:
-            input_features, target_features = {self._target: input}, {self._target: target}
+            input_features, target_features = {self._target: input_features}, {self._target: target_features}
         return super().__call__(input_features, target_features)
 
     @torch.no_grad()
