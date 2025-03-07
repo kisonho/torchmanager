@@ -137,3 +137,58 @@ class FID(FeatureMetric[None, Module]):
 
     def reset(self) -> None:
         super().reset()
+
+
+class KID(FeatureMetric[None, Module]):
+    """
+    Kernel Inception Distance (KID) metric
+
+    * Extends: `FeatureMetric`
+    * Generic class of `Module`
+
+    - Properties:
+        - c: A `float` of small positive constant for numerical stability in the polynomial kernel
+    """
+    c: float
+
+    def __init__(self, feature_extractor: Module = None, c: float = 1.0) -> None:
+        """
+        Constructor
+
+        - Parameters:
+            - feature_extractor: An optional `Module` to extract features
+            - c: A small positive constant for numerical stability in the polynomial kernel
+        """
+        super().__init__(feature_extractor=feature_extractor)
+        self.c = c
+
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        """
+        Compute the squared Maximum Mean Discrepancy (MMD²) using a polynomial kernel
+
+        - Parameters:
+            - input: A `torch.Tensor` representing the generated features
+            - target: A `torch.Tensor` representing the real features
+        - Returns: A `torch.Tensor` representing MMD² score
+        """
+        # Compute kernel matrices
+        K_xx = self.polynomial_kernel(input, input).mean()
+        K_yy = self.polynomial_kernel(target, target).mean()
+        K_xy = self.polynomial_kernel(input, target).mean()
+
+        # Compute unbiased MMD²
+        mmd2 = K_xx + K_yy - 2 * K_xy
+        return mmd2
+
+    def polynomial_kernel(self, x: torch.Tensor, y: torch.Tensor, degree: int = 3) -> torch.Tensor:
+        """
+        Compute the polynomial kernel between two sets of features
+
+        - Parameters:
+            - x: A `torch.Tensor` representing the first set of features
+            - y: A `torch.Tensor` representing the second set of features
+            - degree: The degree of the polynomial kernel (default is 3)
+
+        - Returns: A `torch.Tensor` representing the kernel matrix
+        """
+        return (x @ y.T + self.c) ** degree
