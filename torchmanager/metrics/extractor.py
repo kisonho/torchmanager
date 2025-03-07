@@ -151,15 +151,16 @@ class KID(FeatureMetric[None, Module]):
     """
     c: float
 
-    def __init__(self, feature_extractor: Module = None, c: float = 1.0) -> None:
+    def __init__(self, feature_extractor: Module = None, *, c: float = 1.0, target: str | None = None) -> None:
         """
         Constructor
 
         - Parameters:
             - feature_extractor: An optional `Module` to extract features
             - c: A small positive constant for numerical stability in the polynomial kernel
+            - target: A `str` of target name in `input` and `target` during direct
         """
-        super().__init__(feature_extractor=feature_extractor)
+        super().__init__(feature_extractor=feature_extractor, target=target)
         self.c = c
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
