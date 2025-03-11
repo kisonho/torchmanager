@@ -17,7 +17,7 @@ class BaseTrainingTestingManager(BaseManager[Module], abc.ABC):
     A basic training and testing manager
 
     * extends: `.testing.BasicTestingManager`
-    * abstract methods: `train_step`, `test_step
+    * abstract methods: `backward`, `optimize`, `train_step`, `test_step
 
     Train using fit method:
     >>> from torchmanager.data import Dataset
@@ -102,6 +102,7 @@ class BaseTrainingTestingManager(BaseManager[Module], abc.ABC):
                 break
         return self.summary
 
+    @abc.abstractmethod
     def backward(self, loss: torch.Tensor, /) -> None:
         """
         Backward function to calculate the gradients
@@ -109,7 +110,7 @@ class BaseTrainingTestingManager(BaseManager[Module], abc.ABC):
         - Parameters:
             - loss: A `torch.Tensor` of loss value
         """
-        loss.backward()
+        ...
 
     def eval(self, input: Any, target: Any, /) -> dict[str, float]:
         # forward metrics
@@ -285,10 +286,10 @@ class BaseTrainingTestingManager(BaseManager[Module], abc.ABC):
             self.reset(cpu)
         return (self.raw_model, summary) if return_summary else self.raw_model
 
+    @abc.abstractmethod
     def optimize(self) -> None:
         """Optimize the model with `compiled_optimizer`"""
-        self.compiled_optimizer.step()
-        self.compiled_optimizer.zero_grad()
+        ...
 
     @abc.abstractmethod
     def train_step(self, x_train: Any, y_train: Any) -> dict[str, float]:
@@ -313,7 +314,7 @@ class BaseTrainingManager(BaseTrainingTestingManager[Module], TestingManager[Mod
     A basic training manager
 
     * extends: `BaseTrainingTestingManager`, `.testing.Manager`
-    * abstract methods: `train_step`
+    * abstract methods: `backward`, `optimize`, `train_step`
 
     Train using fit method:
     >>> from torchmanager.data import Dataset
@@ -345,6 +346,20 @@ class Manager(BaseTrainingManager[Module]):
         - current_epoch: The `int` index of current training epoch
         - compiled_optimizer: The `Optimizer` that must be exist
     """
+    def backward(self, loss: torch.Tensor, /) -> None:
+        """
+        Backward function to calculate the gradients
+        
+        - Parameters:
+            - loss: A `torch.Tensor` of loss value
+        """
+        loss.backward()
+
+    def optimize(self) -> None:
+        """Optimize the model with `compiled_optimizer`"""
+        self.compiled_optimizer.step()
+        self.compiled_optimizer.zero_grad()
+
     def train_step(self, x_train: Any, y_train: Any) -> dict[str, float]:
         """
         A single training step
