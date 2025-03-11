@@ -1,5 +1,5 @@
 from torch.utils.data import DataLoader
-from torchmanager_core import devices, errors, torch, view
+from torchmanager_core import abc, devices, errors, torch, view
 from torchmanager_core.protocols import Resulting
 from torchmanager_core.typing import Any, Collection, Module
 
@@ -7,16 +7,12 @@ from .basic import BaseManager
 from .data import Dataset
 
 
-class Manager(BaseManager[Module]):
+class BaseTestingManager(BaseManager[Module], abc.ABC):
     """
-    A testing manager, only used for testing
+    A basic testing manager, only used for testing
 
     * extends: `.basic.BaseManager`
-
-    Testing the model using `test` function:
-    >>> from torchmanager.data import Dataset
-    >>> dataset = Dataset(...)
-    >>> manager.test(dataset, ...)
+    * abstract methods: `test_step`
 
     - Properties:
         - compiled_metrics: The `dict` of metrics in `Resulting` that does not contain losses
@@ -207,6 +203,30 @@ class Manager(BaseManager[Module]):
             if empty_cache:
                 self.reset(cpu)
 
+    @abc.abstractmethod
+    def test_step(self, x_test: Any, y_test: Any) -> dict[str, float]:
+        """
+        A single testing step
+
+        - Parameters:
+            - x_train: The testing input in `torch.Tensor`
+            - y_train: The testing label in `torch.Tensor`
+        - Returns: A `dict` of validation summary
+        """
+        ...
+
+
+class Manager(BaseTestingManager[Module]):
+    """
+    A testing manager, only used for testing
+
+    * extends: `BaseTestingManager`
+
+    Testing the model using `test` function:
+    >>> from torchmanager.data import Dataset
+    >>> dataset = Dataset(...)
+    >>> manager.test(dataset, ...)
+    """
     def test_step(self, x_test: Any, y_test: Any) -> dict[str, float]:
         """
         A single testing step

@@ -1,6 +1,6 @@
 from torch.optim.optimizer import Optimizer
 from torch.utils.data import DataLoader
-from torchmanager_core import devices, errors, math, torch, view, _raise
+from torchmanager_core import abc, devices, errors, math, torch, view, _raise
 from torchmanager_core.checkpoint import Checkpoint
 from torchmanager_core.protocols import Resulting
 from torchmanager_core.typing import Any, Collection, Module, Self, overload
@@ -9,15 +9,15 @@ from .callbacks import Callback, ProgressBar
 from .data import Dataset
 from .losses import Loss
 from .metrics import Metric
-from .testing import Manager as _Manager
+from .testing import BaseTestingManager as BaseManager, Manager as TestingManager
 
 
-class Manager(_Manager[Module]):
+class BaseTrainingTestingManager(BaseManager[Module], abc.ABC):
     """
-    A training manager
+    A basic training and testing manager
 
-    * extends: `.testing.Manager`
-    * [Deprecation Warning]: Method `train` has been set as protected from v1.0.2, the public method will be removed from v1.2.0. Override `_train` method instead.
+    * extends: `.testing.BasicTestingManager`
+    * abstract methods: `train_step`, `test_step
 
     Train using fit method:
     >>> from torchmanager.data import Dataset
@@ -290,6 +290,61 @@ class Manager(_Manager[Module]):
         self.compiled_optimizer.step()
         self.compiled_optimizer.zero_grad()
 
+    @abc.abstractmethod
+    def train_step(self, x_train: Any, y_train: Any) -> dict[str, float]:
+        """
+        A single training step
+
+        - Parameters:
+            - x_train: The training data
+            - y_train: The training label
+        - Returns: A summary of `dict` with keys as `str` and values as `float`
+        """
+        ...
+
+    def to_checkpoint(self) -> Checkpoint[Self]:
+        ckpt = super().to_checkpoint()
+        ckpt.last_epoch = self.current_epoch
+        return ckpt
+    
+
+class BaseTrainingManager(BaseTrainingTestingManager[Module], TestingManager[Module]):
+    """
+    A basic training manager
+
+    * extends: `BaseTrainingTestingManager`, `.testing.Manager`
+    * abstract methods: `train_step`
+
+    Train using fit method:
+    >>> from torchmanager.data import Dataset
+    >>> dataset = Dataset(...)
+    >>> epochs: int = ...
+    >>> manager.fit(dataset, epochs, ...)
+
+    - Properties:
+        - current_epoch: The `int` index of current training epoch
+        - compiled_optimizer: The `Optimizer` that must be exist
+    """
+    ...
+
+
+class Manager(BaseTrainingManager[Module]):
+    """
+    A generic training manager
+
+    * extends: `BaseTrainingTestingManager`, `.testing.Manager`
+    * [Deprecation Warning]: Method `train` has been set as protected from v1.0.2, the public method will be removed from v1.2.0. Override `_train` method instead.
+
+    Train using fit method:
+    >>> from torchmanager.data import Dataset
+    >>> dataset = Dataset(...)
+    >>> epochs: int = ...
+    >>> manager.fit(dataset, epochs, ...)
+
+    - Properties:
+        - current_epoch: The `int` index of current training epoch
+        - compiled_optimizer: The `Optimizer` that must be exist
+    """
     def train_step(self, x_train: Any, y_train: Any) -> dict[str, float]:
         """
         A single training step
@@ -309,8 +364,3 @@ class Manager(_Manager[Module]):
 
         # training evaluation
         return self.eval(y, y_train)
-
-    def to_checkpoint(self) -> Checkpoint[Self]:
-        ckpt = super().to_checkpoint()
-        ckpt.last_epoch = self.current_epoch
-        return ckpt

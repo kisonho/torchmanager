@@ -1,16 +1,17 @@
-from torchmanager_core import torch, API_VERSION, Version, _raise
+from torchmanager_core import abc, torch, API_VERSION, Version, _raise
 from torchmanager_core.typing import Any, Callable, Generic, TypeVar
 
 
 M = TypeVar("M", bound=Callable[[Any, Any], torch.Tensor] | None)
 
 
-class Metric(torch.nn.Module, Generic[M]):
+class BaseMetric(torch.nn.Module, abc.ABC):
     """
     The basic metric class
 
     * extends: `torch.nn.Module`
     * implements: `torchmanager_core.protocols.Resulting`
+    * abstract methods: `forward`
     * Metric tensor is released from memory as soon as the result returned
 
     - Properties:
@@ -18,7 +19,6 @@ class Metric(torch.nn.Module, Generic[M]):
         - results: An optional `torch.Tensor` of all metric results
     """
     __result: torch.Tensor | float
-    _metric_fn: M
     _results: list[torch.Tensor]
     _target: str | None
 
@@ -36,7 +36,7 @@ class Metric(torch.nn.Module, Generic[M]):
         else:
             return None
 
-    def __init__(self, metric_fn: M = None, target: str | None = None) -> None:
+    def __init__(self, target: str | None = None) -> None:
         """
         Constructor
 
@@ -46,7 +46,6 @@ class Metric(torch.nn.Module, Generic[M]):
         """
         super().__init__()
         self.__result = 0
-        self._metric_fn = metric_fn
         self._results = []
         self._target = target
 
@@ -66,6 +65,43 @@ class Metric(torch.nn.Module, Generic[M]):
             self.__result = 0
         pass
 
+    @abc.abstractmethod
+    def forward(self, input: Any, target: Any) -> torch.Tensor:
+        """
+        Forward the current result method
+
+        - Parameters:
+            - input: The prediction, or `y_pred`, in `Any` kind
+            - target: The label, or `y_true`, in `Any` kind
+        - Returns: The metric in `torch.Tensor`
+        """
+        ...
+
+    def reset(self) -> None:
+        """Reset the current results list"""
+        self.__result = 0
+        self._results.clear()
+
+
+class Metric(BaseMetric, Generic[M]):
+    """
+    The basic metric class
+
+    * extends: `BaseMetric`
+    * implements: `torchmanager_core.protocols.Resulting`
+    * Metric tensor is released from memory as soon as the result returned
+    """
+    def __init__(self, metric_fn: M = None, target: str | None = None) -> None:
+        """
+        Constructor
+
+        - Parameters:
+            - metric_fn: An optional `Callable` metrics function that accepts `Any` kind of prediction input and target and returns a metric `torch.Tensor`. A `call` method must be overriden if this parameter is set as `None`.
+            - target: A `str` of target name in `input` and `target` during direct calling
+        """
+        super().__init__(target=target)
+        self._metric_fn = metric_fn
+
     def forward(self, input: Any, target: Any) -> torch.Tensor:
         """
         Forward the current result method
@@ -80,11 +116,6 @@ class Metric(torch.nn.Module, Generic[M]):
             return self._metric_fn(input, target)
         else:
             raise NotImplementedError("metric_fn is not given.")
-
-    def reset(self) -> None:
-        """Reset the current results list"""
-        self.__result = 0
-        self._results.clear()
 
 
 WRAPPED_M = TypeVar("WRAPPED_M", bound=Callable[[Any, Any], torch.Tensor])

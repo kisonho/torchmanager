@@ -1,5 +1,5 @@
 import torch
-from torchmanager import metrics, Manager
+from torchmanager import losses, metrics, Manager
 from unittest import TestCase
 
 
@@ -14,15 +14,24 @@ class Test0100(TestCase):
         # test manager
         self.assertIsInstance(manager, Manager)
 
+    def test_losses(self) -> None:
+        # initialize
+        loss_fn = losses.MSE()
+
+        # calculate loss
+        y = torch.randn((10, 1, 16, 16))
+        y_test = torch.randn((10, 1, 16, 16))
+        loss_fn(y, y_test)
+        self.assertGreaterEqual(float(loss_fn.result), 0, "Loss must be a positive value, got {loss}.")
+
     def test_metrics(self) -> None:
         # initialize
         metric_fn = metrics.Accuracy()
 
         # calculate accuracy
-        for i in range(10):
-            y = torch.randint(0, 10, (i+1,1,1,1))
-            y_test = torch.randint(0, 10, (i+1,1,1,1))
-            metric_fn(y, y_test)
+        y = torch.randn((10, 1, 16, 16))
+        y_test = torch.randn((10, 1, 16, 16))
+        metric_fn(y, y_test)
         self.assertGreaterEqual(float(metric_fn.result), 0, "Accuracy must be a positive value, got {loss}.")
 
     def test_py_version(self) -> None:

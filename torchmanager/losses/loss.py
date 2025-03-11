@@ -1,29 +1,17 @@
-from torchmanager_core import devices, torch, _raise
+from torchmanager_core import abc, devices, torch, _raise
 from torchmanager_core.typing import Any, Callable, Generic, TypeVar
 
-from ..metrics import Metric
+from .protocols import BaseMetric, Metric
 
 
-class Loss(Metric):
+class BaseLoss(BaseMetric, abc.ABC):
     """
-    The main loss function
+    The base loss function
 
     * extends: `..metrics.Metric`
     * implements: `..callbacks.protocols.Weighted`
+    * abstract methods: `forward`
     * Loss tensor is stayed in memory until reset is called
-
-    Define the loss function by overriding `forward` method:
-    >>> from torchmanager import Manager
-    >>> class SomeLoss(Loss):
-    ...     def forward(self, input: Any, target: Any) -> torch.Tensor:
-    ...         ...
-    >>> loss_fn = SomeLoss()
-    >>> manager = Manager(..., loss_fn=loss_fn)
-
-    Or passing existing pytorch losses:
-    >>> import torch
-    >>> cross_entropy = Loss(torch.nn.CrossEntropyLoss(...))
-    >>> manager = Manager(..., loss_fn=cross_entropy)
 
     - Properties:
         - weight: A `float` of coeffiency applied to current loss function
@@ -40,6 +28,50 @@ class Loss(Metric):
         assert w >= 0, f"Weight must be a non-negative number, got {w}."
         self.__weight = w
 
+    def __init__(self, target: str | None = None, weight: float = 1) -> None:
+        """
+        Constructor
+
+        - Parameters:
+            - target: An optional `str` of target name in `input` and `target` during direct calling
+            - weight: A `float` of the loss weight
+        """
+        super().__init__(target=target)
+        self.weight = weight
+
+    def __call__(self, input: Any, target: Any) -> torch.Tensor:
+        m: torch.Tensor = super().__call__(input, target) * self.weight
+        self._results[-1] *= self.weight
+        assert m.numel() == 1, _raise(TypeError(f"The returned loss must be a scalar tensor, got shape {m.shape}"))
+        return m
+
+    @abc.abstractmethod
+    def forward(self, input: Any, target: Any) -> torch.Tensor:
+        ...
+
+
+class Loss(BaseLoss, Metric):
+    """
+    The main loss function
+
+    * extends: `BaseLoss`, `..metrics.Metric`
+    * implements: `..callbacks.protocols.Weighted`
+    * Loss tensor is stayed in memory until reset is called
+
+    Define the loss function by overriding `forward` method:
+    >>> from torchmanager import Manager
+    >>> class SomeLoss(Loss):
+    ...     def forward(self, input: Any, target: Any) -> torch.Tensor:
+    ...         ...
+    >>> loss_fn = SomeLoss()
+    >>> manager = Manager(..., loss_fn=loss_fn)
+
+    Or passing existing pytorch losses:
+    >>> import torch
+    >>> cross_entropy = Loss(torch.nn.CrossEntropyLoss(...))
+    >>> manager = Manager(..., loss_fn=cross_entropy)
+    """
+
     def __init__(self, loss_fn: Callable[[Any, Any], torch.Tensor] | None = None, target: str | None = None, weight: float = 1) -> None:
         """
         Constructor
@@ -49,17 +81,11 @@ class Loss(Metric):
             - target: An optional `str` of target name in `input` and `target` during direct calling
             - weight: A `float` of the loss weight
         """
-        super().__init__(loss_fn, target=target)
-        self.weight = weight
-
-    def __call__(self, input: Any, target: Any) -> torch.Tensor:
-        m: torch.Tensor = super().__call__(input, target) * self.weight
-        self._results[-1] *= self.weight
-        assert m.numel() == 1, _raise(TypeError(f"The returned loss must be a scalar tensor, got shape {m.shape}"))
-        return m
+        super().__init__(target=target, weight=weight)
+        self._metric_fn = loss_fn
 
     def forward(self, input: Any, target: Any) -> torch.Tensor:
-        return super().forward(input, target)
+        return Metric.forward(self, input, target)
 
 
 class MultiLosses(Loss):

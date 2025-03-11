@@ -2,5 +2,5 @@ from .accuracy import Accuracy, CategoricalAccuracy, Dice, F1, MAE, PartialDice,
 from .conf_mat import BinaryConfusionMetric, ConfusionMatrix
 from .extractor import ExtractorScore, FeatureMetric, FID
 from .iou import InstanceIoU, MeanIoU
-from .metric import Metric, metric, metric_fn
+from .metric import BaseMetric, Metric, metric, metric_fn
 from .similarity import CosineSimilarity, PSNR, SSIM
