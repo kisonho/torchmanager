@@ -258,7 +258,12 @@ class Manager(_Manager[Module]):
                         val_message += ", "
                     val_message += f"{name}={value:.4f}"
                 view.logger.info(val_message)
+
+            # log training finished
+            view.logger.info("Training finished.")
         except errors.StopTraining as error:
+            # log training finished
+            view.logger.info("Training finished.")
             pass
         except KeyboardInterrupt:
             view.logger.info("Training interrupted.")

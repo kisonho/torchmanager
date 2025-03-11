@@ -71,6 +71,59 @@ class FeatureMetric(Metric[M], Generic[M, Module]):
         return self
 
 
+class AccumulativeFeatureMetric(FeatureMetric[M, Module]):
+    """
+    A feature metric that accumulates the features across batches.
+    
+    * Extends: `FeatureMetric`
+    * Generic: `M` and `Module`
+
+    - Properties:
+        - accumulative: A `bool` flag of if the metric is accumulative
+        - features_fake: A `torch.Tensor` or `None` storing fake features
+        - features_real: A `torch.Tensor` or `None` storing real features
+        - result: A `torch.Tensor` representing the final score
+    """
+    accumulative: bool
+    features_fake: torch.Tensor | None
+    features_real: torch.Tensor | None
+
+    @property
+    def result(self) -> torch.Tensor:
+        """The final KID score"""
+        if self.accumulative and self.results is not None:
+            return self.results[-1]
+        else:
+            return super().result
+
+    def __init__(self, metric_fn: M = None, feature_extractor: Module = None, *, accumulative: bool = True, target: str | None = None) -> None:
+        super().__init__(metric_fn, feature_extractor, target=target)
+        self.accumulative = accumulative
+        self.features_fake = None
+        self.features_real = None
+
+    def compute_score(self) -> torch.Tensor:
+        """
+        Compute the final score from the accumulated features
+
+        - Returns: A `torch.Tensor` representing the final score
+        """
+        if self.features_real is None or self.features_fake is None:
+            raise ValueError("No features accumulated. Ensure forward has been called before computing the score.")
+        return super().forward(self.features_fake, self.features_real)
+
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        self.features_fake = torch.cat([self.features_fake, input], dim=0) if self.features_fake is not None and self.accumulative else input
+        self.features_real = torch.cat([self.features_real, target], dim=0) if self.features_real is not None and self.accumulative else target
+        return self.compute_score()
+
+    def reset(self) -> None:
+        # Reset accumulated features
+        self.features_real = None
+        self.features_fake = None
+        super().reset()
+
+
 class ExtractorScore(FeatureMetric[M, Module]):
     """
     A general feature score metric which can be used as `InceptionScore` by taking the `feature_extractor` as an InceptionV3 model
@@ -139,57 +192,62 @@ class FID(FeatureMetric[None, Module]):
         super().reset()
 
 
-class KID(FeatureMetric[None, Module]):
+class KID(AccumulativeFeatureMetric[None, Module]):
     """
     Kernel Inception Distance (KID) metric
 
-    * Extends: `FeatureMetric`
+    * Extends: `AccumulativeFeatureMetric`
     * Generic class of `Module`
 
     - Properties:
         - c: A `float` of small positive constant for numerical stability in the polynomial kernel
+        - degree: An `int` representing the degree of the polynomial kernel
+        - features_real: A `torch.Tensor` or `None` storing real features
+        - features_fake: A `torch.Tensor` or `None` storing fake features
     """
     c: float
+    degree: int
 
-    def __init__(self, feature_extractor: Module = None, *, c: float = 1.0, target: str | None = None) -> None:
+    def __init__(self, feature_extractor: Module = None, *, accumulative: bool = True, c: float = 1.0, degree: int = 3, target: str | None = None) -> None:
         """
         Constructor
 
         - Parameters:
             - feature_extractor: An optional `Module` to extract features
+            - accumulative: A `bool` flag of if the metric is accumulative
             - c: A small positive constant for numerical stability in the polynomial kernel
+            - degree: The degree of the polynomial kernel (default is 3)
             - target: A `str` of target name in `input` and `target` during direct
         """
-        super().__init__(feature_extractor=feature_extractor, target=target)
+        super().__init__(accumulative=accumulative, feature_extractor=feature_extractor, target=target)
         self.c = c
+        self.degree = degree
 
-    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    def compute_score(self) -> torch.Tensor:
         """
-        Compute the squared Maximum Mean Discrepancy (MMD²) using a polynomial kernel
+        Compute the Kernel Inception Distance (KID) once all batches have been processed.
 
-        - Parameters:
-            - input: A `torch.Tensor` representing the generated features
-            - target: A `torch.Tensor` representing the real features
-        - Returns: A `torch.Tensor` representing MMD² score
+        - Returns: A `torch.Tensor` representing the final KID score
         """
+        if self.features_real is None or self.features_fake is None:
+            raise ValueError("No features accumulated. Ensure forward has been called before computing KID.")
+
         # Compute kernel matrices
-        K_xx = self.polynomial_kernel(input, input).mean()
-        K_yy = self.polynomial_kernel(target, target).mean()
-        K_xy = self.polynomial_kernel(input, target).mean()
+        K_xx = self.polynomial_kernel(self.features_fake, self.features_fake).mean()
+        K_yy = self.polynomial_kernel(self.features_real, self.features_real).mean()
+        K_xy = self.polynomial_kernel(self.features_fake, self.features_real).mean()
 
         # Compute unbiased MMD²
         mmd2 = K_xx + K_yy - 2 * K_xy
-        return mmd2
+        return mmd2 / self.features_fake.shape[0]
 
-    def polynomial_kernel(self, x: torch.Tensor, y: torch.Tensor, degree: int = 3) -> torch.Tensor:
+    def polynomial_kernel(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         """
         Compute the polynomial kernel between two sets of features
 
         - Parameters:
             - x: A `torch.Tensor` representing the first set of features
             - y: A `torch.Tensor` representing the second set of features
-            - degree: The degree of the polynomial kernel (default is 3)
-
         - Returns: A `torch.Tensor` representing the kernel matrix
         """
-        return (x @ y.T + self.c) ** degree
+        return (x @ y.T + self.c) ** self.degree
