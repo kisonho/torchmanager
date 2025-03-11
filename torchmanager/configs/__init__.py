@@ -1,4 +1,4 @@
-from .basic import Configs
+from .basic import BaseConfigs, Configs
 from .json import JSONConfigs
 
 try:

@@ -142,7 +142,7 @@ class Dataset(_Dataset[T], abc.ABC):
 
 class PreprocessedDataset(Dataset[T], abc.ABC):
     """
-    A data with preprocessing method
+    A data with preprocessing methods
 
     * extends: `Dataset`
     * Abstract class
@@ -151,7 +151,7 @@ class PreprocessedDataset(Dataset[T], abc.ABC):
         - transforms: An `Iterable` of `Callable` preprocessing function that returns `Any` kind of preprocessed object.
 
     - Methods to implement:
-        - transforms: A property method that returns a `Callable` preprocessing function
+        - transforms: A property methods that returns a list of `Callable` preprocessing function
         - load: The method to load an item by index without preprocessing
     """
 

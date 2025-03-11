@@ -2,12 +2,103 @@ from torchmanager_core import argparse, abc, errors, os, platform, shutil, sys, 
 from torchmanager_core.typing import Optional, Union, overload
 
 
+class BaseConfigs(argparse.Namespace, abc.ABC):
+    """
+    Basic Configurations
+    
+    * extends: `argparse.Namespace`
+    * abstract class
+
+    - abstract methods
+        - format_arguments: Format and check current properties
+        - (classmethod) from_arguments: Get properties from argument parser or given arguments
+        - (static) get_arguments: Set up arguments for an argument parser or argument group
+        - show_settings: Printout current configurations, `torchmanager_core.view.logger` is recommended.
+    """
+    @abc.abstractmethod
+    def format_arguments(self) -> None:
+        """Format and check current properties"""
+        ...
+
+    @classmethod
+    @abc.abstractmethod
+    def from_arguments(cls, *arguments: str, parser: argparse.ArgumentParser = argparse.ArgumentParser(), show_summary: bool = True):
+        """
+        Get properties from argument parser or given arguments
+
+        * classmethod
+
+        - Parameters:
+            - arguments: Positional parameters as a `list` of arguments in `str`
+            - parser: 
+        - Returns: A formatted configuration object
+        """
+        ...
+
+    @classmethod
+    def from_experiment(cls, exp: str, /):
+        """
+        Load a `Configs` directly from an experiment
+
+        - Parameters:
+            - exp: A `str` of experiment path or name
+        """
+        exp = os.path.normpath(f"{exp}.exp") if not exp.endswith(".exp") else os.path.normpath(exp)
+        cfg_path = os.path.join(exp, "configs.cfg")
+        cfg = torch.load(cfg_path)
+        assert isinstance(cfg, Configs), _raise(TypeError(f"Saved object at path {cfg_path} is not a valid `Configs`."))
+        return cfg
+
+    @overload
+    @abc.abstractmethod
+    @staticmethod
+    def get_arguments(parser: argparse.ArgumentParser = argparse.ArgumentParser()) -> argparse.ArgumentParser:
+        ...
+
+    @overload
+    @abc.abstractmethod
+    @staticmethod
+    def get_arguments(parser: argparse._ArgumentGroup) -> argparse._ArgumentGroup:
+        ...
+
+    @abc.abstractmethod
+    @staticmethod
+    def get_arguments(parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup] = argparse.ArgumentParser()) -> Union[argparse.ArgumentParser, argparse._ArgumentGroup]:
+        """
+        Set up arguments for an argument parser or argument group
+
+        * staticmethod
+
+        - Parameters:
+            - parser: An `argparse.ArgumentParser` or `argparse._ArgumentGroup` to add arguments
+        - Returns: An `argparse.ArgumentParser` or `argparse._ArgumentGroup` with arguments setup
+        """
+        ...
+
+    def show_environments(self, description: str = DESCRIPTION) -> None:
+        """
+        Show current environments
+
+        - Parameters:
+            - description: A `str` to display the description of current app
+        """
+        view.logger.info(description)
+        view.logger.info(f"python={sys.version}")
+        view.logger.info(f"torch={torch.__version__}")
+        view.logger.info(f"platform={platform.platform()}")
+
+    @abc.abstractmethod
+    def show_settings(self) -> None:
+        """Show current configurations"""
+        pass
+
+
 class Configs(argparse.Namespace, abc.ABC):
     """
     Basic Configurations
     
     * extends: `argparse.Namespace`
-    * Abstract class
+    * abstract methods: `show_settings`
 
     - Properties:
         - comments: The comments of this experiment
@@ -24,6 +115,32 @@ class Configs(argparse.Namespace, abc.ABC):
     def format_arguments(self) -> None:
         """Format and check current properties"""
         self.experiment = self.experiment if self.experiment.endswith(".exp") else f"{self.experiment}.exp"
+
+    @overload
+    @staticmethod
+    def get_arguments(parser: argparse.ArgumentParser = argparse.ArgumentParser()) -> argparse.ArgumentParser:
+        ...
+
+    @overload
+    @staticmethod
+    def get_arguments(parser: argparse._ArgumentGroup) -> argparse._ArgumentGroup:
+        ...
+
+    @staticmethod
+    def get_arguments(parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup] = argparse.ArgumentParser()) -> Union[argparse.ArgumentParser, argparse._ArgumentGroup]:
+        """
+        Set up arguments for an argument parser or argument group
+
+        * staticmethod
+
+        - Parameters:
+            - parser: An `argparse.ArgumentParser` or `argparse._ArgumentGroup` to add arguments
+        - Returns: An `argparse.ArgumentParser` or `argparse._ArgumentGroup` with arguments setup
+        """
+        parser.add_argument("-exp", "--experiment", type=str, default="test.exp", help="The name of experiment")
+        parser.add_argument("--comments", type=str, default=None, help="The comments of this experiment.")
+        parser.add_argument("--replace_experiment", action="store_true", default=False, help="The flag to replace given experiment if exists.")
+        return parser
 
     @classmethod
     def from_arguments(cls, *arguments: str, parser: argparse.ArgumentParser = argparse.ArgumentParser(), show_summary: bool = True):
@@ -80,46 +197,6 @@ class Configs(argparse.Namespace, abc.ABC):
                 view.logger.info(f"{configs.comments}")
             view.logger.info("--------------------------------")
         return configs
-
-    @classmethod
-    def from_experiment(cls, exp: str, /):
-        """
-        Load a `Configs` directly from an experiment
-
-        - Parameters:
-            - exp: A `str` of experiment path or name
-        """
-        exp = os.path.normpath(f"{exp}.exp") if not exp.endswith(".exp") else os.path.normpath(exp)
-        cfg_path = os.path.join(exp, "configs.cfg")
-        cfg = torch.load(cfg_path)
-        assert isinstance(cfg, Configs), _raise(TypeError(f"Saved object at path {cfg_path} is not a valid `Configs`."))
-        return cfg
-
-    @overload
-    @staticmethod
-    def get_arguments(parser: argparse.ArgumentParser = argparse.ArgumentParser()) -> argparse.ArgumentParser:
-        ...
-
-    @overload
-    @staticmethod
-    def get_arguments(parser: argparse._ArgumentGroup) -> argparse._ArgumentGroup:
-        ...
-
-    @staticmethod
-    def get_arguments(parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup] = argparse.ArgumentParser()) -> Union[argparse.ArgumentParser, argparse._ArgumentGroup]:
-        """
-        Set up arguments for an argument parser or argument group
-
-        * staticmethod
-
-        - Parameters:
-            - parser: An `argparse.ArgumentParser` or `argparse._ArgumentGroup` to add arguments
-        - Returns: An `argparse.ArgumentParser` or `argparse._ArgumentGroup` with arguments setup
-        """
-        parser.add_argument("-exp", "--experiment", type=str, default="test.exp", help="The name of experiment")
-        parser.add_argument("--comments", type=str, default=None, help="The comments of this experiment.")
-        parser.add_argument("--replace_experiment", action="store_true", default=False, help="The flag to replace given experiment if exists.")
-        return parser
 
     def save(self) -> None:
         """Save this configuration to experiment folder"""
