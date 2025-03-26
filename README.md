@@ -35,11 +35,13 @@ class Configs(_Configs):
     lr: float
     ...
 
+    @staticmethod
     def get_arguments(parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup] = argparse.ArgumentParser()) -> Union[argparse.ArgumentParser, argparse._ArgumentGroup]:
         '''Add arguments to argument parser'''
         ...
 
     def show_settings(self) -> None:
+        '''Display current configuerations'''
         ...
 
 # get configs from terminal arguments
@@ -59,9 +61,11 @@ class CustomDataset(Dataset):
 
     @property
     def unbatched_len(self) -> int:
+        '''The total length of data without batch'''
         ...
 
-    def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
+    def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor]:
+        '''Returns a single pair of unbatched data, iterator will batch the data automatically with `torch.util.data.DataLoader`'''
         ...
 
 # initialize datasets
@@ -71,7 +75,7 @@ testing_dataset = CustomDataset(...)
 ```
 
 ## The Manager
-The `Manager` class is the core of the framework. It provides a generic training/testing loop for PyTorch models. The `Manager` class is designed to be inherited to manage the training/testing algorithm. There are also some useful callbacks to use during training/testing.
+The `Manager` class is the core of the framework. It provides a generic training/testing pipeline for PyTorch models. The `Manager` class is designed to be inherited to manage the training/testing algorithm. There are also some useful callbacks to use during training/testing.
 
 1. Initialize the manager with target model, optimizer, loss function, and metrics:
 ```python
@@ -100,7 +104,7 @@ loss_fn = {
 }
 ```
 
-2. Train the model with `fit`` method:
+2. Train the model with `fit` method:
 ```python
 show_verbose: bool = ... # show progress bar information during training/testing
 manager.fit(training_dataset, epochs=configs.epochs, val_dataset=val_dataset, show_verbose=show_verbose)
@@ -124,9 +128,9 @@ torch.save(model, "model.pth") # The saved PyTorch model can be loaded individua
 ```
 
 ## Device selection during training/testing
-Torchmanager automatically detects available devices to use during training/testing. GPU/MPS will be used in first priority if available. To specify other device to use, simply pass the device to the `fit` method for training and `test` method for testing:
+Torchmanager automatically identifies available devices for training and testing. If CUDA or MPS is available, it will be used first. To use multiple GPUs, set the `use_multi_gpus` flag to `True`. To specify a different device for training or testing, pass the device to the `fit` or `test` method, respectively. When `use_multi_gpus` is set to `False`, the first available or specified device will be used.
 
-1. Multi-GPU training/testing:
+1. Multi-GPU (CUDA) training/testing:
 ```python
 # train on multiple GPUs
 model = manager.fit(..., use_multi_gpus=True)
@@ -138,25 +142,25 @@ manager.test(..., use_multi_gpus=True)
 2. Use only specified GPUs for training/testing:
 ```python
 # specify devices to use
-gpus: Union[list[torch.device], torch.device] = ... # Notice: device id must be specified
+gpus: list[torch.device] | torch.device = ... # Notice: device id must be specified
 
 # train on specified multiple GPUs
-model = manager.fit(..., use_multi_gpus=True, devices=gpus)
+model = manager.fit(..., use_multi_gpus=True, devices=gpus) # Notice: `use_multi_gpus` must set to `True` to use all specified GPUs, otherwise only the first will be used.
 
 # test on specified multiple GPUs
 manager.test(..., use_multi_gpus=True, devices=gpus)
 ```
 
 ## Customize training/testing algorithm
-The `Manager` class is designed to be inherited to manage the training/testing algorithm. To customize the training/testing algorithm, simply inherit the `Manager` class and override the `train_step` and `test_step` methods.
+The `Manager` class is designed to be inherited to manage the training/testing algorithm. To customize the training/testing algorithm, simply inherit the `Manager` class and override the `train_step` and/or `test_step` methods.
 ```python
 class CustomManager(Manager):
     ...
 
-    def train_step(x_train: torch.Tensor, y_train: torch.Tensor) -> Dict[str, float]:
+    def train_step(x_train: Any, y_train: Any) -> dict[str, float]:
         ...
 
-    def test_step(x_test: torch.Tensor, y_test: torch.Tensor) -> Dict[str, float]:
+    def test_step(x_test: Any, y_test: Any) -> dict[str, float]:
         ...
 ```
 
