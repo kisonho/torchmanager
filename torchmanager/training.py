@@ -12,9 +12,9 @@ from .metrics import Metric
 from .testing import BaseTestingManager as BaseManager, Manager as TestingManager
 
 
-class BaseTrainingTestingManager(BaseManager[Module], abc.ABC):
+class BaseTrainingManager(BaseManager[Module], abc.ABC):
     """
-    A basic training and testing manager
+    A basic training manager
 
     * extends: `.testing.BasicTestingManager`
     * abstract methods: `backward`, `optimize`, `train_step`, `test_step
@@ -307,29 +307,9 @@ class BaseTrainingTestingManager(BaseManager[Module], abc.ABC):
         ckpt = super().to_checkpoint()
         ckpt.last_epoch = self.current_epoch
         return ckpt
-    
-
-class BaseTrainingManager(BaseTrainingTestingManager[Module], TestingManager[Module]):
-    """
-    A basic training manager
-
-    * extends: `BaseTrainingTestingManager`, `.testing.Manager`
-    * abstract methods: `backward`, `optimize`, `train_step`
-
-    Train using fit method:
-    >>> from torchmanager.data import Dataset
-    >>> dataset = Dataset(...)
-    >>> epochs: int = ...
-    >>> manager.fit(dataset, epochs, ...)
-
-    - Properties:
-        - current_epoch: The `int` index of current training epoch
-        - compiled_optimizer: The `Optimizer` that must be exist
-    """
-    ...
 
 
-class Manager(BaseTrainingManager[Module]):
+class Manager(BaseTrainingManager[Module], TestingManager[Module]):
     """
     A generic training manager
 
