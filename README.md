@@ -101,7 +101,35 @@ loss_fn = {
     'loss1': torchmanager.losses.CrossEntropy(),
     'loss2': torchmanager.losses.Dice(),
     ...
-}
+}  # total_loss = loss1 + loss2
+```
+
+- Use `weight` for constant weight coefficients to control the balance between multiple losses:
+```python
+# define weights
+w1: float = ...
+w2: float = ...
+
+loss_fn = {
+    'loss1': torchmanager.losses.CrossEntropy(weight=w1),
+    'loss2': torchmanager.losses.Dice(),
+    ...
+}  # total_loss = w1 * loss1 + w2 * loss2
+```
+
+- Use `target` for output targets between different losses:
+```python
+class ModelOutputDict(TypedDict):
+    output1: torch.Tensor
+    output2: torch.Tensor
+
+LabelDict = ModelOutputDict  # optional, label can also be a direct `torch.Tensor` to compare with target
+
+loss_fn = {
+    'loss1': torchmanager.losses.CrossEntropy(target="output1"),
+    'loss2': torchmanager.losses.Dice(target="output2"),
+    ...
+}  # total_loss = loss1(y['output1'], label['output1']) + loss2(y['output2'], label['output2]) if type(label) is LabelDict else loss1(y['output1'], label) + loss2(y['output2'], label)
 ```
 
 2. Train the model with `fit` method:
@@ -152,16 +180,61 @@ manager.test(..., use_multi_gpus=True, devices=gpus)
 ```
 
 ## Customize training/testing algorithm
-The `Manager` class is designed to be inherited to manage the training/testing algorithm. To customize the training/testing algorithm, simply inherit the `Manager` class and override the `train_step` and/or `test_step` methods.
+Inherited the `Manager` (`TrainingManager`) class to manage the training/testing algorithm if default training/testing algorithm is necessary. To customize the training/testing algorithm, simply override the `train_step` and/or `test_step` methods.
 ```python
 class CustomManager(Manager):
     ...
 
     def train_step(x_train: Any, y_train: Any) -> dict[str, float]:
-        ...
+        ...  # code before default training step
+        summary = super().train_step(x_train, y_train)
+        ...  # code after default training step
+        return summary
 
     def test_step(x_test: Any, y_test: Any) -> dict[str, float]:
-        ...
+        ...  # code before default testing step
+        summary = super().test_step(x_test, y_test)
+        ...  # code after default testing step
+        return summary
+```
+
+Inherited the `TestingManager` class to manage the testing algorithm without training algorithm if default testing algorithm is necessary. To customize the testing algorithm, simply override the `test_step` methods.
+```python
+class CustomManager(TestingManager):
+    ...
+
+    def test_step(x_test: Any, y_test: Any) -> dict[str, float]:
+        ...  # code before default testing step
+        summary = super().test_step(x_test, y_test)
+        ...  # code after default testing step
+        return summary
+```
+
+Inherited the `BasicTrainingManager` class to implement the training algorithm with `train_step` method and testing algorithm with `test_step`.
+```python
+class CustomManager(BasicTrainingManager):
+    ...
+
+    def train_step(x_train: Any, y_train: Any) -> dict[str, float]:
+        ...  # code for one iteration training
+        summary: dict[str, float] = ...  # set training summary
+        return summary
+
+    def test_step(x_test: Any, y_test: Any) -> dict[str, float]:
+        ...  # code for one iteration testing
+        summary = ...  # set testing summary
+        return summary
+```
+
+Inherited the `BasicTestingManager` class to implement the testing algorithm with `test_step` method without training algorithm.
+```python
+class CustomManager(BasicTestingManager):
+    ...
+
+    def test_step(x_test: Any, y_test: Any) -> dict[str, float]:
+        ...  # code for one iteration testing
+        summary = ...  # set testing summary
+        return summary
 ```
 
 ## The saved experiment information
