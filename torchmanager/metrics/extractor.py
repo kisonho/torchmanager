@@ -1,4 +1,4 @@
-from torchmanager_core import torch, view, _raise
+from torchmanager_core import abc, torch, view, _raise
 from torchmanager_core.typing import Any, Callable, Generic, TypeVar
 
 from .metric import Metric
@@ -71,7 +71,7 @@ class FeatureMetric(Metric[M], Generic[M, Module]):
         return self
 
 
-class AccumulativeFeatureMetric(FeatureMetric[M, Module]):
+class AccumulativeFeatureMetric(FeatureMetric[M, Module], abc.ABC):
     """
     A feature metric that accumulates the features across batches.
     
@@ -102,15 +102,14 @@ class AccumulativeFeatureMetric(FeatureMetric[M, Module]):
         self.features_fake = None
         self.features_real = None
 
+    @abc.abstractmethod
     def compute_score(self) -> torch.Tensor:
         """
         Compute the final score from the accumulated features
 
         - Returns: A `torch.Tensor` representing the final score
         """
-        if self.features_real is None or self.features_fake is None:
-            raise ValueError("No features accumulated. Ensure forward has been called before computing the score.")
-        return super().forward(self.features_fake, self.features_real)
+        ...
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         self.features_fake = torch.cat([self.features_fake, input], dim=0) if self.features_fake is not None and self.accumulative else input
@@ -208,7 +207,7 @@ class KID(AccumulativeFeatureMetric[None, Module]):
     c: float
     degree: int
 
-    def __init__(self, feature_extractor: Module = None, *, accumulative: bool = True, c: float = 1.0, degree: int = 3, target: str | None = None) -> None:
+    def __init__(self, feature_extractor: Module = None, *, accumulative: bool = True, c: float = 1.0, degree: int = 3, scale: float = 100, target: str | None = None) -> None:
         """
         Constructor
 
@@ -216,30 +215,30 @@ class KID(AccumulativeFeatureMetric[None, Module]):
             - feature_extractor: An optional `Module` to extract features
             - accumulative: A `bool` flag of if the metric is accumulative
             - c: A small positive constant for numerical stability in the polynomial kernel
-            - degree: The degree of the polynomial kernel (default is 3)
+            - degree: The degree of the polynomial kernel
+            - scale: A `float` to scale the final score
             - target: A `str` of target name in `input` and `target` during direct
         """
-        super().__init__(accumulative=accumulative, feature_extractor=feature_extractor, target=target)
+        super().__init__(feature_extractor=feature_extractor, accumulative=accumulative, target=target)
         self.c = c
         self.degree = degree
+        self.scale = scale
 
     def compute_score(self) -> torch.Tensor:
-        """
-        Compute the Kernel Inception Distance (KID) once all batches have been processed.
-
-        - Returns: A `torch.Tensor` representing the final KID score
-        """
         if self.features_real is None or self.features_fake is None:
-            raise ValueError("No features accumulated. Ensure forward has been called before computing KID.")
+            raise ValueError("No features accumulated. Ensure forward has been called before computing the score.")
 
         # Compute kernel matrices
-        K_xx = self.polynomial_kernel(self.features_fake, self.features_fake).mean()
-        K_yy = self.polynomial_kernel(self.features_real, self.features_real).mean()
-        K_xy = self.polynomial_kernel(self.features_fake, self.features_real).mean()
+        k_xx = self.polynomial_kernel(self.features_fake, self.features_real).sum()
+        k_yy = self.polynomial_kernel(self.features_real, self.features_real).sum()
+        k_xy = self.polynomial_kernel(self.features_fake, self.features_real).sum()
+        m = self.features_fake.shape[0]
 
         # Compute unbiased MMD²
-        mmd2 = K_xx + K_yy - 2 * K_xy
-        return mmd2 / self.features_fake.shape[0]
+        mmd2 = k_xx + k_yy
+        mmd2 /= m * (m - 1)
+        mmd2 -= 2 * k_xy / (m ** 2)
+        return self.scale * mmd2
 
     def polynomial_kernel(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         """
@@ -250,4 +249,4 @@ class KID(AccumulativeFeatureMetric[None, Module]):
             - y: A `torch.Tensor` representing the second set of features
         - Returns: A `torch.Tensor` representing the kernel matrix
         """
-        return (x @ y.T + self.c) ** self.degree
+        return (x @ y.T / x.shape[1] + self.c) ** self.degree
