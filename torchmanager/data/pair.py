@@ -1,7 +1,11 @@
-from torchmanager_core.typing import Any, NamedTuple
+from torchmanager_core.typing import Generic, NamedTuple, TypeVar
 
 
-class DataPair(NamedTuple):
+I = TypeVar('I')
+T = TypeVar('T')
+
+
+class DataPair(NamedTuple, Generic[I, T]):
     """
     A data pair for training and testing
 
@@ -12,5 +16,5 @@ class DataPair(NamedTuple):
     >>> print(pair.train_data)
     >>> print(pair.test_data)
     """
-    input: Any
-    target: Any
+    input: I
+    target: T
