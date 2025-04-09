@@ -3,6 +3,7 @@ from torchmanager_core import checkpoint, devices, errors, torch, Version, API_V
 from torchmanager_core.protocols import Resulting
 from torchmanager_core.typing import Any, Collection, Generic, Mapping, Module, OrderedDict, Self, cast
 
+from .data import DataPair
 from .losses import Loss, MultiLosses, ParallelLoss
 from .metrics import Metric
 
@@ -201,6 +202,10 @@ class BaseManager(Generic[Module]):
         """
         # forward model
         y = self.model(input)
+
+        # unwrap data pair
+        if isinstance(y, DataPair):
+            y, target = y.input, y.target
 
         # forward loss
         if self.loss_fn is not None and target is not None:
