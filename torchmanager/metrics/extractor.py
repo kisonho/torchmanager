@@ -1,5 +1,6 @@
 from torchmanager_core import abc, torch, view, _raise
 from torchmanager_core.typing import Any, Callable, Generic, TypeVar
+from torchmanager_core.version import Version
 
 from .metric import Metric
 
@@ -96,7 +97,7 @@ class AccumulativeFeatureMetric(FeatureMetric[M, Module], abc.ABC):
         else:
             return super().result
 
-    def __init__(self, metric_fn: M = None, feature_extractor: Module = None, *, accumulative: bool = True, target: str | None = None) -> None:
+    def __init__(self, metric_fn: M = None, feature_extractor: Module = None, *, accumulative: bool = False, target: str | None = None) -> None:
         super().__init__(metric_fn, feature_extractor, target=target)
         self.accumulative = accumulative
         self.features_fake = None
@@ -138,7 +139,7 @@ class ExtractorScore(FeatureMetric[M, Module]):
         return scores
 
 
-class FID(FeatureMetric[None, Module]):
+class FID(AccumulativeFeatureMetric[None, Module]):
     """
     Fréchet Inception Distance (FID) metric
 
@@ -151,26 +152,36 @@ class FID(FeatureMetric[None, Module]):
     use_linalg: bool
     """A `bool` flag of if use `scipy.linalg` package"""
 
-    def __init__(self, feature_extractor: Module = None, *, use_linalg: bool = True, target: str | None = None) -> None:
+    def __init__(self, feature_extractor: Module = None, *, accumulative: bool = False, target: str | None = None, use_linalg: bool = True) -> None:
         """
         Constructor
 
         - Parameters:
             - feature_extractor: An optional `Module` to extract features, a pre-trained InceptionV3 will be used if not given
-            - return_when_forwarding: A `bool` flag of if returning results when calculating the metrics, a `torch.nan` will be returned if set to `False` during forwarding
+            - accumulative: A `bool` flag of if the metric is accumulative
             - target: A `str` of target name in `input` and `target` during direct calling
             - use_linalg: A `bool` flag of if use `scipy.linalg` package
         """
-        super().__init__(feature_extractor=feature_extractor, target=target)
+        super().__init__(feature_extractor=feature_extractor, accumulative=accumulative, target=target)
         self.use_linalg = use_linalg
 
-    @torch.no_grad()
-    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    def convert(self, from_version: Version) -> None:
+        if from_version < Version("v1.4rc2"):
+            self.accumulative = False
+            self.features_fake = None
+            self.features_real = None
+        super().convert(from_version)
+
+    def compute_score(self) -> torch.Tensor:
+        # check if features are accumulated
+        if self.features_real is None or self.features_fake is None:
+            raise ValueError("No features accumulated. Ensure forward has been called before computing the score.")
+
         # calculate mean and covariance
-        mu_real = target.mean(0)
-        mu_gen = input.mean(0)
-        sigma_real = target.cov() / (target.shape[0] - 1)
-        sigma_gen = input.cov() / (input.shape[0] - 1)
+        mu_real = self.features_real.mean(0)
+        mu_gen = self.features_fake.mean(0)
+        sigma_real = self.features_real.cov() / (self.features_real.shape[0] - 1)
+        sigma_gen = self.features_fake.cov() / (self.features_fake.shape[0] - 1)
         diff = mu_real - mu_gen
 
         # square root of sigma
@@ -207,7 +218,7 @@ class KID(AccumulativeFeatureMetric[None, Module]):
     c: float
     degree: int
 
-    def __init__(self, feature_extractor: Module = None, *, accumulative: bool = True, c: float = 1.0, degree: int = 3, scale: float = 100, target: str | None = None) -> None:
+    def __init__(self, feature_extractor: Module = None, *, accumulative: bool = False, c: float = 1.0, degree: int = 3, scale: float = 100, target: str | None = None) -> None:
         """
         Constructor
 
@@ -225,6 +236,7 @@ class KID(AccumulativeFeatureMetric[None, Module]):
         self.scale = scale
 
     def compute_score(self) -> torch.Tensor:
+        # check if features are accumulated
         if self.features_real is None or self.features_fake is None:
             raise ValueError("No features accumulated. Ensure forward has been called before computing the score.")
 
