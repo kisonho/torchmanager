@@ -145,7 +145,16 @@ class MS_SSIM(SSIM):
         - weights: A `list` of the weights for each scale
         - scales: A `int` of the number of scales
     """
-    weights: list[float]
+    __weights: list[float]
+
+    @property
+    def weights(self) -> list[float]:
+        return self.__weights
+
+    @weights.setter
+    def weights(self, value: list[float]) -> None:
+        assert len(value) > 0, _raise(ValueError("Weights must be a non-empty list."))
+        self.__weights = value
 
     @property
     def scales(self) -> int:
@@ -153,6 +162,8 @@ class MS_SSIM(SSIM):
 
     def __init__(self, channels: int, /, sigma: float = 1.5, window_size: int = 11, *, denormalize_fn: Callable[[torch.Tensor], torch.Tensor] | None = None, pixel_range: float = 255, target: str | None = None, weights: list[float] = _DEFAULT_MS_SSIM_WEIGHTS) -> None:
         super().__init__(channels, sigma, window_size, denormalize_fn=denormalize_fn, pixel_range=pixel_range, target=target)
+        self.weights = weights
+
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # initialize ms_ssim
