@@ -4,6 +4,8 @@ from torchmanager_core.typing import Callable
 
 from .metric import Metric
 
+_DEFAULT_MS_SSIM_WEIGHTS = [0.0448, 0.2856, 0.3001, 0.2363, 0.1333]
+
 
 class CosineSimilarity(Metric):
     """The Cosine Similarity metric"""
@@ -133,3 +135,40 @@ class SSIM(Metric):
         ssim = ((2 * mu1_mu2 + C1) * (2 * sigma12 + C2)) / ((mu1_sq + mu2_sq + C1) * (sigma1_sq + sigma2_sq + C2))
         ssim = ssim.clip(-1, 1)
         return ssim.mean()
+
+
+class MS_SSIM(SSIM):
+    """
+    The Multi-Scale Structural Similarity Index metric
+
+    - Properties:
+        - weights: A `list` of the weights for each scale
+        - scales: A `int` of the number of scales
+    """
+    weights: list[float]
+
+    @property
+    def scales(self) -> int:
+        return len(self.weights)
+
+    def __init__(self, channels: int, /, sigma: float = 1.5, window_size: int = 11, *, denormalize_fn: Callable[[torch.Tensor], torch.Tensor] | None = None, pixel_range: float = 255, target: str | None = None, weights: list[float] = _DEFAULT_MS_SSIM_WEIGHTS) -> None:
+        super().__init__(channels, sigma, window_size, denormalize_fn=denormalize_fn, pixel_range=pixel_range, target=target)
+
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        # initialize ms_ssim
+        ms_ssims: list[torch.Tensor] = []
+
+        # loop for scales
+        for _ in self.weights:
+            # calculate ssim
+            ssim = super().forward(input, target)
+            ms_ssims.append(ssim)
+
+            # downsample input and target
+            input = F.avg_pool2d(input, kernel_size=2, stride=2)
+            target = F.avg_pool2d(target, kernel_size=2, stride=2)
+
+        # calculate ms_ssim
+        ms_ssim = torch.stack(ms_ssims)
+        ms_ssim = ms_ssim * torch.tensor(self.weights).to(ms_ssim.device)
+        return ms_ssim.mean()
