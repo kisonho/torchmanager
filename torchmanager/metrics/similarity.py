@@ -164,7 +164,7 @@ class MS_SSIM(SSIM):
         super().__init__(channels, sigma, window_size, denormalize_fn=denormalize_fn, pixel_range=pixel_range, target=target)
         self.weights = weights
 
-
+    @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # initialize ms_ssim
         ms_ssims: list[torch.Tensor] = []
