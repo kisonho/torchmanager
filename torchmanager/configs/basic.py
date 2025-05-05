@@ -50,19 +50,19 @@ class BaseConfigs(argparse.Namespace, abc.ABC):
         return cfg
 
     @overload
-    @abc.abstractmethod
     @staticmethod
+    @abc.abstractmethod
     def get_arguments(parser: argparse.ArgumentParser = argparse.ArgumentParser()) -> argparse.ArgumentParser:
         ...
 
     @overload
-    @abc.abstractmethod
     @staticmethod
+    @abc.abstractmethod
     def get_arguments(parser: argparse._ArgumentGroup) -> argparse._ArgumentGroup:
         ...
 
-    @abc.abstractmethod
     @staticmethod
+    @abc.abstractmethod
     def get_arguments(parser: Union[argparse.ArgumentParser, argparse._ArgumentGroup] = argparse.ArgumentParser()) -> Union[argparse.ArgumentParser, argparse._ArgumentGroup]:
         """
         Set up arguments for an argument parser or argument group
