@@ -115,10 +115,10 @@ class FocalCrossEntropy(Loss):
 
     def convert(self, from_version: Version) -> None:
         if from_version < Version("v1.3"):
-            self.alpha = self._alpha
-            self.gamma = self._gamma
-            self.calculate_average = self._calculate_average
-            self.ignore_index = self._ignore_index
+            self.alpha = self._alpha  # type: ignore
+            self.gamma = self._gamma  # type: ignore
+            self.calculate_average = self._calculate_average  # type: ignore
+            self.ignore_index = self._ignore_index  # type: ignore
 
     def forward(self, inputs: Any, targets: Any) -> torch.Tensor:
         # calculate loss
