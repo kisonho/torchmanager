@@ -193,7 +193,7 @@ class FID(AccumulativeFeatureMetric[None, Module]):
             sigma = sigma_real @ sigma_gen
             covmean = linalg.sqrtm(sigma.cpu().numpy())
             assert not isinstance(covmean, tuple), _raise(TypeError("The square root of `covmean` should not contain errest number."))
-            sigma = torch.from_numpy(covmean.real).to(sigma.device)
+            sigma = torch.from_numpy(covmean.real).to(sigma.device)  # type: ignore  # TODO: fix typing
 
         # Calculate the squared Euclidean distance between the means
         return diff @ diff + torch.trace(sigma_real + sigma_gen - 2 * sigma)
