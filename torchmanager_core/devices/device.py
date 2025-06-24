@@ -6,21 +6,22 @@ from .protocols import DeviceMovable, DataParallelType
 CPU = torch.device('cpu')
 '''The main CPU'''
 
-try:
-    from torch.backends import mps
-    METAL = torch.device('mps') if mps.is_available() else NotImplemented
+# METAL is only available on macOS with Apple Silicon
+if torch.backends.mps.is_available():
+    METAL = torch.device('mps')
     '''The overall Metal (Mac only) devices'''
-except:
+else:
     METAL = NotImplemented
 
-try:
-    DEFAULT = torch.device(torch.cuda.current_device()) if torch.cuda.is_available() else CPU
+# CUDA is only available on NVIDIA GPUs
+if torch.cuda.is_available():
+    DEFAULT = torch.device(torch.cuda.current_device())
     '''The default device'''
-    GPU = torch.device('cuda') if torch.cuda.is_available() else NotImplemented
+    GPU = torch.device('cuda')
     '''The overall CUDA (NVIDIA only) devices'''
-    GPUS = [torch.device(i) for i in range(torch.cuda.device_count())] if torch.cuda.is_available() else []
+    GPUS = [torch.device(i) for i in range(torch.cuda.device_count())]
     '''The list of available CUDA devices'''
-except:
+else:
     DEFAULT = CPU
     GPU = NotImplemented
     GPUS: list[torch.device] = []
@@ -72,16 +73,16 @@ def search(specified: torch.device | list[torch.device] | None = None) -> tuple[
         - specified: An optional `torch.device` of specified
     - Returns: A `tuple` of CPU in `torch.device`, available device in `torch.device` and `list` of specified devices in `torch.device`
     """
-    if specified is None and GPU is not NotImplemented:
+    if specified is None and GPU is not NotImplemented:  # automatically search for CUDA devices
         return (CPU, GPU, GPUS)
-    elif specified is None and METAL is not NotImplemented:
+    elif specified is None and METAL is not NotImplemented:  # automatically search for METAL devices
         return (CPU, METAL, [METAL])
-    elif specified is None:
+    elif specified is None:  # no available acceleration devices, return CPU
         return (CPU, CPU, [CPU])
-    elif not isinstance(specified, list):
+    elif not isinstance(specified, list):  # if specified is a single device
         device = specified
         specified = [specified]
-    elif len(specified) > 0:
+    elif len(specified) > 0:  # if specified is a list of devices
         # set default device
         device = torch.device(specified[0].type)
 
@@ -94,13 +95,13 @@ def search(specified: torch.device | list[torch.device] | None = None) -> tuple[
             # assert all devices have device index
             if d.index is None:
                 raise SystemError("All devices in the specified list must have a device index.")
-    else:
+    else:  # if specified is an empty list
         raise SystemError("Specified device list must not be empty")
     return CPU, device, specified
 
 T = TypeVar('T', bound=DeviceMovable | dict[str, DeviceMovable | Any] | list[DeviceMovable | Any])
 
-def move_to_device(target: T, /, device: torch.device, *, recursive: bool = False) -> T:
+def move_to_device(target: T, /, device: torch.device, *, recursive: bool = True) -> T:
     """
     Recurrently move a target variable to device if elements perform to `DeviceMovable` protocol
 
@@ -110,11 +111,11 @@ def move_to_device(target: T, /, device: torch.device, *, recursive: bool = Fals
         - recursive: A `bool` flag of if move to device recursively
     - Returns: The same type of target but moved to target device
     """
-    if isinstance(target, DeviceMovable):
+    if isinstance(target, DeviceMovable):  # if target performs `DeviceMovable` protocol
         target = target.to(device)
-    elif isinstance(target, dict):
+    elif isinstance(target, dict):  # if target is a dict
         target = cast(T, {k: move_to_device(t, device) if isinstance(t, DeviceMovable) or recursive else t for k, t in target.items()})
-    elif isinstance(target, Iterable):
+    elif isinstance(target, Iterable):  # if target is an iterable
         target = cast(T, [move_to_device(t, device) if isinstance(t, DeviceMovable) or recursive else t for t in target])
     return target
 
