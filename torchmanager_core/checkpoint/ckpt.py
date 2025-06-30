@@ -83,7 +83,7 @@ class Checkpoint(Generic[T]):
             - model: Any object to be loaded
         """
         # load checkpint dictionary
-        ckpt: dict[str, Any] = torch.load(ckpt_path, map_location=map_location)
+        ckpt: dict[str, Any] = torch.load(ckpt_path, map_location=map_location, weights_only=False)
 
         # load model
         if model is not None and ckpt["save_weights_only"] is True:
