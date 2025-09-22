@@ -1,6 +1,6 @@
 from torchmanager_core import abc
 from torchmanager_core.protocols import Frequency, SummaryWriteble, Weighted
-from torchmanager_core.typing import Any, Callable, Generic, Optional, SupportsFloat, TypeVar
+from torchmanager_core.typing import Any, Callable, Generic, SupportsFloat, TypeVar
 
 from .callback import FrequencyCallback
 
@@ -16,7 +16,7 @@ class DynamicWeight(FrequencyCallback, abc.ABC, Generic[W]):
     '''
     __key: str
     __weighted: W
-    __writer: Optional[SummaryWriteble]
+    __writer: SummaryWriteble | None
 
     @property
     def _key(self) -> str:
@@ -27,10 +27,10 @@ class DynamicWeight(FrequencyCallback, abc.ABC, Generic[W]):
         return self.__weighted
 
     @property
-    def _writer(self) -> Optional[SummaryWriteble]:
+    def _writer(self) -> SummaryWriteble | None:
         return self.__writer
 
-    def __init__(self, weighted: W, freq: Frequency = Frequency.EPOCH, writer: Optional[SummaryWriteble] = None, name: Optional[str] = None) -> None:
+    def __init__(self, weighted: W, freq: Frequency = Frequency.EPOCH, writer: SummaryWriteble | None = None, name: str | None = None) -> None:
         '''
         Constructor
 
@@ -88,7 +88,7 @@ class LambdaDynamicWeight(DynamicWeight[W], Generic[W]):
     @property
     def _lambda_fn(self) -> Callable[[int], Any]: return self.__lambda_fn
 
-    def __init__(self, fn: Callable[[int], Any], weighted: W, freq: Frequency = Frequency.EPOCH, writer: Optional[SummaryWriteble] = None, name: Optional[str] = None) -> None:
+    def __init__(self, fn: Callable[[int], Any], weighted: W, freq: Frequency = Frequency.EPOCH, writer: SummaryWriteble | None = None, name: str | None = None) -> None:
         super().__init__(weighted, freq, writer, name)
         self.__lambda_fn = fn
 

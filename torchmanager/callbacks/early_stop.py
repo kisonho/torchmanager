@@ -1,5 +1,4 @@
 from torchmanager_core import errors, sys
-from torchmanager_core.typing import Optional
 
 from .ckpt import Callback, MonitorType
 
@@ -29,7 +28,7 @@ class EarlyStop(Callback):
         self.monitor_type = monitor_type
         self.steps = steps
 
-    def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: Optional[dict[str, float]] = None) -> None:
+    def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: dict[str, float] | None = None) -> None:
         # load monitoring value
         summary = val_summary if val_summary is not None else summary
         monitoring_value = summary[self.monitor]

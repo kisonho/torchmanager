@@ -16,7 +16,7 @@ class JSONConfigs(Configs, abc.ABC):
     * Abstract class
     """
     @classmethod
-    def from_arguments(cls, *arguments: str, parser: argparse.ArgumentParser = argparse.ArgumentParser(), show_summary: bool = True):
+    def from_arguments(cls: type["JSONConfigs"], *arguments: str, parser: argparse.ArgumentParser = argparse.ArgumentParser(), show_summary: bool = True) -> "JSONConfigs":
         # get arguments
         fetched_parser = cls.get_arguments(parser=parser)
         if len(arguments) > 0:
@@ -26,7 +26,7 @@ class JSONConfigs(Configs, abc.ABC):
         return cls.from_json(configs.json, show_summary=show_summary)
 
     @classmethod
-    def from_json(cls, json_path: str, /, *, show_summary: bool = True):
+    def from_json(cls: type["JSONConfigs"], json_path: str, /, *, show_summary: bool = True) -> "JSONConfigs":
         """
         Load a `Configs` directly from a JSON file
 

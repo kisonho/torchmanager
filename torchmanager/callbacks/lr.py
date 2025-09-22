@@ -1,5 +1,5 @@
 from torchmanager_core.protocols import Frequency, SummaryWriteble
-from torchmanager_core.typing import Any, Generic, Optional, TypeVar
+from torchmanager_core.typing import Any, Generic, TypeVar
 
 from .callback import FrequencyCallback
 
@@ -11,7 +11,6 @@ _LrScheduler = LRScheduler
 
 
 Scheduler = TypeVar("Scheduler", bound=_LrScheduler)
-Writer = TypeVar("Writer", bound=SummaryWriteble)
 
 
 class LrSchedueler(FrequencyCallback, Generic[Scheduler]):
@@ -26,7 +25,7 @@ class LrSchedueler(FrequencyCallback, Generic[Scheduler]):
     """
     __lr_scheduler: Scheduler
     __name: str
-    __writer: Optional[SummaryWriteble]
+    __writer: SummaryWriteble | None
 
     @property
     def _name(self) -> str:
@@ -37,10 +36,10 @@ class LrSchedueler(FrequencyCallback, Generic[Scheduler]):
         return self.__lr_scheduler
 
     @property
-    def _writer(self) -> Optional[SummaryWriteble]:
+    def _writer(self) -> SummaryWriteble | None:
         return self.__writer
 
-    def __init__(self, scheduler: Scheduler, freq: Frequency = Frequency.EPOCH, name: str = 'lr', tf_board_writer: Optional[Writer] = None) -> None:
+    def __init__(self, scheduler: Scheduler, freq: Frequency = Frequency.EPOCH, name: str = 'lr', tf_board_writer: SummaryWriteble | None = None) -> None:
         super().__init__(freq)
         self.__lr_scheduler = scheduler
         self.__name = name
@@ -49,7 +48,7 @@ class LrSchedueler(FrequencyCallback, Generic[Scheduler]):
     def _update(self, result: Any) -> None:
         pass
 
-    def on_epoch_end(self, epoch: int, summary: dict[str, float], val_summary: Optional[dict[str, Any]] = None) -> None:
+    def on_epoch_end(self, epoch: int, summary: dict[str, float], val_summary: dict[str, Any] | None = None) -> None:
         # get lr summary
         lr_summary = {}
         lr_list = self._scheduler.get_last_lr()

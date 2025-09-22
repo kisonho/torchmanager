@@ -214,7 +214,7 @@ class BaseManager(Generic[Module]):
         return y, loss
 
     @classmethod
-    def from_checkpoint(cls, ckpt: checkpoint.Checkpoint[Any] | str, experiment: str | None = None, *, map_location: torch.device | None = None):
+    def from_checkpoint(cls: type["BaseManager"], ckpt: checkpoint.Checkpoint[Any] | str, experiment: str | None = None, *, map_location: torch.device | None = None) -> "BaseManager":
         """
         Method to load a manager from a saved `Checkpoint`. The manager will not be compiled with a loss function and its metrics.
 

@@ -16,7 +16,7 @@ class YAMLConfigs(Configs, abc.ABC):
     * Abstract class
     """
     @classmethod
-    def from_arguments(cls, *arguments: str, parser: argparse.ArgumentParser = argparse.ArgumentParser(), show_summary: bool = True):
+    def from_arguments(cls: type["YAMLConfigs"], *arguments: str, parser: argparse.ArgumentParser = argparse.ArgumentParser(), show_summary: bool = True) -> "YAMLConfigs":
         # get arguments
         fetched_parser = cls.get_arguments(parser=parser)
         if len(arguments) > 0:
@@ -26,7 +26,7 @@ class YAMLConfigs(Configs, abc.ABC):
         return cls.from_yaml(configs.yaml, show_summary=show_summary)
 
     @classmethod
-    def from_yaml(cls, yaml_path: str, /, *, show_summary: bool = True):
+    def from_yaml(cls: type["YAMLConfigs"], yaml_path: str, /, *, show_summary: bool = True) -> "YAMLConfigs":
         """
         Load a `Configs` directly from a YAML file
 

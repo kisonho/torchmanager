@@ -166,7 +166,7 @@ class FID(AccumulativeFeatureMetric[None, Module]):
         self.use_linalg = use_linalg
 
     def convert(self, from_version: Version) -> None:
-        if from_version < Version("v1.4rc2"):
+        if from_version < Version("v1.4"):
             self.accumulative = False
             self.features_fake = None
             self.features_real = None

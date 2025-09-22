@@ -1,8 +1,8 @@
 from torchmanager.callbacks import FrequencyCallback
 from torchmanager_core import tensorboard, torch
-from torchmanager_core.typing import Optional, Set
 from torchmanager_core.protocols import Frequency
 
+SummaryResult = tuple[set[str], dict[str, float], dict[str, float] | None]
 
 
 class TensorBoard(FrequencyCallback):
@@ -35,7 +35,7 @@ class TensorBoard(FrequencyCallback):
         self.__writer = tensorboard.writer.SummaryWriter(log_dir)
         assert self.freq == Frequency.EPOCH or self.freq == Frequency.BATCH, "Record to tensorboard at start of batch or epoch is not supported."
 
-    def add_graph(self, model: torch.nn.Module, input_shape: Optional[tuple[int, ...]] = None) -> None:
+    def add_graph(self, model: torch.nn.Module, input_shape: tuple[int, ...] | None = None) -> None:
         """
         Add graph to TensorBoard
 
@@ -46,7 +46,7 @@ class TensorBoard(FrequencyCallback):
         inputs = torch.randn(input_shape) if input_shape is not None else None
         self.writer.add_graph(model, input_to_model=inputs)
 
-    def _update(self, result: tuple[Set[str], dict[str, float], Optional[dict[str, float]]]) -> None:
+    def _update(self, result: SummaryResult) -> None:
         keys, summary, val_summary = result
 
         # write results to Tensorboard
@@ -61,7 +61,7 @@ class TensorBoard(FrequencyCallback):
                 r["val"] = val_summary[key]
             self.writer.add_scalars(key, r, self.current_step + 1)
 
-    def step(self, summary: dict[str, float], val_summary: Optional[dict[str, float]] = None) -> tuple[Set[str], dict[str, float], Optional[dict[str, float]]]:
+    def step(self, summary: dict[str, float], val_summary: dict[str, float] | None = None) -> SummaryResult:
         # fetch keys
         keys = list(summary.keys())
         if val_summary is not None:
