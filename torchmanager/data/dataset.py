@@ -1,6 +1,6 @@
 from torch.utils.data import Dataset as _Dataset, DataLoader, Sampler
 from torchmanager_core import abc, devices, errors, math, os, torch, _raise
-from torchmanager_core.typing import Any, Callable, Iterable, Iterator, Optional, Sequence, TypeVar, cast
+from torchmanager_core.typing import Any, Callable, Iterable, Iterator, Sequence, TypeVar, cast
 
 D = TypeVar("D", bound=DataLoader)
 T = TypeVar("T")
@@ -71,7 +71,7 @@ class Dataset(_Dataset[T], abc.ABC):
         else:
             return math.ceil(self.unbatched_len / self.batch_size)
 
-    def __init__(self, batch_size: int, /, *, device: torch.device = devices.CPU, drop_last: bool = False, num_workers: Optional[int] = os.cpu_count(), sampler: Sampler[list[T]] | Iterable[list[T]] | None = None, shuffle: bool = False) -> None:
+    def __init__(self, batch_size: int, /, *, device: torch.device = devices.CPU, drop_last: bool = False, num_workers: int | None = os.cpu_count(), sampler: Sampler[list[T]] | Iterable[list[T]] | None = None, shuffle: bool = False) -> None:
         """
         Constructor
 
@@ -218,7 +218,7 @@ def batched(fn: Callable[..., _Dataset], loader_type: type[D] = DataLoader) -> C
     ...     ...
     """
     # wrap function
-    def wrapped_fn(*args: Any, batch_size: int = 1, device: torch.device = devices.CPU, drop_last: bool = False, num_workers: Optional[int] = None, shuffle: bool = False, **kwargs: Any) -> D:
+    def wrapped_fn(*args: Any, batch_size: int = 1, device: torch.device = devices.CPU, drop_last: bool = False, num_workers: int | None = None, shuffle: bool = False, **kwargs: Any) -> D:
         # initialize devices
         if num_workers is None:
             cpu_count = os.cpu_count()
@@ -232,7 +232,7 @@ def batched(fn: Callable[..., _Dataset], loader_type: type[D] = DataLoader) -> C
 
         # load dataset
         loaded_dataset = fn(*args, **kwargs)
-        assert not isinstance(loaded_dataset, Dataset), _raise(RuntimeError("The loaded dataset is a `torchmanager.data.Dataset` which has already been wrapped with batch loader during iteration."))
+        assert isinstance(loaded_dataset, Dataset), _raise(RuntimeError("The loaded dataset is a `torchmanager.data.Dataset` which has already been wrapped with batch loader during iteration."))
         data_loader = loader_type(loaded_dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last, num_workers=num_workers, pin_memory=pin_memory, pin_memory_device=f"{targeted_devices[0].type}:{targeted_devices.index}")
         return data_loader
     return wrapped_fn

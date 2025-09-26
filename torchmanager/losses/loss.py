@@ -3,6 +3,8 @@ from torchmanager_core.typing import Any, Callable, Generic, TypeVar
 
 from .protocols import BaseMetric, Metric
 
+LossFn = TypeVar("LossFn", bound=Callable[[Any, Any], torch.Tensor] | None)
+
 
 class BaseLoss(BaseMetric, abc.ABC):
     """
@@ -50,7 +52,7 @@ class BaseLoss(BaseMetric, abc.ABC):
         ...
 
 
-class Loss(BaseLoss, Metric):
+class Loss(BaseLoss, Metric[LossFn]):
     """
     The main loss function
 
@@ -72,7 +74,7 @@ class Loss(BaseLoss, Metric):
     >>> manager = Manager(..., loss_fn=cross_entropy)
     """
 
-    def __init__(self, loss_fn: Callable[[Any, Any], torch.Tensor] | None = None, target: str | None = None, weight: float = 1) -> None:
+    def __init__(self, loss_fn: LossFn = None, target: str | None = None, weight: float = 1) -> None:
         """
         Constructor
 
@@ -88,7 +90,7 @@ class Loss(BaseLoss, Metric):
         return Metric.forward(self, input, target)
 
 
-class MultiLosses(Loss):
+class MultiLosses(Loss[None]):
     """
     A loss with multiple losses sum together
 
@@ -187,13 +189,16 @@ class ParallelLoss(Loss, Generic[L, P]):
         return self
 
 
-class _WrappedLoss(Loss):
+WrappedLossFn = TypeVar("WrappedLossFn", bound=Callable[[Any, Any], torch.Tensor])
+
+
+class _WrappedLoss(Loss[WrappedLossFn]):
     @property
     def wrapped_metric_fn(self) -> Callable[[Any, Any], torch.Tensor]:
         assert self._metric_fn is not None, _raise(AttributeError("Metric function is not given."))
         return self._metric_fn
 
-    def __init__(self, loss_fn: Callable[[Any, Any], torch.Tensor], target: str | None = None, weight: float = 1) -> None:
+    def __init__(self, loss_fn: WrappedLossFn, target: str | None = None, weight: float = 1) -> None:
         super().__init__(loss_fn, target, weight)
 
     def forward(self, input: Any, target: Any) -> torch.Tensor:

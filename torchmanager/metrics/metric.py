@@ -2,7 +2,7 @@ from torchmanager_core import abc, torch, API_VERSION, Version, _raise
 from torchmanager_core.typing import Any, Callable, Generic, TypeVar
 
 
-M = TypeVar("M", bound=Callable[[Any, Any], torch.Tensor] | None)
+MetricFn = TypeVar("MetricFn", bound=Callable[[Any, Any], torch.Tensor] | None)
 
 
 class BaseMetric(torch.nn.Module, abc.ABC):
@@ -83,7 +83,7 @@ class BaseMetric(torch.nn.Module, abc.ABC):
         self._results.clear()
 
 
-class Metric(BaseMetric, Generic[M]):
+class Metric(BaseMetric, Generic[MetricFn]):
     """
     The basic metric class
 
@@ -91,7 +91,7 @@ class Metric(BaseMetric, Generic[M]):
     * implements: `torchmanager_core.protocols.Resulting`
     * Metric tensor is released from memory as soon as the result returned
     """
-    def __init__(self, metric_fn: M = None, target: str | None = None) -> None:
+    def __init__(self, metric_fn: MetricFn = None, target: str | None = None) -> None:
         """
         Constructor
 
@@ -118,16 +118,16 @@ class Metric(BaseMetric, Generic[M]):
             raise NotImplementedError("metric_fn is not given.")
 
 
-WRAPPED_M = TypeVar("WRAPPED_M", bound=Callable[[Any, Any], torch.Tensor])
+WrappedMetricFn = TypeVar("WrappedMetricFn", bound=Callable[[Any, Any], torch.Tensor])
 
 
-class _WrappedMetric(Metric[WRAPPED_M]):
+class _WrappedMetric(Metric[WrappedMetricFn]):
     @property
-    def wrapped_metric_fn(self) -> WRAPPED_M:
+    def wrapped_metric_fn(self) -> WrappedMetricFn:
         assert self._metric_fn is not None, _raise(AttributeError("Metric function is not given."))
         return self._metric_fn
 
-    def __init__(self, metric_fn: WRAPPED_M, target: str | None = None) -> None:
+    def __init__(self, metric_fn: WrappedMetricFn, target: str | None = None) -> None:
         super().__init__(metric_fn, target)
 
     @torch.no_grad()
