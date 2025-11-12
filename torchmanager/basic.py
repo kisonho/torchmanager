@@ -214,7 +214,7 @@ class BaseManager(Generic[Module]):
         return y, loss
 
     @classmethod
-    def from_checkpoint(cls: type["BaseManager"], ckpt: checkpoint.Checkpoint[Any] | str, experiment: str | None = None, *, map_location: torch.device | None = None) -> "BaseManager":
+    def from_checkpoint(cls: type[Self], ckpt: checkpoint.Checkpoint[Any] | str, experiment: str | None = None, *, map_location: torch.device | None = None) -> Self:
         """
         Method to load a manager from a saved `Checkpoint`. The manager will not be compiled with a loss function and its metrics.
 
@@ -259,7 +259,7 @@ class BaseManager(Generic[Module]):
             manager.reset(map_location)
         else:
             manager.reset()
-        return manager
+        return cast(Self, manager)
 
     def load_state_dict(self, state_dict: Mapping[str, Any], *args, **kwargs) -> None:
         # load state dict elements

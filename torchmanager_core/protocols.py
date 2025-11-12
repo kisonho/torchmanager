@@ -1,6 +1,6 @@
 import torch, sys
 from enum import Enum
-from typing import Any, Callable, Optional, Protocol, runtime_checkable
+from typing import Any, Callable, Protocol, runtime_checkable
 from typing_extensions import Self
 
 from .checkpoint import Checkpoint
@@ -54,7 +54,7 @@ class LrSteping(Steppable):
     def get_last_lr(self) -> list[float]:
         ...
 
-    def step(self, epoch: Optional[int] = None) -> None:
+    def step(self, epoch: int | None = None) -> None:
         ...
 
 
@@ -75,15 +75,22 @@ class Reduction(Enum):
 
 class Resulting(DeviceMovable, StateDictLoadable, Trainable, Protocol):
     """An object that have result available with reset method"""
-    _metric_fn: Optional[Callable[[Any, Any], torch.Tensor]]
-    _target: Optional[str]
+    _target: str | None
+    
+    @property
+    def _metric_fn(self) -> Callable[[Any, Any], torch.Tensor] | None:
+        ...
+
+    @_metric_fn.setter
+    def _metric_fn(self, fn: Callable[[Any, Any], torch.Tensor] | None) -> None:
+        ...
 
     @property
     def result(self) -> torch.Tensor:
         ...
 
     @property
-    def results(self) -> Optional[torch.Tensor]:
+    def results(self) -> torch.Tensor | None:
         ...
 
     def __call__(self, input: Any, target: Any) -> torch.Tensor:
@@ -99,7 +106,7 @@ class Resulting(DeviceMovable, StateDictLoadable, Trainable, Protocol):
 class SummaryWriteble(Protocol):
     """The SummaryWriter protocol"""
 
-    def add_scalars(self, main_tag: str, tag_scalar_dict: Any, global_step: Optional[int] = None) -> None:
+    def add_scalars(self, main_tag: str, tag_scalar_dict: Any, global_step: int | None = None) -> None:
         ...
 
 
