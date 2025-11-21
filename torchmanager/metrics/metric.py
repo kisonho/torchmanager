@@ -56,8 +56,7 @@ class BaseMetric(torch.nn.Module, abc.ABC):
 
         # call
         m: torch.Tensor = super().__call__(input, target)
-        self._results.append(m.unsqueeze(0).cpu().detach())
-        self.__result += self._results[-1]
+        self.record(m)
         return m
 
     def convert(self, from_version: Version) -> None:
@@ -76,6 +75,16 @@ class BaseMetric(torch.nn.Module, abc.ABC):
         - Returns: The metric in `torch.Tensor`
         """
         ...
+
+    def record(self, m: torch.Tensor) -> None:
+        """
+        Record the metric value.
+
+        - Parameters:
+            - m: A metric value in `torch.Tensor`
+        """
+        self._results.append(m.unsqueeze(0).cpu().detach())
+        self.__result += self._results[-1]
 
     def reset(self) -> None:
         """Reset the current results list"""

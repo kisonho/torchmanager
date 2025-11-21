@@ -1,5 +1,6 @@
+from itertools import chain
 from torchmanager_core import abc, devices, torch, _raise
-from torchmanager_core.typing import Any, Callable, Generic, TypeVar
+from torchmanager_core.typing import Any, Callable, Generic, TypeVar, cast
 
 from .protocols import BaseMetric, Metric
 
@@ -148,6 +149,34 @@ L = TypeVar("L", bound=Loss)
 P = TypeVar("P", bound=torch.nn.DataParallel)
 
 
+class _RecordingDataParallel(torch.nn.DataParallel):
+    """DataParallel that keeps replicas for downstream metric aggregation."""
+
+    _replicas: list[torch.nn.Module] | None
+
+    def __init__(self, module: torch.nn.Module, device_ids: list[int] | None = None, output_device: torch.device | None = None, dim: int = 0) -> None:
+        super().__init__(module, device_ids=device_ids, output_device=output_device, dim=dim)
+        self._replicas = None
+
+    def forward(self, *inputs, **kwargs) -> Any:
+        if not self.device_ids:
+            return self.module(*inputs, **kwargs)
+
+        for t in chain(self.module.parameters(), self.module.buffers()):
+            if t.device != self.src_device_obj:
+                raise RuntimeError(f"module must have its parameters and buffers on device {self.src_device_obj} (device_ids[0]) but found one of them on device: {t.device}")
+
+        inputs, kwargs = self.scatter(inputs, kwargs, self.device_ids)
+        if len(self.device_ids) == 1:
+            self._replicas = None
+            return self.module(*inputs[0], **kwargs[0])
+
+        replicas = self.replicate(self.module, self.device_ids[: len(inputs)])
+        self._replicas = replicas
+        outputs = self.parallel_apply(replicas, inputs, kwargs)
+        return self.gather(outputs, self.output_device)
+
+
 class ParallelLoss(Loss, Generic[L, P]):
     """
     A data parallel loss function
@@ -161,7 +190,7 @@ class ParallelLoss(Loss, Generic[L, P]):
     _metric_fn: P
     module: L
 
-    def __init__(self, module: L, device_ids: list[int] | None = None, output_device: torch.device | None = None, dim: int = 0, *, parallel_type: type[P] = torch.nn.DataParallel) -> None:
+    def __init__(self, module: L, device_ids: list[int] | None = None, output_device: torch.device | None = None, dim: int = 0, *, parallel_type: type[P] = _RecordingDataParallel) -> None:
         super().__init__(parallel_type(module, device_ids, output_device, dim=dim))
         self.module = module
 
@@ -169,7 +198,37 @@ class ParallelLoss(Loss, Generic[L, P]):
         input = devices.move_to_device(input, devices.CPU)
         target = devices.move_to_device(target, devices.CPU)
         loss: torch.Tensor = super().forward(input, target)
+
+        # merge individual loss breakdowns when running multi-loss in data parallel mode
+        if isinstance(self.module, MultiLosses):
+            self._merge_replica_losses()
         return loss.mean()
+
+    def _merge_replica_losses(self) -> None:
+        """Gather per-loss results from replicas created inside DataParallel forward."""
+        # check if in data parallel
+        if not isinstance(self._metric_fn, _RecordingDataParallel):
+            return
+
+        # get replicas
+        replicas = self._metric_fn._replicas
+        if not replicas:
+            return
+
+        # loop for replicas
+        for replica in replicas:
+            if not isinstance(replica, MultiLosses) or not isinstance(self.module, MultiLosses):
+                continue
+            for merged_loss, replica_loss in zip(self.module.losses, replica.losses):
+                self._merge_loss_result(cast(Loss, merged_loss), cast(Loss, replica_loss))
+
+        # clear replicas
+        self._metric_fn._replicas = None
+
+    @staticmethod
+    def _merge_loss_result(target_loss: Loss, replica_loss: Loss) -> None:
+        """Accumulate replica loss results into the master loss without re-computation."""
+        target_loss.record(replica_loss.result)
 
     def reset(self) -> None:
         """Reset the current results list"""
