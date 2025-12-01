@@ -1,5 +1,5 @@
 import torch, warnings
-from typing import Any, Iterable, Type, TypeVar, cast, overload
+from typing import Type, TypeVar, cast, overload
 
 from .protocols import DeviceMovable, DataParallelType
 
@@ -99,7 +99,7 @@ def search(specified: torch.device | list[torch.device] | None = None) -> tuple[
         raise SystemError("Specified device list must not be empty")
     return CPU, device, specified
 
-T = TypeVar('T', bound=DeviceMovable | dict[str, DeviceMovable | Any] | list[DeviceMovable | Any])
+T = TypeVar('T')
 
 def move_to_device(target: T, /, device: torch.device, *, recursive: bool = True) -> T:
     """
@@ -115,8 +115,11 @@ def move_to_device(target: T, /, device: torch.device, *, recursive: bool = True
         target = target.to(device)
     elif isinstance(target, dict):  # if target is a dict
         target = cast(T, {k: move_to_device(t, device) if isinstance(t, DeviceMovable) or recursive else t for k, t in target.items()})
-    elif isinstance(target, Iterable):  # if target is an iterable
-        target = cast(T, [move_to_device(t, device) if isinstance(t, DeviceMovable) or recursive else t for t in target])
+    else:
+        try:
+            target = cast(T, type(target)([move_to_device(t, device) if isinstance(t, DeviceMovable) or recursive else t for t in target]))  # type: ignore
+        except:
+            pass
     return target
 
 def set_default(d: torch.device) -> None:

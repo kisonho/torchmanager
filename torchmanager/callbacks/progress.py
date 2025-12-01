@@ -1,5 +1,4 @@
 from torchmanager_core import torch, view, _raise
-from torchmanager_core.typing import Optional
 
 from .callback import Callback
 
@@ -14,7 +13,7 @@ class ProgressBar(Callback):
         - progress_bar: A `tqdm` progress bar
     """
     iterations_per_epoch: int
-    progress_bar: Optional[view.tqdm]
+    progress_bar: view.tqdm | None
     verbose_type: view.VerboseType
 
     def __init__(self, iterations_per_epoch: int, *, verbose_type: view.VerboseType = view.VerboseType.ALL) -> None:
@@ -33,7 +32,7 @@ class ProgressBar(Callback):
         # create progress bar
         self.progress_bar = view.tqdm(total=self.iterations_per_epoch)
 
-    def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: Optional[dict[str, float]] = None) -> None:
+    def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: dict[str, float] | None = None) -> None:
         # close progress bar
         assert self.progress_bar is not None, _raise(TypeError("Progress bar is not initialized."))
         self.progress_bar.close()

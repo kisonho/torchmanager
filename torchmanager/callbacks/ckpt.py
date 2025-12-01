@@ -2,14 +2,14 @@ from torch.optim.optimizer import Optimizer
 from torchmanager_core import os, torch, view, _raise
 from torchmanager_core.checkpoint import Checkpoint as Ckpt
 from torchmanager_core.protocols import CkptConvertable, ModelContainer, MonitorType, StateDictLoadable
-from torchmanager_core.typing import Any, Generic, Optional, TypeVar, overload
+from torchmanager_core.typing import Any, Generic, TypeVar, overload
 
 from .callback import Callback
 
-T = TypeVar('T', bound=StateDictLoadable)
+CKPT = TypeVar('CKPT', bound=StateDictLoadable)
 
 
-class _Checkpoint(Callback, Generic[T]):
+class _Checkpoint(Callback, Generic[CKPT]):
     """
     The callback to save the last checkpoint during training
 
@@ -19,7 +19,7 @@ class _Checkpoint(Callback, Generic[T]):
         - ckpt_path: A `str` of checkpoint path
     """
     __ckpt_path: str
-    __checkpoint: Ckpt[T]
+    __checkpoint: Ckpt[CKPT]
 
     @property
     def ckpt_path(self) -> str:
@@ -30,18 +30,18 @@ class _Checkpoint(Callback, Generic[T]):
         self.__ckpt_path = os.path.normpath(p)
 
     @property
-    def checkpoint(self) -> Ckpt[T]:
+    def checkpoint(self) -> Ckpt[CKPT]:
         return self.__checkpoint
 
     @overload
-    def __init__(self, model: T, ckpt_path: str) -> None:
+    def __init__(self, model: CKPT, ckpt_path: str) -> None:
         ...
 
     @overload
-    def __init__(self, model: T, ckpt_path: str, *, last_epoch: int = 0, optimizer: Optional[Optimizer] = None, loss_fn: Optional[StateDictLoadable] = None, metrics: Optional[dict[str, StateDictLoadable]] = None, save_weights_only: bool = False) -> None:
+    def __init__(self, model: CKPT, ckpt_path: str, *, last_epoch: int = 0, optimizer: Optimizer | None = None, loss_fn: StateDictLoadable | None = None, metrics: dict[str, StateDictLoadable] | None = None, save_weights_only: bool = False) -> None:
         ...
 
-    def __init__(self, model: T, ckpt_path: str, **kwargs: Any) -> None:
+    def __init__(self, model: CKPT, ckpt_path: str, **kwargs: Any) -> None:
         """
         Constructor
 
@@ -54,12 +54,12 @@ class _Checkpoint(Callback, Generic[T]):
         self.__checkpoint = model.to_checkpoint() if isinstance(model, CkptConvertable) else Ckpt(model, **kwargs)
         self.ckpt_path = os.path.normpath(ckpt_path)
 
-    def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: Optional[dict[str, float]] = None) -> None:
+    def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: dict[str, float] | None = None) -> None:
         self.checkpoint.last_epoch = epoch
         self.checkpoint.save(epoch, self.ckpt_path)
 
 
-class LastCheckpoint(_Checkpoint[T]):
+class LastCheckpoint(_Checkpoint[CKPT]):
     """
     Last checkpoint with frequency control support
 
@@ -80,23 +80,23 @@ class LastCheckpoint(_Checkpoint[T]):
         self.__freq = f
 
     @overload
-    def __init__(self, model: T, ckpt_path: str, freq: int = 1) -> None:
+    def __init__(self, model: CKPT, ckpt_path: str, freq: int = 1) -> None:
         ...
 
     @overload
-    def __init__(self, model: T, ckpt_path: str, freq: int = 1, *, last_epoch: int = 0, optimizer: Optional[Optimizer] = None, loss_fn: Optional[StateDictLoadable] = None, metrics: Optional[dict[str, StateDictLoadable]] = None, save_weights_only: bool = False) -> None:
+    def __init__(self, model: CKPT, ckpt_path: str, freq: int = 1, *, last_epoch: int = 0, optimizer: Optimizer | None = None, loss_fn: StateDictLoadable | None = None, metrics: dict[str, StateDictLoadable] | None = None, save_weights_only: bool = False) -> None:
         ...
 
-    def __init__(self, model: T, ckpt_path: str, freq: int = 1, **kwargs: Any) -> None:
+    def __init__(self, model: CKPT, ckpt_path: str, freq: int = 1, **kwargs: Any) -> None:
         super().__init__(model, ckpt_path, **kwargs)
         self.freq = freq
 
-    def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: Optional[dict[str, float]] = None) -> None:
+    def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: dict[str, float] | None = None) -> None:
         if epoch % self.freq == 0:
             super().on_epoch_end(epoch, summary, val_summary)
 
 
-class BestCheckpoint(_Checkpoint[T]):
+class BestCheckpoint(_Checkpoint[CKPT]):
     """
     The callback to save the latest checkpoint for each epoch
 
@@ -119,14 +119,14 @@ class BestCheckpoint(_Checkpoint[T]):
         return self.best_summary[f"val_{self.monitor}"] if f"val_{self.monitor}" in self.best_summary else self.best_summary[self.monitor]
 
     @overload
-    def __init__(self, monitor: str, model: T, ckpt_path: str, *, load_best: bool = False, monitor_type: MonitorType = MonitorType.MAX, show_verbose: bool = False) -> None:
+    def __init__(self, monitor: str, model: CKPT, ckpt_path: str, *, load_best: bool = False, monitor_type: MonitorType = MonitorType.MAX, show_verbose: bool = False) -> None:
         ...
 
     @overload
-    def __init__(self, monitor: str, model: T, ckpt_path: str, *, load_best: bool = False, monitor_type: MonitorType = MonitorType.MAX, show_verbose: bool = False, last_epoch: int = 0, optimizer: Optional[Optimizer] = None, loss_fn: Optional[StateDictLoadable] = None, metrics: Optional[dict[str, StateDictLoadable]] = None, save_weights_only: bool = False) -> None:
+    def __init__(self, monitor: str, model: CKPT, ckpt_path: str, *, load_best: bool = False, monitor_type: MonitorType = MonitorType.MAX, show_verbose: bool = False, last_epoch: int = 0, optimizer: Optimizer | None = None, loss_fn: StateDictLoadable | None = None, metrics: dict[str, StateDictLoadable] | None = None, save_weights_only: bool = False) -> None:
         ...
 
-    def __init__(self, monitor: str, model: T, ckpt_path: str, load_best: bool = False, monitor_type: MonitorType = MonitorType.MAX, show_verbose: bool = False, **kwargs: Any) -> None:
+    def __init__(self, monitor: str, model: CKPT, ckpt_path: str, load_best: bool = False, monitor_type: MonitorType = MonitorType.MAX, show_verbose: bool = False, **kwargs: Any) -> None:
         """
         Constructor
 
@@ -141,7 +141,7 @@ class BestCheckpoint(_Checkpoint[T]):
         self.monitor_type = monitor_type
         self.show_verbose = show_verbose
 
-    def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: Optional[dict[str, float]] = None) -> None:
+    def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: dict[str, float] | None = None) -> None:
         # initialize
         current_summary = summary.copy()
 

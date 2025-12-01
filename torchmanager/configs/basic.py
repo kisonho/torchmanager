@@ -22,7 +22,7 @@ class BaseConfigs(argparse.Namespace, abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def from_arguments(cls, *arguments: str, parser: argparse.ArgumentParser = argparse.ArgumentParser(), show_summary: bool = True):
+    def from_arguments(cls: type["BaseConfigs"], *arguments: str, parser: argparse.ArgumentParser = argparse.ArgumentParser(), show_summary: bool = True) -> "BaseConfigs":
         """
         Get properties from argument parser or given arguments
 
@@ -36,7 +36,7 @@ class BaseConfigs(argparse.Namespace, abc.ABC):
         ...
 
     @classmethod
-    def from_experiment(cls, exp: str, /):
+    def from_experiment(cls: type["BaseConfigs"], exp: str, /) -> "BaseConfigs":
         """
         Load a `Configs` directly from an experiment
 
@@ -46,7 +46,7 @@ class BaseConfigs(argparse.Namespace, abc.ABC):
         exp = os.path.normpath(f"{exp}.exp") if not exp.endswith(".exp") else os.path.normpath(exp)
         cfg_path = os.path.join(exp, "configs.cfg")
         cfg = torch.load(cfg_path)
-        assert isinstance(cfg, Configs), _raise(TypeError(f"Saved object at path {cfg_path} is not a valid `Configs`."))
+        assert isinstance(cfg, BaseConfigs), _raise(TypeError(f"Saved object at path {cfg_path} is not a valid `Configs`."))
         return cfg
 
     @overload
@@ -143,7 +143,7 @@ class Configs(argparse.Namespace, abc.ABC):
         return parser
 
     @classmethod
-    def from_arguments(cls, *arguments: str, parser: argparse.ArgumentParser = argparse.ArgumentParser(), show_summary: bool = True):
+    def from_arguments(cls: type["Configs"], *arguments: str, parser: argparse.ArgumentParser = argparse.ArgumentParser(), show_summary: bool = True) -> "Configs":
         """
         Get properties from argument parser or given arguments
 
