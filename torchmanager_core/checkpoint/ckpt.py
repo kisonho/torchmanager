@@ -1,8 +1,8 @@
 import os, torch, warnings
 from torch.optim.optimizer import Optimizer
-from typing import Any, Generic, Mapping, OrderedDict, Self, Type, TypeVar
+from typing import Any, Generic, Mapping, OrderedDict, Self, Type, TypeVar, cast
 
-from .protocols import ModelContainer, StateDictLoadable, WrappedFn
+from .protocols import CkptDict, ModelContainer, StateDictLoadable, WrappedFn
 
 T = TypeVar("T", bound=StateDictLoadable | Mapping[str, Any])
 
@@ -117,7 +117,7 @@ class Checkpoint(Generic[T]):
         self.last_epoch = epoch
 
         # initialize checkpoint dictionary
-        ckpt = self.__dict__
+        ckpt = cast(CkptDict, self.__dict__)
 
         # check if save weights only
         if self.save_weights_only is True:

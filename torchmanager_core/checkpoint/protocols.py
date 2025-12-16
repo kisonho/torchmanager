@@ -1,6 +1,6 @@
 import torch
 from torch.optim.optimizer import Optimizer
-from typing import Any, Callable, Mapping, Optional, OrderedDict, Protocol, runtime_checkable, overload
+from typing import Any, Callable, Mapping, OrderedDict, Protocol, Required, TypedDict, runtime_checkable, overload
 
 
 class StateDictLoadable(Protocol):
@@ -21,13 +21,20 @@ class StateDictLoadable(Protocol):
         ...
 
 
+class CkptDict(TypedDict):
+    model: Required[StateDictLoadable | Mapping[str, Any]]
+    optimizer: Optimizer | None
+    loss_fn: StateDictLoadable | None
+    metrics: dict[str, StateDictLoadable]
+
+
 @runtime_checkable
 class ModelContainer(Protocol):
     """A container protocol that contains a property `model` as `torch.nn.module`"""
 
     model: torch.nn.Module
-    optimizer: Optional[Optimizer]
-    loss_fn: Optional[StateDictLoadable]
+    optimizer: Optimizer | None
+    loss_fn: StateDictLoadable | None
     metric_fns: dict[str, StateDictLoadable]
 
 
