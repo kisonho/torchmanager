@@ -1,7 +1,7 @@
 from torch.optim.optimizer import Optimizer
 from torchmanager_core import checkpoint, devices, errors, torch, Version, API_VERSION
 from torchmanager_core.protocols import Resulting
-from torchmanager_core.typing import Any, Collection, Generic, Mapping, Module, OrderedDict, Self, cast
+from torchmanager_core.typing import Any, Collection, Generic, Mapping, Module, OrderedDict, Self, cast, overload
 
 from .losses import Loss, MultiLosses, ParallelLoss
 from .metrics import Metric
@@ -204,13 +204,22 @@ class BaseManager(Generic[Module]):
         self.model, use_multi_gpus = devices.data_parallel(self.raw_model, devices=target_devices)
         return use_multi_gpus
 
+    @overload
+    def forward(self, input: Any, target: None = None, /) -> tuple[Any, None]:
+        ...
+
+    @overload
+    def forward(self, input: Any, target: Any, /) -> tuple[Any, torch.Tensor]:
+        ...
+
     def forward(self, input: Any, target: Any = None, /) -> tuple[Any, torch.Tensor | None]:
         """
         Forward pass function
 
         - Parameters:
-            - x_train: The training data
-        - Returns: `Any` kind of model output
+            - x_train: The input data
+            - target: The target ground truth
+        - Returns: A `tuple` of an `Any` kind of model output and an optional total objective loss in `torch.Tensor`
         """
         # forward model
         y = self.model(input)

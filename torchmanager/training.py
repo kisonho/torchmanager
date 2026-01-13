@@ -17,7 +17,7 @@ class BaseTrainingManager(BaseManager[Module], abc.ABC):
     A basic training manager
 
     * extends: `.testing.BasicTestingManager`
-    * abstract methods: `backward`, `optimize`, `train_step`, `test_step
+    * abstract methods: `backward`, `optimize`, `train_step`, `test_step`
 
     Train using fit method:
     >>> from torchmanager.data import Dataset
@@ -314,7 +314,6 @@ class Manager(BaseTrainingManager[Module], TestingManager[Module]):
     A generic training manager
 
     * extends: `BaseTrainingTestingManager`, `.testing.Manager`
-    * [Deprecation Warning]: Method `train` has been set as protected from v1.0.2, the public method will be removed from v1.2.0. Override `_train` method instead.
 
     Train using fit method:
     >>> from torchmanager.data import Dataset

@@ -62,6 +62,7 @@ class Dataset(_Dataset[T], abc.ABC):
     @property
     @abc.abstractmethod
     def unbatched_len(self) -> int:
+        """Returns the total length of unbatched dataset."""
         return NotImplemented
 
     @property
@@ -105,7 +106,13 @@ class Dataset(_Dataset[T], abc.ABC):
 
     @abc.abstractmethod
     def __getitem__(self, index: Any) -> Any:
-        """Returns an unbatched item"""
+        """
+        Returns an unbatched item
+
+        - Parameters:
+            - index: `Any` kind of index object
+        - Returns: `Any` kind of unbatched object
+        """
         return NotImplemented
 
     def __iter__(self) -> Iterator[tuple[T, T]]:
