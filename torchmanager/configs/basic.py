@@ -1,5 +1,5 @@
 from torchmanager_core import argparse, abc, errors, os, platform, shutil, sys, torch, view, _raise, DESCRIPTION
-from torchmanager_core.typing import Optional, Union, overload
+from torchmanager_core.typing import Self, Union, overload
 
 
 class BaseConfigs(argparse.Namespace, abc.ABC):
@@ -22,7 +22,7 @@ class BaseConfigs(argparse.Namespace, abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def from_arguments(cls: type["BaseConfigs"], *arguments: str, parser: argparse.ArgumentParser = argparse.ArgumentParser(), show_summary: bool = True) -> "BaseConfigs":
+    def from_arguments(cls: type[Self], *arguments: str, parser: argparse.ArgumentParser = argparse.ArgumentParser(), show_summary: bool = True) -> Self:
         """
         Get properties from argument parser or given arguments
 
@@ -36,7 +36,7 @@ class BaseConfigs(argparse.Namespace, abc.ABC):
         ...
 
     @classmethod
-    def from_experiment(cls: type["BaseConfigs"], exp: str, /) -> "BaseConfigs":
+    def from_experiment(cls: type[Self], exp: str, /) -> Self:
         """
         Load a `Configs` directly from an experiment
 
@@ -45,9 +45,7 @@ class BaseConfigs(argparse.Namespace, abc.ABC):
         """
         exp = os.path.normpath(f"{exp}.exp") if not exp.endswith(".exp") else os.path.normpath(exp)
         cfg_path = os.path.join(exp, "configs.cfg")
-        cfg = torch.load(cfg_path)
-        assert isinstance(cfg, BaseConfigs), _raise(TypeError(f"Saved object at path {cfg_path} is not a valid `Configs`."))
-        return cfg
+        return torch.load(cfg_path)
 
     @overload
     @staticmethod
@@ -108,7 +106,7 @@ class Configs(argparse.Namespace, abc.ABC):
     - Method to implement:
         - show_settings: Printout current configurations, `torchmanager_core.view.logger` is recommended.
     """
-    comments: Optional[str]
+    comments: str | None
     experiment: str
     replace_experiment: bool
 

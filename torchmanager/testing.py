@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader
 from torchmanager_core import abc, devices, errors, torch, view
 from torchmanager_core.protocols import Resulting
-from torchmanager_core.typing import Any, Collection, Module
+from torchmanager_core.typing import Any, Collection, Module, override
 
 from .basic import BaseManager
 from .data import Dataset
@@ -57,8 +57,6 @@ class BaseTestingManager(BaseManager[Module], abc.ABC):
         for name, fn in self.compiled_metrics.items():
             if name.startswith("val_"):
                 name = name.replace("val_", "")
-            elif "loss" in name:
-                continue
             try:
                 _ = fn(input, target)
             except Exception as metric_error:
@@ -227,6 +225,7 @@ class Manager(BaseTestingManager[Module]):
     >>> dataset = Dataset(...)
     >>> manager.test(dataset, ...)
     """
+    @override
     def test_step(self, x_test: Any, y_test: Any) -> dict[str, float]:
         """
         A single testing step

@@ -1,5 +1,5 @@
 from torchmanager_core import abc, torch, API_VERSION, Version, _raise
-from torchmanager_core.typing import Any, Callable, Generic, TypeVar
+from torchmanager_core.typing import Any, Callable, Generic, TypeVar, override
 
 
 MetricFn = TypeVar("MetricFn", bound=Callable[[Any, Any], torch.Tensor] | None)
@@ -36,6 +36,7 @@ class BaseMetric(torch.nn.Module, abc.ABC):
         else:
             return None
 
+    @override
     def __init__(self, target: str | None = None) -> None:
         """
         Constructor
@@ -49,6 +50,7 @@ class BaseMetric(torch.nn.Module, abc.ABC):
         self._results = []
         self._target = target
 
+    @override
     def __call__(self, input: Any, target: Any) -> torch.Tensor:
         # unpack input and target
         input = input[self._target] if self._target is not None and isinstance(input, dict) else input
@@ -64,6 +66,7 @@ class BaseMetric(torch.nn.Module, abc.ABC):
             self.__result = 0
         pass
 
+    @override
     @abc.abstractmethod
     def forward(self, input: Any, target: Any) -> torch.Tensor:
         """
@@ -100,6 +103,7 @@ class Metric(BaseMetric, Generic[MetricFn]):
     * implements: `torchmanager_core.protocols.Resulting`
     * Metric tensor is released from memory as soon as the result returned
     """
+    @override
     def __init__(self, metric_fn: MetricFn = None, target: str | None = None) -> None:
         """
         Constructor
@@ -111,6 +115,7 @@ class Metric(BaseMetric, Generic[MetricFn]):
         super().__init__(target=target)
         self._metric_fn = metric_fn
 
+    @override
     def forward(self, input: Any, target: Any) -> torch.Tensor:
         """
         Forward the current result method
@@ -136,9 +141,11 @@ class _WrappedMetric(Metric[WrappedMetricFn]):
         assert self._metric_fn is not None, _raise(AttributeError("Metric function is not given."))
         return self._metric_fn
 
+    @override
     def __init__(self, metric_fn: WrappedMetricFn, target: str | None = None) -> None:
         super().__init__(metric_fn, target)
 
+    @override
     @torch.no_grad()
     def forward(self, input: Any, target: Any) -> torch.Tensor:
         return self.wrapped_metric_fn(input, target)

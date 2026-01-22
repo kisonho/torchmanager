@@ -1,14 +1,14 @@
 from torchmanager_core import _raise
 from torchmanager_core.protocols import Frequency
-from torchmanager_core.typing import Any, Callable, TypeAlias
+from torchmanager_core.typing import Any, Callable, TypeAlias, override
 
-from .callback import Callback
+from .callback import BaseCallback
 
 PreCallbackFn: TypeAlias = Callable[[int], None]
 PostCallbackFn: TypeAlias = Callable[[int, dict[str, Any]], None]
 
 
-class LambdaCallback(Callback):
+class LambdaCallback(BaseCallback):
     """
     The callback for lambda functions
 
@@ -33,20 +33,24 @@ class LambdaCallback(Callback):
         assert f in [Frequency.BATCH, Frequency.EPOCH], _raise(TypeError(f"The frequency must be either `Frequency.BATCH` or `Frequency.EPOCH`, {f} is not supported."))
         self.__freq = f
 
+    @override
     def __init__(self, pre_fn: PreCallbackFn | None = None, post_fn: PostCallbackFn | None = None, *, freq: Frequency = Frequency.EPOCH) -> None:
         super().__init__()
         self.freq = freq
         self.pre_callback_fn = pre_fn
         self.post_callback_fn = post_fn
 
+    @override
     def on_batch_end(self, batch: int, summary: dict[str, float] = {}) -> None:
         if self.freq == Frequency.BATCH and self.post_callback_fn is not None:
             self.post_callback_fn(batch, summary)
 
+    @override
     def on_batch_start(self, batch: int) -> None:
         if self.freq == Frequency.BATCH and self.pre_callback_fn is not None:
             self.pre_callback_fn(batch)
 
+    @override
     def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: dict[str, float] | None = None) -> None:
         if self.freq == Frequency.EPOCH and self.post_callback_fn is not None:
             # add validation summary if exists
@@ -55,6 +59,7 @@ class LambdaCallback(Callback):
                 summary.update(val_summary)
             self.post_callback_fn(epoch, summary)
 
+    @override
     def on_epoch_start(self, epoch: int) -> None:
         if self.freq == Frequency.EPOCH and self.pre_callback_fn is not None:
             self.pre_callback_fn(epoch)

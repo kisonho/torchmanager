@@ -1,5 +1,5 @@
 from torchmanager_core import functional as F, torch, Version, _raise
-from torchmanager_core.typing import Any
+from torchmanager_core.typing import Any, override
 
 from .dice import Dice
 from .loss import Loss
@@ -11,7 +11,7 @@ class CrossEntropy(Loss):
 
     * extends: `.loss.Loss`
     """
-
+    @override
     def __init__(self, *args: Any, target: str | None = None, weight: float = 1, **kwargs: Any) -> None:
         loss_fn = torch.nn.CrossEntropyLoss(*args, **kwargs)
         super().__init__(loss_fn, target=target, weight=weight)
@@ -54,17 +54,20 @@ class DiceCE(CrossEntropy, Dice):
         assert value >= 0, _raise(ValueError(f"Dice lambda must be a non-negative number, got {value}."))
         self.__dice_lambda = value
 
+    @override
     def __init__(self, *args, ce_lambda: float = 1, dice_lambda: float = 1, smooth: int = 1, target: str | None = None, weight: float = 1, **kwargs) -> None:
         CrossEntropy.__init__(self, *args, target=target, weight=weight, **kwargs)
         Dice.__init__(self, smooth=smooth, target=target, weight=weight)
         self.ce_lambda = ce_lambda
         self.dice_lambda = dice_lambda
 
+    @override
     def convert(self, from_version: Version) -> None:
         if from_version < Version("v1.3"):
             self.ce_lambda = self._ce_lambda
             self.dice_lambda = self._dice_lambda
 
+    @override
     def forward(self, input: Any, target: Any) -> torch.Tensor:
         dice = Dice.forward(self, input, target)
         ce = CrossEntropy.forward(self, input, target)
@@ -97,6 +100,7 @@ class FocalCrossEntropy(Loss):
         assert value >= 0, _raise(ValueError(f"Alpha must be a non-negative number, got {value}."))
         self.__alpha = value
 
+    @override
     def __init__(self, alpha: float = 1, gamma: float = 1, calculate_average: bool = True, ignore_index: int = 255, **kwargs: Any):
         """
         Constructor
@@ -113,6 +117,7 @@ class FocalCrossEntropy(Loss):
         self.gamma = gamma
         self.ignore_index = ignore_index
 
+    @override
     def convert(self, from_version: Version) -> None:
         if from_version < Version("v1.3"):
             self.alpha = self._alpha  # type: ignore
@@ -120,6 +125,7 @@ class FocalCrossEntropy(Loss):
             self.calculate_average = self._calculate_average  # type: ignore
             self.ignore_index = self._ignore_index  # type: ignore
 
+    @override
     def forward(self, inputs: Any, targets: Any) -> torch.Tensor:
         # calculate loss
         ce_loss = F.cross_entropy(inputs, targets, reduction='none', ignore_index=self.ignore_index)
@@ -163,6 +169,7 @@ class KLDiv(Loss):
         assert value is None or value > 0, _raise(ValueError(f"A given temperature must be a positive number, got {value}."))
         self.__t = value
 
+    @override
     def __init__(self, *args: Any, replace_nan: bool = False, softmax_temperature: float | None = None, target: str | None = None, weight: float = 1, **kwargs: Any) -> None:
         """
         Constructor
@@ -178,6 +185,7 @@ class KLDiv(Loss):
         self.softmax_temperature = softmax_temperature
         self.replace_nan = replace_nan
 
+    @override
     def convert(self, from_version: Version) -> None:
         if from_version < Version("v1.1"):
             self.replace_nan = False
@@ -185,6 +193,7 @@ class KLDiv(Loss):
         elif from_version < Version("v1.3"):
             self.softmax_temperature = self._t
 
+    @override
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # softmax input and target
         if self.softmax_temperature is not None:

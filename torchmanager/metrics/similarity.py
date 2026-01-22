@@ -1,6 +1,6 @@
 import torch.nn.functional as F
 from torchmanager_core import torch, Version, _raise
-from torchmanager_core.typing import Callable
+from torchmanager_core.typing import Callable, override
 
 from .metric import Metric
 
@@ -32,6 +32,7 @@ class PSNR(Metric):
         assert value is None or value > 0, _raise(ValueError("Max value must be positive."))
         self.__max_value = value
 
+    @override
     def __init__(self, *, denormalize_fn: Callable[[torch.Tensor], torch.Tensor] | None = None, max_value: float | None = 1, target: str | None = None) -> None:
         """
         Constructor
@@ -45,6 +46,7 @@ class PSNR(Metric):
         self.denormalize_fn = denormalize_fn
         self.max_value = max_value
 
+    @override
     @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # denormalize input and target
@@ -83,6 +85,7 @@ class SSIM(Metric):
     def window_size(self) -> int:
         return self.window.shape[-1]
 
+    @override
     def __init__(self, channels: int, /, sigma: float = 1.5, window_size: int = 11, *, denormalize_fn: Callable[[torch.Tensor], torch.Tensor] | None = None, pixel_range: float = 255, target: str | None = None) -> None:
         """
         Constructor
@@ -105,11 +108,13 @@ class SSIM(Metric):
         self.denormalize_fn = denormalize_fn
         self.pixel_range = pixel_range
 
+    @override
     def convert(self, from_version: Version) -> None:
         if from_version < "1.3":
             self.denormalize_fn = None
             self.pixel_range = 255
 
+    @override
     @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # denormalize input and target
@@ -160,10 +165,12 @@ class MS_SSIM(SSIM):
     def scales(self) -> int:
         return len(self.weights)
 
+    @override
     def __init__(self, channels: int, /, sigma: float = 1.5, window_size: int = 11, *, denormalize_fn: Callable[[torch.Tensor], torch.Tensor] | None = None, pixel_range: float = 255, target: str | None = None, weights: list[float] = _DEFAULT_MS_SSIM_WEIGHTS) -> None:
         super().__init__(channels, sigma, window_size, denormalize_fn=denormalize_fn, pixel_range=pixel_range, target=target)
         self.weights = weights
 
+    @override
     @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # initialize ms_ssim

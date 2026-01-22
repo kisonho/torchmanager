@@ -1,5 +1,5 @@
 from torchmanager_core import abc, argparse, errors, json, os, shutil, view, _raise
-from torchmanager_core.typing import Any
+from torchmanager_core.typing import Any, Self, override
 
 from .basic import Configs
 
@@ -15,8 +15,9 @@ class JSONConfigs(Configs, abc.ABC):
     * extend: `Configs`
     * Abstract class
     """
+    @override
     @classmethod
-    def from_arguments(cls: type["JSONConfigs"], *arguments: str, parser: argparse.ArgumentParser = argparse.ArgumentParser(), show_summary: bool = True) -> "JSONConfigs":
+    def from_arguments(cls: type[Self], *arguments: str, parser: argparse.ArgumentParser = argparse.ArgumentParser(), show_summary: bool = True) -> Self:
         # get arguments
         fetched_parser = cls.get_arguments(parser=parser)
         if len(arguments) > 0:
@@ -26,7 +27,7 @@ class JSONConfigs(Configs, abc.ABC):
         return cls.from_json(configs.json, show_summary=show_summary)
 
     @classmethod
-    def from_json(cls: type["JSONConfigs"], json_path: str, /, *, show_summary: bool = True) -> "JSONConfigs":
+    def from_json(cls: type[Self], json_path: str, /, *, show_summary: bool = True) -> Self:
         """
         Load a `Configs` directly from a JSON file
 
@@ -85,6 +86,7 @@ class JSONConfigs(Configs, abc.ABC):
             view.logger.info("--------------------------------")
         return configs
 
+    @override
     @staticmethod
     def get_arguments(parser: argparse.ArgumentParser = argparse.ArgumentParser()) -> argparse.ArgumentParser:
         """

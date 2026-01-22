@@ -1,4 +1,4 @@
-from .callback import Callback, FrequencyCallback, MultiCallbacks
+from .callback import BaseCallback, FrequencyCallback, MultiCallbacks
 from .ckpt import BestCheckpoint, LastCheckpoint, MonitorType
 from .dynamic import DynamicWeight, LambdaDynamicWeight
 from .early_stop import EarlyStop
@@ -6,6 +6,8 @@ from .functional import LambdaCallback, on_batch_end, on_batch_start, on_epoch_e
 from .lr import LrSchedueler
 from .progress import ProgressBar
 from torchmanager_core.protocols import Frequency
+
+Callback = BaseCallback
 Checkpoint = LastCheckpoint
 
 try:

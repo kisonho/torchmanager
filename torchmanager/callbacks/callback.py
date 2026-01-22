@@ -1,9 +1,9 @@
 from torchmanager_core import abc, torch
 from torchmanager_core.protocols import Frequency
-from torchmanager_core.typing import Any, Iterator
+from torchmanager_core.typing import Any, Iterator, override
 
 
-class Callback:
+class BaseCallback:
     """An empty basic training callback"""
 
     def on_batch_end(self, batch: int, summary: dict[str, float] = {}) -> None:
@@ -59,7 +59,7 @@ class Callback:
         pass
 
 
-class FrequencyCallback(Callback, abc.ABC):
+class FrequencyCallback(BaseCallback, abc.ABC):
     """
     A callback with frequency control
 
@@ -89,6 +89,7 @@ class FrequencyCallback(Callback, abc.ABC):
     def freq(self) -> Frequency:
         return self.__freq
 
+    @override
     def __init__(self, freq: Frequency = Frequency.EPOCH, initial_step: int = 0) -> None:
         """
         Constructor
@@ -110,28 +111,33 @@ class FrequencyCallback(Callback, abc.ABC):
         """
         pass
 
+    @override
     def on_batch_end(self, batch: int, summary: dict[str, float] = {}) -> None:
         if self.freq == Frequency.BATCH:
             result = self.step(summary)
             self._update(result)
             self.current_step += 1
 
+    @override
     def on_batch_start(self, batch: int) -> None:
         if self.freq == Frequency.BATCH_START:
             result = self.step()
             self._update(result)
             self.current_step += 1
 
+    @override
     def on_train_start(self, initial_epoch: int = 0) -> None:
         if self.freq == Frequency.EPOCH or self.freq == Frequency.EPOCH_START:
             self.current_step = initial_epoch
 
+    @override
     def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: dict[str, float] | None = None) -> None:
         if self.freq == Frequency.EPOCH:
             result = self.step(summary, val_summary)
             self._update(result)
             self.current_step += 1
 
+    @override
     def on_epoch_start(self, epoch: int) -> None:
         if self.freq == Frequency.EPOCH_START:
             result = self.step()
@@ -151,7 +157,7 @@ class FrequencyCallback(Callback, abc.ABC):
         return NotImplemented
 
 
-class MultiCallbacks(Callback):
+class MultiCallbacks(BaseCallback):
     """
     A callback that contains multiple callbacks
 
@@ -160,9 +166,10 @@ class MultiCallbacks(Callback):
     - Properties:
         - callbacks_list: A `list` of callbacks in `Callback`
     """
-    callbacks_list: list[Callback]
+    callbacks_list: list[BaseCallback]
 
-    def __init__(self, *callbacks: Callback) -> None:
+    @override
+    def __init__(self, *callbacks: BaseCallback) -> None:
         """
         Constructor
 
@@ -172,16 +179,16 @@ class MultiCallbacks(Callback):
         super().__init__()
         self.callbacks_list = list(callbacks)
 
-    def __getitem__(self, index: int) -> Callback:
+    def __getitem__(self, index: int) -> BaseCallback:
         return self.callbacks_list[index]
 
-    def __iter__(self) -> Iterator[Callback]:
+    def __iter__(self) -> Iterator[BaseCallback]:
         return iter(self.callbacks_list)
 
     def __len__(self) -> int:
         return len(self.callbacks_list)
 
-    def append(self, callback: Callback) -> None:
+    def append(self, callback: BaseCallback) -> None:
         """
         Append a callback to the list
 
@@ -190,31 +197,37 @@ class MultiCallbacks(Callback):
         """
         self.callbacks_list.append(callback)
 
+    @override
     def on_batch_end(self, batch: int, summary: dict[str, float] = {}) -> None:
         for callback in self.callbacks_list:
             callback.on_batch_end(batch, summary)
 
+    @override
     def on_batch_start(self, batch: int) -> None:
         for callback in self.callbacks_list:
             callback.on_batch_start(batch)
 
+    @override
     def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: dict[str, float] | None = None) -> None:
         for callback in self.callbacks_list:
             callback.on_epoch_end(epoch, summary, val_summary)
 
+    @override
     def on_epoch_start(self, epoch: int) -> None:
         for callback in self.callbacks_list:
             callback.on_epoch_start(epoch)
 
+    @override
     def on_train_end(self, model: torch.nn.Module) -> None:
         for callback in self.callbacks_list:
             callback.on_train_end(model)
 
+    @override
     def on_train_start(self, initial_epoch: int = 0) -> None:
         for callback in self.callbacks_list:
             callback.on_train_start(initial_epoch)
 
-    def pop(self, index: int = -1) -> Callback:
+    def pop(self, index: int = -1) -> BaseCallback:
         """
         Remove and return the callback at the index
 

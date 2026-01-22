@@ -1,4 +1,5 @@
 from torchmanager_core import Version, abc, torch, _raise
+from torchmanager_core.typing import override
 
 from .metric import Metric
 
@@ -17,6 +18,7 @@ class BinaryConfusionMetric(Metric, abc.ABC):
     _dim: int
     _eps: float
 
+    @override
     def __init__(self, dim: int = 1, *, class_index: int = 1, eps: float=1e-7, target: str | None = None):
         """
         Constructor
@@ -32,9 +34,11 @@ class BinaryConfusionMetric(Metric, abc.ABC):
         self._dim = dim
         self._eps = eps
 
+    @override
     def convert(self, from_version: Version) -> None:
         return super().convert(from_version)
 
+    @override
     @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # argmax input
@@ -83,10 +87,12 @@ class ConfusionMatrix(Metric):
         return self.__num_classes
 
     @property
+    @override
     def result(self) -> torch.Tensor:
         return torch.tensor(torch.nan)
 
     @property
+    @override
     def results(self) -> torch.Tensor:
         if len(self._results) == 0:
             return torch.zeros((self.num_classes, self.num_classes))
@@ -94,6 +100,7 @@ class ConfusionMatrix(Metric):
             conf_mat = torch.cat(self._results, dim=0).sum(dim=0)
             return conf_mat
 
+    @override
     def __init__(self, num_classes: int, /, *, target: str | None = None) -> None:
         """
         Constructor
@@ -106,6 +113,7 @@ class ConfusionMatrix(Metric):
         assert num_classes > 0, _raise(ValueError(f"The number of classes must be a positive number, got {num_classes}."))
         self.__num_classes = num_classes
 
+    @override
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # initialize metrics
         conf_mat = torch.zeros((self.num_classes, self.num_classes), device=input.device)

@@ -1,5 +1,5 @@
 from torch.optim.optimizer import Optimizer
-from torchmanager_core import checkpoint, devices, errors, torch, Version, API_VERSION
+from torchmanager_core import checkpoint, copy, devices, errors, torch, Version, API_VERSION
 from torchmanager_core.protocols import Resulting
 from torchmanager_core.typing import Any, Collection, Generic, Mapping, Module, OrderedDict, Self, cast, overload
 
@@ -80,8 +80,6 @@ class BaseManager(Generic[Module]):
         """The `torchmanager.losses.Loss` controlled by this manager without `torch.nn.DataParallel` wrap"""
         if self.loss_fn is None:
             return self.loss_fn
-        elif isinstance(self.loss_fn, MultiLosses):
-            return MultiLosses([cast(Loss, l.module) if isinstance(l, torch.nn.parallel.DataParallel) else cast(Loss, l) for l in self.loss_fn.losses])
         elif isinstance(self.loss_fn, ParallelLoss):
             return self.loss_fn.module
         elif isinstance(self.loss_fn._metric_fn, torch.nn.parallel.DataParallel):
@@ -112,7 +110,7 @@ class BaseManager(Generic[Module]):
 
         # initialize loss
         if isinstance(loss_fn, dict):
-            loss_fn_mapping: dict[str, Loss] = {f"{name}_loss": fn for name, fn in loss_fn.items()}
+            loss_fn_mapping = {f"{name}_loss": copy.deepcopy(fn) for name, fn in loss_fn.items()}
             self.metric_fns.update(loss_fn_mapping)
             loss_fn = MultiLosses([l for l in loss_fn_mapping.values()])
         self.loss_fn = loss_fn
@@ -183,22 +181,11 @@ class BaseManager(Generic[Module]):
         - Returns: A `bool` flag of if use multi GPUs
         """
         # multi gpus support for loss
-        if isinstance(self.loss_fn, MultiLosses):
-            # initialize
-            paralleled_loss_fns: list[ParallelLoss | Loss] = []
-
-            # loop for each loss
-            for l in self.loss_fn.losses:
-                l, use_multi_gpus = devices.data_parallel(cast(Loss, l), devices=target_devices, parallel_type=ParallelLoss)
-                assert isinstance(l, ParallelLoss) or isinstance(l, Loss), errors._raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
-                paralleled_loss_fns.append(l)
-
-            # rewrap to parallel losses
-            self.loss_fn = MultiLosses(paralleled_loss_fns, self.loss_fn._target, self.loss_fn.weight)
-        elif self.loss_fn is not None:
+        if self.loss_fn is not None:
             assert isinstance(self.raw_loss_fn, Loss), errors._raise(TypeError("The loss function is not a valid `Loss` object."))
             paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.raw_loss_fn, devices=target_devices, parallel_type=ParallelLoss)
-        self.loss_fn = paralleled_loss_fn
+            assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), errors._raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
+            self.loss_fn = paralleled_loss_fn
 
         # multi gpus support for model
         self.model, use_multi_gpus = devices.data_parallel(self.raw_model, devices=target_devices)

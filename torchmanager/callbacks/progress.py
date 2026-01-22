@@ -1,9 +1,10 @@
 from torchmanager_core import torch, view, _raise
+from torchmanager_core.typing import override
 
-from .callback import Callback
+from .callback import BaseCallback
 
 
-class ProgressBar(Callback):
+class ProgressBar(BaseCallback):
     """
     A callback to display a progress bar.
 
@@ -16,6 +17,7 @@ class ProgressBar(Callback):
     progress_bar: view.tqdm | None
     verbose_type: view.VerboseType
 
+    @override
     def __init__(self, iterations_per_epoch: int, *, verbose_type: view.VerboseType = view.VerboseType.ALL) -> None:
         """
         Constructor
@@ -28,16 +30,19 @@ class ProgressBar(Callback):
         self.progress_bar = None
         self.verbose_type = verbose_type
 
+    @override
     def on_epoch_start(self, epoch: int) -> None:
         # create progress bar
         self.progress_bar = view.tqdm(total=self.iterations_per_epoch)
 
+    @override
     def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: dict[str, float] | None = None) -> None:
         # close progress bar
         assert self.progress_bar is not None, _raise(TypeError("Progress bar is not initialized."))
         self.progress_bar.close()
         self.progress_bar = None
 
+    @override
     def on_batch_end(self, batch: int, summary: dict[str, float] = {}) -> None:# initialize progress summary
         # switch verbose type
         if self.verbose_type == view.VerboseType.LOSS:
@@ -54,6 +59,7 @@ class ProgressBar(Callback):
         self.progress_bar.set_postfix(progress_summary)
         self.progress_bar.update()
 
+    @override
     def on_train_end(self, model: torch.nn.Module) -> None:
         # close progress bar
         if self.progress_bar is not None:

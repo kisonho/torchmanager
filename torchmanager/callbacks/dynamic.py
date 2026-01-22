@@ -1,6 +1,6 @@
 from torchmanager_core import abc
 from torchmanager_core.protocols import Frequency, SummaryWriteble, Weighted
-from torchmanager_core.typing import Any, Callable, Generic, SupportsFloat, TypeVar
+from torchmanager_core.typing import Any, Callable, Generic, SupportsFloat, TypeVar, override
 
 from .callback import FrequencyCallback
 
@@ -30,6 +30,7 @@ class DynamicWeight(FrequencyCallback, abc.ABC, Generic[W]):
     def _writer(self) -> SummaryWriteble | None:
         return self.__writer
 
+    @override
     def __init__(self, weighted: W, freq: Frequency = Frequency.EPOCH, writer: SummaryWriteble | None = None, name: str | None = None) -> None:
         '''
         Constructor
@@ -45,9 +46,11 @@ class DynamicWeight(FrequencyCallback, abc.ABC, Generic[W]):
         self.__writer = writer
         self.current_step = 0
 
+    @override
     def _update(self, result: Any) -> None:
         self._weighted.weight = result
 
+    @override
     def on_epoch_end(self, epoch: int, *args: Any, **kwargs: Any) -> None:
         # write results to Tensorboard
         if self._writer is not None and isinstance(self._weighted.weight, SupportsFloat):
@@ -88,9 +91,11 @@ class LambdaDynamicWeight(DynamicWeight[W], Generic[W]):
     @property
     def _lambda_fn(self) -> Callable[[int], Any]: return self.__lambda_fn
 
+    @override
     def __init__(self, fn: Callable[[int], Any], weighted: W, freq: Frequency = Frequency.EPOCH, writer: SummaryWriteble | None = None, name: str | None = None) -> None:
         super().__init__(weighted, freq, writer, name)
         self.__lambda_fn = fn
 
+    @override
     def step(self, *args: Any, **kwargs: Any) -> Any:
         return self._lambda_fn(self.current_step)

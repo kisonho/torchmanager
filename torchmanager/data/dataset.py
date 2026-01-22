@@ -1,6 +1,6 @@
 from torch.utils.data import Dataset as _Dataset, DataLoader, Sampler
 from torchmanager_core import abc, devices, errors, math, os, torch, _raise
-from torchmanager_core.typing import Any, Callable, Iterable, Iterator, Sequence, TypeVar, cast
+from torchmanager_core.typing import Any, Callable, Iterable, Iterator, Sequence, TypeVar, cast, override
 
 D = TypeVar("D", bound=DataLoader)
 T = TypeVar("T")
@@ -72,6 +72,7 @@ class Dataset(_Dataset[T], abc.ABC):
         else:
             return math.ceil(self.unbatched_len / self.batch_size)
 
+    @override
     def __init__(self, batch_size: int, /, *, device: torch.device = devices.CPU, drop_last: bool = False, num_workers: int | None = os.cpu_count(), sampler: Sampler[list[T]] | Iterable[list[T]] | None = None, shuffle: bool = False) -> None:
         """
         Constructor
@@ -104,6 +105,7 @@ class Dataset(_Dataset[T], abc.ABC):
                 return True
         return False
 
+    @override
     @abc.abstractmethod
     def __getitem__(self, index: Any) -> Any:
         """
@@ -167,6 +169,7 @@ class PreprocessedDataset(Dataset[T], abc.ABC):
     def transforms(self) -> Iterable[Callable[..., Any]]:
         return NotImplemented
 
+    @override
     def __getitem__(self, index: Any) -> Any:
         # load data
         data = self.load(index)

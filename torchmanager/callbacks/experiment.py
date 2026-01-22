@@ -1,5 +1,5 @@
 from torchmanager_core import os, view, _raise
-from torchmanager_core.typing import Generic, TypeVar
+from torchmanager_core.typing import Generic, TypeVar, override
 from torchmanager_core.protocols import MonitorType, StateDictLoadable
 
 from .callback import MultiCallbacks
@@ -16,6 +16,7 @@ class Experiment(MultiCallbacks, Generic[T]):
     * extends: `.callback.Callback`
     * requires: `tensorboard` package
     """
+    @override
     def __init__(self, experiment: str, model: T, monitors: dict[str, MonitorType] | list[str] = {}, **kwargs) -> None:
         """
         Constructor
