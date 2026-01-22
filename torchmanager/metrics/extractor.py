@@ -1,6 +1,6 @@
 from torch.nn.modules.module import Module
-from torchmanager_core import abc, torch, view, _raise
-from torchmanager_core.typing import Any, Callable, Generic, TypeVar, override
+from torchmanager_core import abc, functional as F, torch, view, _raise
+from torchmanager_core.typing import Any, Callable, Generic, TypeVar
 from torchmanager_core.version import Version
 
 from .metric import Metric
@@ -28,7 +28,6 @@ class FeatureMetric(Metric[M], Generic[M, Module]):
     feature_extractor: Module
     """A `Module` to extract the features"""
 
-    @override
     def __init__(self, metric_fn: M = None, feature_extractor: Module = None, *, target: str | None = None) -> None:
         """
         Constructor
@@ -40,7 +39,6 @@ class FeatureMetric(Metric[M], Generic[M, Module]):
         super().__init__(metric_fn, target=target)
         self.feature_extractor = feature_extractor
 
-    @override
     def __call__(self, input: Any, target: Any) -> torch.Tensor:
         # unpack input and target
         input = input[self._target] if self._target is not None and isinstance(input, dict) else input
@@ -70,7 +68,6 @@ class FeatureMetric(Metric[M], Generic[M, Module]):
         else:
             return x
 
-    @override
     def train(self, mode: bool = True):
         self.training = mode
         return self
@@ -94,7 +91,6 @@ class AccumulativeFeatureMetric(FeatureMetric[M, Module], abc.ABC):
     features_real: torch.Tensor | None
 
     @property
-    @override
     def result(self) -> torch.Tensor:
         """The final KID score"""
         if self.accumulative and self.results is not None:
@@ -102,7 +98,6 @@ class AccumulativeFeatureMetric(FeatureMetric[M, Module], abc.ABC):
         else:
             return super().result
 
-    @override
     def __init__(self, metric_fn: M = None, feature_extractor: Module = None, *, accumulative: bool = False, target: str | None = None) -> None:
         super().__init__(metric_fn, feature_extractor, target=target)
         self.accumulative = accumulative
@@ -118,13 +113,11 @@ class AccumulativeFeatureMetric(FeatureMetric[M, Module], abc.ABC):
         """
         ...
 
-    @override
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         self.features_fake = torch.cat([self.features_fake, input], dim=0) if self.features_fake is not None and self.accumulative else input
         self.features_real = torch.cat([self.features_real, target], dim=0) if self.features_real is not None and self.accumulative else target
         return self.compute_score()
 
-    @override
     def reset(self) -> None:
         # Reset accumulated features
         self.features_real = None
@@ -139,7 +132,6 @@ class ExtractorScore(FeatureMetric[M, Module]):
     * Extends: `FeatureExtractorMetric`
     * Generic class of `Module`
     """
-    @override
     @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         scores = input.softmax(1).mean(0)
@@ -161,7 +153,6 @@ class FID(AccumulativeFeatureMetric[None, Module]):
     use_linalg: bool
     """A `bool` flag of if use `scipy.linalg` package"""
 
-    @override
     def __init__(self, feature_extractor: Module = None, *, accumulative: bool = False, target: str | None = None, use_linalg: bool = True) -> None:
         """
         Constructor
@@ -175,7 +166,6 @@ class FID(AccumulativeFeatureMetric[None, Module]):
         super().__init__(feature_extractor=feature_extractor, accumulative=accumulative, target=target)
         self.use_linalg = use_linalg
 
-    @override
     def convert(self, from_version: Version) -> None:
         if from_version < Version("v1.4"):
             self.accumulative = False
@@ -183,7 +173,6 @@ class FID(AccumulativeFeatureMetric[None, Module]):
             self.features_real = None
         super().convert(from_version)
 
-    @override
     def compute_score(self) -> torch.Tensor:
         # check if features are accumulated
         if self.features_real is None or self.features_fake is None:
@@ -210,6 +199,9 @@ class FID(AccumulativeFeatureMetric[None, Module]):
         # Calculate the squared Euclidean distance between the means
         return diff @ diff + torch.trace(sigma_real + sigma_gen - 2 * sigma)
 
+    def reset(self) -> None:
+        super().reset()
+
 
 class KID(AccumulativeFeatureMetric[None, Module]):
     """
@@ -227,7 +219,6 @@ class KID(AccumulativeFeatureMetric[None, Module]):
     c: float
     degree: int
 
-    @override
     def __init__(self, feature_extractor: Module = None, *, accumulative: bool = False, c: float = 1.0, degree: int = 3, scale: float = 100, target: str | None = None) -> None:
         """
         Constructor
@@ -245,7 +236,6 @@ class KID(AccumulativeFeatureMetric[None, Module]):
         self.degree = degree
         self.scale = scale
 
-    @override
     def compute_score(self) -> torch.Tensor:
         # check if features are accumulated
         if self.features_real is None or self.features_fake is None:

@@ -1,6 +1,6 @@
 from torchmanager_core import torch
 from torchmanager_core.protocols import Reduction
-from torchmanager_core.typing import Any, Callable, TypeVar, override
+from torchmanager_core.typing import Any, Callable, TypeVar
 
 from .loss import Loss
 
@@ -18,7 +18,6 @@ class _ReductableLoss(Loss[LossFn]):
     reduction: Reduction
     replace_nan: bool
 
-    @override
     def __init__(self, loss_fn: LossFn = None, *, reduction: Reduction = Reduction.MEAN, replace_nan: bool = False, target: str | None = None, weight: float = 1) -> None:
         """
         Constructor
@@ -33,7 +32,6 @@ class _ReductableLoss(Loss[LossFn]):
         self.reduction = reduction
         self.replace_nan = replace_nan
 
-    @override
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # calculate mse loss
         loss = super().forward(input, target)
@@ -56,7 +54,6 @@ class MAE(_ReductableLoss[torch.nn.L1Loss]):
     """
     The MSE loss
     """
-    @override
     def __init__(self, *, reduction: Reduction = Reduction.MEAN, replace_nan: bool = False, target: str | None = None, weight: float = 1) -> None:
         """
         Constructor
@@ -75,7 +72,6 @@ class MSE(_ReductableLoss[torch.nn.MSELoss]):
     """
     The MSE loss
     """
-    @override
     def __init__(self, *, reduction: Reduction = Reduction.MEAN, replace_nan: bool = False, target: str | None = None, weight: float = 1) -> None:
         """
         Constructor

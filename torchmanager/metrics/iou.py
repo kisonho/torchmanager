@@ -1,5 +1,4 @@
 from torchmanager_core import torch, _raise
-from torchmanager_core.typing import override
 
 from .conf_mat import ConfusionMatrix
 from .metric import Metric
@@ -11,11 +10,10 @@ class InstanceIoU(ConfusionMatrix):
 
     * extends: `.conf_met.ConfusionMetrics`
     """
-    @override
+
     def __init__(self, num_classes: int, /, *, target: str | None = None) -> None:
         super().__init__(num_classes, target=target)
 
-    @override
     @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # argmax for input
@@ -34,7 +32,6 @@ class MeanIoU(Metric):
     _smooth: float
     _threshold: float
 
-    @override
     def __init__(self, dim: int = 1, smooth: float = 1e-4, threshold: float = 0, *, target: str | None = None) -> None:
         """
         Constructor
@@ -52,7 +49,6 @@ class MeanIoU(Metric):
         self._smooth = smooth
         self._threshold = threshold
 
-    @override
     @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # calculate predictions from logits

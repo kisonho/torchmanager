@@ -5,7 +5,7 @@ from torch.utils.data.distributed import DistributedSampler
 from torchmanager_core import devices, errors, math, torch, view
 from torchmanager_core.typing import Any, Collection, Module, cast
 
-from .callbacks import BaseCallback, ProgressBar
+from .callbacks import Callback, ProgressBar
 from .data import Dataset
 from .training import Manager as BaseTrainingManager
 
@@ -119,7 +119,7 @@ class DistributedTrainingManager(BaseTrainingManager[Module]):
         progress_bar.close()
         return self.summary
 
-    def fit(self, training_dataset: DataLoader[Any] | Dataset[Any], /, epochs: int | None = None, val_dataset: DataLoader[Any] | Dataset[Any] | None = None, callbacks_list: list[BaseCallback] = [], *args, iterations: int | None = None, initial_epoch: int | None = None, return_summary: bool = False, device: torch.device | list[torch.device] | None = None, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, backend: str | None = None, init_method: str | None = None, world_size: int | None = None, rank: int | None = None, **kwargs) -> Module | tuple[Module, dict[str, float]]:
+    def fit(self, training_dataset: DataLoader[Any] | Dataset[Any], /, epochs: int | None = None, val_dataset: DataLoader[Any] | Dataset[Any] | None = None, callbacks_list: list[Callback] = [], *args, iterations: int | None = None, initial_epoch: int | None = None, return_summary: bool = False, device: torch.device | list[torch.device] | None = None, show_verbose: bool = False, verbose_type: view.VerboseType = view.VerboseType.ALL, backend: str | None = None, init_method: str | None = None, world_size: int | None = None, rank: int | None = None, **kwargs) -> Module | tuple[Module, dict[str, float]]:
         dataset_len = training_dataset.batched_len if isinstance(training_dataset, Dataset) else len(training_dataset)
         assert self.compiled is True, errors._raise(ValueError("Manager has not yet been compiled. Either loss_fn or optimizer, or both, are not given."))
 

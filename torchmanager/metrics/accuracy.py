@@ -1,6 +1,5 @@
 from torchmanager_core import torch, Version, _raise
 from torchmanager_core.protocols import Reduction
-from torchmanager_core.typing import override
 
 from .conf_mat import BinaryConfusionMetric
 from .metric import Metric
@@ -18,17 +17,14 @@ class Accuracy(Metric):
     """
     reduction: Reduction
 
-    @override
     def __init__(self, *, reduction: Reduction = Reduction.MEAN, target: str | None = None) -> None:
         super().__init__(target=target)
         self.reduction = reduction
 
-    @override
     def convert(self, from_version: Version) -> None:
         if from_version < Version("v1.1"):
             self.reduction = Reduction.MEAN
 
-    @override
     @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         if self.reduction == Reduction.MEAN:
@@ -62,7 +58,6 @@ class SparseCategoricalAccuracy(Accuracy):
         assert value >= 0, _raise(ValueError(f"Dim must be a non-negative number, got {value}."))
         self.__dim = value
 
-    @override
     def __init__(self, dim: int = -1, *, target: str | None = None) -> None:
         """
         Constructor
@@ -74,13 +69,11 @@ class SparseCategoricalAccuracy(Accuracy):
         super().__init__(target=target)
         self.dim = dim
 
-    @override
     def convert(self, from_version: Version) -> None:
         super().convert(from_version)
         if from_version < Version("v1.3"):
             self.dim = self._dim
 
-    @override
     @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         input = input.argmax(dim=self._dim) if input.shape[self._dim] > 1 else input > 0
@@ -93,7 +86,7 @@ class CategoricalAccuracy(SparseCategoricalAccuracy):
 
     * extends: `SparseCategoricalAccuracy`
     """
-    @override
+
     @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         target = target.argmax(dim=self.dim)
@@ -128,7 +121,6 @@ class Dice(Metric):
         assert value > 0, _raise(ValueError(f"Num classes must be a positive number, got {value}."))
         self.__num_classes = value
 
-    @override
     def __init__(self, num_classes: int, /, dim: int = 1, *, eps: float = 1e-7, target: str | None = None) -> None:
         """
         Constructor
@@ -144,12 +136,10 @@ class Dice(Metric):
         self.num_classes = num_classes
         self._eps = eps
 
-    @override
     def convert(self, from_version: Version) -> None:
         if from_version < Version("v1.3"):
             self.dim = self._dim
 
-    @override
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # Convert target to one-hot encoding
         input_dims = [s-1 for s in range(self.dim+1, len(input.shape))]
@@ -177,7 +167,7 @@ class Dice(Metric):
 
 class F1(BinaryConfusionMetric):
     """The F1 metrics"""
-    @override
+
     def forward_metric(self, tp: torch.Tensor, tn: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
         # calculate precision and recall
         precision = tp / (tp + fp + self._eps)
@@ -199,7 +189,6 @@ class MAE(Metric):
     """
     reduction: Reduction
 
-    @override
     def __init__(self, *, reduction: Reduction = Reduction.MEAN, target: str | None = None) -> None:
         """
         Constructor
@@ -211,7 +200,6 @@ class MAE(Metric):
         super().__init__(target=target)
         self.reduction = reduction
 
-    @override
     @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # calculate MAE
@@ -236,7 +224,6 @@ class PartialDice(Dice):
     """
     class_idx: int
 
-    @override
     def __init__(self, c: int, /, dim: int = 1, *, eps: float = 1e-7, target:str | None = None):
         """
         Constructor
@@ -250,7 +237,6 @@ class PartialDice(Dice):
         super().__init__(dim, eps=eps, target=target)
         self.class_idx = c
 
-    @override
     @torch.no_grad()
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         input = input.argmax(self.dim)
@@ -263,7 +249,7 @@ class PartialDice(Dice):
 
 class Precision(BinaryConfusionMetric):
     """The Precision metrics"""
-    @override
+
     def forward_metric(self, tp: torch.Tensor, tn: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
         precision = tp / (tp + fp + self._eps)
         return precision.mean()
@@ -271,7 +257,7 @@ class Precision(BinaryConfusionMetric):
 
 class Recall(BinaryConfusionMetric):
     """The Recall metrics"""
-    @override
+
     def forward_metric(self, tp: torch.Tensor, tn: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
         recall = tp / (tp + fn + self._eps)
         return recall.mean()

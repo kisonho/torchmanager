@@ -1,5 +1,5 @@
 from torchmanager_core import abc, devices, torch, _raise
-from torchmanager_core.typing import Any, Callable, Generic, Self, TypeVar, override
+from torchmanager_core.typing import Any, Callable, Generic, Self, TypeVar
 
 from .protocols import BaseMetric, Metric
 
@@ -30,7 +30,6 @@ class BaseLoss(BaseMetric, abc.ABC):
         assert w >= 0, f"Weight must be a non-negative number, got {w}."
         self.__weight = w
 
-    @override
     def __init__(self, target: str | None = None, weight: float = 1) -> None:
         """
         Constructor
@@ -42,14 +41,12 @@ class BaseLoss(BaseMetric, abc.ABC):
         super().__init__(target=target)
         self.weight = weight
 
-    @override
     def __call__(self, input: Any, target: Any) -> torch.Tensor:
         m: torch.Tensor = super().__call__(input, target) * self.weight
         self._results[-1] *= self.weight
         assert m.numel() == 1, _raise(TypeError(f"The returned loss must be a scalar tensor, got shape {m.shape}"))
         return m
 
-    @override
     @abc.abstractmethod
     def forward(self, input: Any, target: Any) -> torch.Tensor:
         ...

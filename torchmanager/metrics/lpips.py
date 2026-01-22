@@ -1,5 +1,5 @@
 from torchmanager_core import functional as F, torch, _raise
-from torchmanager_core.typing import Enum, override
+from torchmanager_core.typing import Enum, Protocol
 
 from .extractor import FeatureMetric
 
@@ -95,16 +95,13 @@ class LPIPSNetType(Enum):
 class _LPIPSModule(torch.nn.Module):
     slices: torch.nn.ModuleList
 
-    @override
     def __init__(self, slices: torch.nn.ModuleList) -> None:
         super().__init__()
         self.slices = slices
 
-    @override
     def __call__(self, x: torch.Tensor) -> list[torch.Tensor]:
         return super().__call__(x)
 
-    @override
     def forward(self, x: torch.Tensor) -> list[torch.Tensor]:
         # initialize output
         y: list[torch.Tensor] = []
@@ -119,7 +116,6 @@ class _LPIPSModule(torch.nn.Module):
 
 class LPIPS(FeatureMetric[None, _LPIPSModule | None]):
     """The LPIPS metric"""
-    @override
     def __init__(self, feature_extractor: torch.nn.Sequential | None = None, net_type: LPIPSNetType | None = None, *, target: str | None = None) -> None:
         # check extractor and net type
         if feature_extractor is None:
@@ -134,7 +130,6 @@ class LPIPS(FeatureMetric[None, _LPIPSModule | None]):
         # initialize feature metric
         super().__init__(feature_extractor=lpips_module, target=target)
 
-    @override
     @torch.no_grad()
     def forward(self, input: list[torch.Tensor], target: list[torch.Tensor]) -> torch.Tensor:
         # Compute LPIPS: per-layer channel-normalized L2, spatially averaged, summed over layers

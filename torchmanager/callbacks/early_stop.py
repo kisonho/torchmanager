@@ -1,10 +1,9 @@
 from torchmanager_core import errors, sys
-from torchmanager_core.typing import override
 
-from .ckpt import BaseCallback, MonitorType
+from .ckpt import Callback, MonitorType
 
 
-class EarlyStop(BaseCallback):
+class EarlyStop(Callback):
     '''
     The early stop callback that raises `StopTraining` error during the training if monitored metric not improved for several steps
 
@@ -22,7 +21,6 @@ class EarlyStop(BaseCallback):
     def _metrics(self) -> list[float]:
         return self.__metrics
 
-    @override
     def __init__(self, monitor: str, monitor_type: MonitorType = MonitorType.MAX, steps: int = 10) -> None:
         super().__init__()
         self.__metrics = [sys.float_info.min if monitor_type == MonitorType.MAX else sys.float_info.max]
@@ -30,7 +28,6 @@ class EarlyStop(BaseCallback):
         self.monitor_type = monitor_type
         self.steps = steps
 
-    @override
     def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: dict[str, float] | None = None) -> None:
         # load monitoring value
         summary = val_summary if val_summary is not None else summary

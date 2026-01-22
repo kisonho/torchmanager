@@ -2,14 +2,14 @@ from torch.optim.optimizer import Optimizer
 from torchmanager_core import os, torch, view, _raise
 from torchmanager_core.checkpoint import Checkpoint as Ckpt
 from torchmanager_core.protocols import CkptConvertable, ModelContainer, MonitorType, StateDictLoadable
-from torchmanager_core.typing import Any, Generic, TypeVar, overload, override
+from torchmanager_core.typing import Any, Generic, TypeVar, overload
 
-from .callback import BaseCallback
+from .callback import Callback
 
 CKPT = TypeVar('CKPT', bound=StateDictLoadable)
 
 
-class _Checkpoint(BaseCallback, Generic[CKPT]):
+class _Checkpoint(Callback, Generic[CKPT]):
     """
     The callback to save the last checkpoint during training
 
@@ -41,7 +41,6 @@ class _Checkpoint(BaseCallback, Generic[CKPT]):
     def __init__(self, model: CKPT, ckpt_path: str, *, last_epoch: int = 0, optimizer: Optimizer | None = None, loss_fn: StateDictLoadable | None = None, metrics: dict[str, StateDictLoadable] | None = None, save_weights_only: bool = False) -> None:
         ...
 
-    @override
     def __init__(self, model: CKPT, ckpt_path: str, **kwargs: Any) -> None:
         """
         Constructor
@@ -55,7 +54,6 @@ class _Checkpoint(BaseCallback, Generic[CKPT]):
         self.__checkpoint = model.to_checkpoint() if isinstance(model, CkptConvertable) else Ckpt(model, **kwargs)
         self.ckpt_path = os.path.normpath(ckpt_path)
 
-    @override
     def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: dict[str, float] | None = None) -> None:
         self.checkpoint.last_epoch = epoch
         self.checkpoint.save(epoch, self.ckpt_path)
@@ -89,12 +87,10 @@ class LastCheckpoint(_Checkpoint[CKPT]):
     def __init__(self, model: CKPT, ckpt_path: str, freq: int = 1, *, last_epoch: int = 0, optimizer: Optimizer | None = None, loss_fn: StateDictLoadable | None = None, metrics: dict[str, StateDictLoadable] | None = None, save_weights_only: bool = False) -> None:
         ...
 
-    @override
     def __init__(self, model: CKPT, ckpt_path: str, freq: int = 1, **kwargs: Any) -> None:
         super().__init__(model, ckpt_path, **kwargs)
         self.freq = freq
 
-    @override
     def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: dict[str, float] | None = None) -> None:
         if epoch % self.freq == 0:
             super().on_epoch_end(epoch, summary, val_summary)
@@ -130,7 +126,6 @@ class BestCheckpoint(_Checkpoint[CKPT]):
     def __init__(self, monitor: str, model: CKPT, ckpt_path: str, *, load_best: bool = False, monitor_type: MonitorType = MonitorType.MAX, show_verbose: bool = False, last_epoch: int = 0, optimizer: Optimizer | None = None, loss_fn: StateDictLoadable | None = None, metrics: dict[str, StateDictLoadable] | None = None, save_weights_only: bool = False) -> None:
         ...
 
-    @override
     def __init__(self, monitor: str, model: CKPT, ckpt_path: str, load_best: bool = False, monitor_type: MonitorType = MonitorType.MAX, show_verbose: bool = False, **kwargs: Any) -> None:
         """
         Constructor
@@ -146,7 +141,6 @@ class BestCheckpoint(_Checkpoint[CKPT]):
         self.monitor_type = monitor_type
         self.show_verbose = show_verbose
 
-    @override
     def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: dict[str, float] | None = None) -> None:
         # initialize
         current_summary = summary.copy()
@@ -175,7 +169,6 @@ class BestCheckpoint(_Checkpoint[CKPT]):
             self.best_summary = current_summary
             super().on_epoch_end(epoch, current_summary, val_summary)
 
-    @override
     def on_train_end(self, model: torch.nn.Module) -> None:
         # load best checkpoint
         if self.load_best:

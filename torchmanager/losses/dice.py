@@ -1,5 +1,5 @@
 from torchmanager_core import functional as F, torch, _raise
-from torchmanager_core.typing import Any, override
+from torchmanager_core.typing import Any
 from torchmanager_core.version.version import Version
 
 from .loss import Loss
@@ -43,7 +43,6 @@ class Dice(Loss):
         assert value >= 0, _raise(ValueError(f"The smooth value must be a non-negative number, got {value}."))
         self.__smooth = value
 
-    @override
     def __init__(self, dim: int = 1, smooth: float = 1e-6, *, softmax_input: bool = True, **kwargs: Any) -> None:
         """
         Constructor
@@ -58,14 +57,12 @@ class Dice(Loss):
         self.smooth = smooth
         self.softmax_input = softmax_input
 
-    @override
     def convert(self, from_version: Version) -> None:
         if from_version < Version("v1.3"):
             self.dim = self._dim
             self.smooth = self._smooth
             self.softmax_input = self._softmax_input
 
-    @override
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         # softmax activation
         num_classes = input.shape[self.dim]

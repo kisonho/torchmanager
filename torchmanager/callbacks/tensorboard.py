@@ -1,7 +1,6 @@
 from torchmanager.callbacks import FrequencyCallback
 from torchmanager_core import tensorboard, torch
 from torchmanager_core.protocols import Frequency
-from torchmanager_core.typing import override
 
 SummaryResult = tuple[set[str], dict[str, float], dict[str, float] | None]
 
@@ -23,7 +22,6 @@ class TensorBoard(FrequencyCallback):
     def writer(self) -> tensorboard.writer.SummaryWriter:
         return self.__writer
 
-    @override
     def __init__(self, log_dir: str, freq: Frequency = Frequency.EPOCH, initial_step: int = 0) -> None:
         """
         Constructor
@@ -48,7 +46,6 @@ class TensorBoard(FrequencyCallback):
         inputs = torch.randn(input_shape) if input_shape is not None else None
         self.writer.add_graph(model, input_to_model=inputs)
 
-    @override
     def _update(self, result: SummaryResult) -> None:
         keys, summary, val_summary = result
 
@@ -64,7 +61,6 @@ class TensorBoard(FrequencyCallback):
                 r["val"] = val_summary[key]
             self.writer.add_scalars(key, r, self.current_step + 1)
 
-    @override
     def step(self, summary: dict[str, float], val_summary: dict[str, float] | None = None) -> SummaryResult:
         # fetch keys
         keys = list(summary.keys())

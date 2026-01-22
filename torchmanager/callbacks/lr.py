@@ -1,5 +1,5 @@
 from torchmanager_core.protocols import Frequency, SummaryWriteble
-from torchmanager_core.typing import Any, Generic, TypeVar, override
+from torchmanager_core.typing import Any, Generic, TypeVar
 
 from .callback import FrequencyCallback
 
@@ -39,18 +39,15 @@ class LrSchedueler(FrequencyCallback, Generic[Scheduler]):
     def _writer(self) -> SummaryWriteble | None:
         return self.__writer
 
-    @override
     def __init__(self, scheduler: Scheduler, freq: Frequency = Frequency.EPOCH, name: str = 'lr', tf_board_writer: SummaryWriteble | None = None) -> None:
         super().__init__(freq)
         self.__lr_scheduler = scheduler
         self.__name = name
         self.__writer = tf_board_writer
 
-    @override
     def _update(self, result: Any) -> None:
         pass
 
-    @override
     def on_epoch_end(self, epoch: int, summary: dict[str, float], val_summary: dict[str, Any] | None = None) -> None:
         # get lr summary
         lr_summary = {}
@@ -73,6 +70,5 @@ class LrSchedueler(FrequencyCallback, Generic[Scheduler]):
         summary.update(lr_summary)
         super().on_epoch_end(epoch, summary, val_summary)
 
-    @override
     def step(self, *args: Any, **kwargs: Any) -> Any:
         self._scheduler.step()
