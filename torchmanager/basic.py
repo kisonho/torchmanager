@@ -11,7 +11,7 @@ class BaseManager(Generic[Module]):
     """
     The basic manager
 
-    * Implements: `torchmanager_core.devices.DeviceMovable`, `.callbacks.protocols.ModelContainer`
+    * Implements: `DataParallelable`, `DeviceMovable`, `ModelContainer`
 
     Compile a model, optimizer, loss function, and metrics into the manager:
     >>> import torch
@@ -172,12 +172,13 @@ class BaseManager(Generic[Module]):
             # set version
             self.version = API_VERSION
 
-    def data_parallel(self, target_devices: list[torch.device]) -> bool:
+    def data_parallel(self, target_devices: list[torch.device], *, parallel_type: type[torch.nn.parallel.DataParallel] = torch.nn.parallel.DataParallel) -> bool:
         """
         Data parallel all available models
 
         - Parameters:
             - target_devices: The target multiple devices for data parallel
+            - parallel_type: The `torch.nn.parallel.DataParallel` type for parallel, default to `torch.nn.parallel.DataParallel`
         - Returns: A `bool` flag of if use multi GPUs
         """
         # multi gpus support for loss
@@ -188,7 +189,7 @@ class BaseManager(Generic[Module]):
             self.loss_fn = paralleled_loss_fn
 
         # multi gpus support for model
-        self.model, use_multi_gpus = devices.data_parallel(self.raw_model, devices=target_devices)
+        self.model, use_multi_gpus = devices.data_parallel(self.raw_model, devices=target_devices, parallel_type=parallel_type)
         return use_multi_gpus
 
     @overload

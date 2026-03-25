@@ -1,4 +1,5 @@
 from torch.utils.data import Dataset as _Dataset, DataLoader, Sampler
+from torch.utils.data.distributed import DistributedSampler
 from torchmanager_core import abc, devices, errors, math, os, torch, _raise
 from torchmanager_core.typing import Any, Callable, Iterable, Iterator, Sequence, TypeVar, cast
 
@@ -243,3 +244,44 @@ def batched(fn: Callable[..., _Dataset], loader_type: type[D] = DataLoader) -> C
         data_loader = loader_type(loaded_dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last, num_workers=num_workers, pin_memory=pin_memory, pin_memory_device=f"{targeted_devices[0].type}:{targeted_devices.index}")
         return data_loader
     return wrapped_fn
+
+
+def distribute(dataset: type[Dataset] | Callable[..., Dataset], *, world_size: int, rank: int) -> Callable[..., Dataset]:
+    """
+    Distributes a dataset for distributed training/testing.
+
+    - Usage:
+    >>> wold_size = ...  # total number of processes
+    >>> rank = ...  # rank of the current process
+    >>> @distribute(world_size=world_size, rank=rank)
+    >>> class SomeDataset(Dataset):
+    ...     ...
+    >>> some_dataset = SomeDataset(...)
+
+    - Parameters:
+        - dataset: A type of or a function that generates the `Dataset` to be distributed
+        - world_size: An `int` of total number of processes
+        - rank: An `int` of the rank of the current process
+    - Returns: A distributed `Dataset` with `DistributedSampler` injected"""
+    def inject_sampler(loaded_dataset: Dataset) -> Dataset:
+        assert isinstance(loaded_dataset, Dataset), _raise(RuntimeError("The loaded dataset is not a `torchmanager.data.Dataset`."))
+        sampler = DistributedSampler(loaded_dataset, num_replicas=world_size, rank=rank, shuffle=loaded_dataset.shuffle, drop_last=loaded_dataset.drop_last)
+        loaded_dataset.sampler = sampler
+        loaded_dataset.shuffle = False
+        return loaded_dataset
+
+    def decorator(ds: type[Dataset] | Callable[..., Dataset]) -> Callable[..., Dataset]:
+        if isinstance(ds, type):
+            assert issubclass(ds, Dataset), _raise(RuntimeError("The given dataset type is not a `torchmanager.data.Dataset`."))
+
+            class DistributedDataset(ds):
+                def __init__(self, *args: Any, **kwargs: Any) -> None:
+                    super().__init__(*args, **kwargs)
+                    inject_sampler(self)
+
+            return DistributedDataset
+
+        def wrapped_fn(*args: Any, **kwargs: Any) -> Dataset:
+            return inject_sampler(ds(*args, **kwargs))
+        return wrapped_fn
+    return decorator(dataset)

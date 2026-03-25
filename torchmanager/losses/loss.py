@@ -179,16 +179,6 @@ class ParallelLoss(Loss, Generic[L, P]):
         self.module.reset()
         super().reset()
 
-    def to(self, device: torch.device) -> Self:
-        """
-        Move the loss to a specific device
-
-        - Parameters:
-            - device: A `torch.device` to move the loss to
-        """
-        self.module = self.module.to(device)
-        return self
-
 
 WrappedLossFn = TypeVar("WrappedLossFn", bound=Callable[[Any, Any], torch.Tensor])
 

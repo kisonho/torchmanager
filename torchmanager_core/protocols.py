@@ -5,7 +5,7 @@ from typing_extensions import Self
 
 from .checkpoint import Checkpoint
 from .checkpoint.protocols import ModelContainer, StateDictLoadable, WrappedFn
-from .devices.protocols import DeviceMovable
+from .devices.protocols import DeviceMovable, DataParallelable
 from .version import Version
 from .view.protocols import VerboseControllable
 
