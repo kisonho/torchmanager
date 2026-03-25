@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 from torchmanager_core import abc, devices, errors, math, torch, view, _raise
 from torchmanager_core.checkpoint import Checkpoint
 from torchmanager_core.protocols import Resulting
-from torchmanager_core.typing import Any, Collection, Module, Self, overload
+from torchmanager_core.typing import Any, Collection, Module, Self, Sequence, overload
 
 from .callbacks import Callback, ProgressBar
 from .data import Dataset
@@ -103,12 +103,13 @@ class BaseTrainingManager(BaseManager[Module], abc.ABC):
         return self.summary
 
     @abc.abstractmethod
-    def backward(self, loss: torch.Tensor, /) -> None:
+    def backward(self, loss: torch.Tensor, /, inputs: Sequence[torch.Tensor] | None = None) -> None:
         """
         Backward function to calculate the gradients
         
         - Parameters:
             - loss: A `torch.Tensor` of loss value
+            - inputs: An optional `Sequence` of `torch.Tensor` for calculating gradients, only used for some special backward functions like `torch.autograd.backward`
         """
         ...
 
@@ -325,29 +326,14 @@ class Manager(BaseTrainingManager[Module], TestingManager[Module]):
         - current_epoch: The `int` index of current training epoch
         - compiled_optimizer: The `Optimizer` that must be exist
     """
-    def backward(self, loss: torch.Tensor, /) -> None:
-        """
-        Backward function to calculate the gradients
-        
-        - Parameters:
-            - loss: A `torch.Tensor` of loss value
-        """
-        loss.backward()
+    def backward(self, loss: torch.Tensor, /, inputs: Sequence[torch.Tensor] | None = None) -> None:
+        loss.backward(inputs=inputs)
 
     def optimize(self) -> None:
-        """Optimize the model with `compiled_optimizer`"""
         self.compiled_optimizer.step()
         self.compiled_optimizer.zero_grad()
 
     def train_step(self, x_train: Any, y_train: Any) -> dict[str, float]:
-        """
-        A single training step
-
-        - Parameters:
-            - x_train: The training data
-            - y_train: The training label
-        - Returns: A summary of `dict` with keys as `str` and values as `float`
-        """
         # forward pass
         y, loss = self.forward(x_train, y_train)
         assert loss is not None, _raise(TypeError("Loss cannot be fetched."))
