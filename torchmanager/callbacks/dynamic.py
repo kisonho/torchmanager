@@ -4,6 +4,8 @@ from torchmanager_core.typing import Any, Callable, Generic, SupportsFloat, Type
 
 from .callback import FrequencyCallback
 
+__all__ = ["DynamicWeight", "LambdaDynamicWeight"]
+
 W = TypeVar('W', bound=Weighted)
 
 

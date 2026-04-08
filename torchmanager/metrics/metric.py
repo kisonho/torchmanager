@@ -1,8 +1,9 @@
-from torchmanager_core import abc, torch, API_VERSION, Version, _raise
+from torchmanager_core import abc, torch, API_VERSION, Version, raise_error
 from torchmanager_core.typing import Any, Callable, Generic, TypeVar
 
-
 MetricFn = TypeVar("MetricFn", bound=Callable[[Any, Any], torch.Tensor] | None)
+
+__all__ = ["BaseMetric", "Metric", "metric", "metric_fn"]
 
 
 class BaseMetric(torch.nn.Module, abc.ABC):
@@ -133,7 +134,7 @@ WrappedMetricFn = TypeVar("WrappedMetricFn", bound=Callable[[Any, Any], torch.Te
 class _WrappedMetric(Metric[WrappedMetricFn]):
     @property
     def wrapped_metric_fn(self) -> WrappedMetricFn:
-        assert self._metric_fn is not None, _raise(AttributeError("Metric function is not given."))
+        assert self._metric_fn is not None, raise_error(AttributeError("Metric function is not given."))
         return self._metric_fn
 
     def __init__(self, metric_fn: WrappedMetricFn, target: str | None = None) -> None:

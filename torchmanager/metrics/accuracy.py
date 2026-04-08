@@ -1,8 +1,10 @@
-from torchmanager_core import torch, Version, _raise
+from torchmanager_core import torch, Version, raise_error
 from torchmanager_core.protocols import Reduction
 
-from .conf_mat import BinaryConfusionMetric
+from .conf_mat import BinaryConfusionMatrix
 from .metric import Metric
+
+__all__ = ["Accuracy", "SparseCategoricalAccuracy", "CategoricalAccuracy", "Dice", "F1", "MAE", "PartialDice", "Precision", "Recall"]
 
 
 class Accuracy(Metric):
@@ -55,7 +57,7 @@ class SparseCategoricalAccuracy(Accuracy):
 
     @dim.setter
     def dim(self, value: int) -> None:
-        assert value >= 0, _raise(ValueError(f"Dim must be a non-negative number, got {value}."))
+        assert value >= 0, raise_error(ValueError(f"Dim must be a non-negative number, got {value}."))
         self.__dim = value
 
     def __init__(self, dim: int = -1, *, target: str | None = None) -> None:
@@ -108,7 +110,7 @@ class Dice(Metric):
 
     @dim.setter
     def dim(self, value: int) -> None:
-        assert value >= 0, _raise(ValueError(f"Dim must be a non-negative number, got {value}."))
+        assert value >= 0, raise_error(ValueError(f"Dim must be a non-negative number, got {value}."))
         self.__dim = value
 
     @property
@@ -118,7 +120,7 @@ class Dice(Metric):
 
     @num_classes.setter
     def num_classes(self, value: int) -> None:
-        assert value > 0, _raise(ValueError(f"Num classes must be a positive number, got {value}."))
+        assert value > 0, raise_error(ValueError(f"Num classes must be a positive number, got {value}."))
         self.__num_classes = value
 
     def __init__(self, num_classes: int, /, dim: int = 1, *, eps: float = 1e-7, target: str | None = None) -> None:
@@ -165,7 +167,7 @@ class Dice(Metric):
         return dice.mean()
 
 
-class F1(BinaryConfusionMetric):
+class F1(BinaryConfusionMatrix):
     """The F1 metrics"""
 
     def forward_metric(self, tp: torch.Tensor, tn: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
@@ -247,7 +249,7 @@ class PartialDice(Dice):
         return dice.mean()
 
 
-class Precision(BinaryConfusionMetric):
+class Precision(BinaryConfusionMatrix):
     """The Precision metrics"""
 
     def forward_metric(self, tp: torch.Tensor, tn: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
@@ -255,7 +257,7 @@ class Precision(BinaryConfusionMetric):
         return precision.mean()
 
 
-class Recall(BinaryConfusionMetric):
+class Recall(BinaryConfusionMatrix):
     """The Recall metrics"""
 
     def forward_metric(self, tp: torch.Tensor, tn: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:

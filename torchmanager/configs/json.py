@@ -1,7 +1,9 @@
-from torchmanager_core import abc, argparse, errors, json, os, shutil, view, _raise
+from torchmanager_core import abc, argparse, errors, json, os, shutil, view, raise_error
 from torchmanager_core.typing import Any
 
 from .basic import Configs
+
+__all__ = ["JSONConfigs"]
 
 
 class _JSON:
@@ -36,8 +38,8 @@ class JSONConfigs(Configs, abc.ABC):
         - Returns: A formatted configuration `JSONConfigs` object
         """
         json_path = os.path.normpath(json_path)
-        assert os.path.exists(json_path), _raise(FileNotFoundError(f"JSON file '{json_path}' does not exist."))
-        assert json_path.endswith(".json"), _raise(FileNotFoundError(f"JSON file '{json_path}' is not a valid JSON file."))
+        assert os.path.exists(json_path), raise_error(FileNotFoundError(f"JSON file '{json_path}' does not exist."))
+        assert json_path.endswith(".json"), raise_error(FileNotFoundError(f"JSON file '{json_path}' is not a valid JSON file."))
 
         # read json file
         with open(json_path, "r") as json_file:
@@ -119,8 +121,8 @@ class JSONConfigs(Configs, abc.ABC):
             # read extensions
             for extension in extensions:
                 extension_path = os.path.normpath(extension) if os.path.isabs(extension) else os.path.normpath(os.path.join(related_dir, extension))
-                assert os.path.exists(extension_path), _raise(FileNotFoundError(f"JSON file '{extension_path}' does not exist."))
-                assert extension_path.endswith(".json"), _raise(FileNotFoundError(f"JSON file '{extension_path}' is not a valid JSON file."))
+                assert os.path.exists(extension_path), raise_error(FileNotFoundError(f"JSON file '{extension_path}' does not exist."))
+                assert extension_path.endswith(".json"), raise_error(FileNotFoundError(f"JSON file '{extension_path}' is not a valid JSON file."))
 
                 # read extended json files
                 with open(extension_path, "r") as json_file:

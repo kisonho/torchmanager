@@ -1,7 +1,9 @@
-from torchmanager_core import abc, argparse, errors, os, shutil, view, yaml, _raise
+from torchmanager_core import abc, argparse, errors, os, shutil, view, yaml, raise_error
 from torchmanager_core.typing import Any
 
 from .basic import Configs
+
+__all__ = ["YAMLConfigs"]
 
 
 class _YAML:
@@ -36,8 +38,8 @@ class YAMLConfigs(Configs, abc.ABC):
         - Returns: A formatted configuration `YAMLConfigs` object
         """
         yaml_path = os.path.normpath(yaml_path)
-        assert os.path.exists(yaml_path), _raise(FileNotFoundError(f"YAML file '{yaml_path}' does not exist."))
-        assert yaml_path.endswith(".yaml"), _raise(FileNotFoundError(f"YAML file '{yaml_path}' is not a valid YAML file."))
+        assert os.path.exists(yaml_path), raise_error(FileNotFoundError(f"YAML file '{yaml_path}' does not exist."))
+        assert yaml_path.endswith(".yaml"), raise_error(FileNotFoundError(f"YAML file '{yaml_path}' is not a valid YAML file."))
 
         # read yaml file
         with open(yaml_path, "r") as yaml_file:
@@ -119,8 +121,8 @@ class YAMLConfigs(Configs, abc.ABC):
             # read extensions
             for extension in extensions:
                 extension_path = os.path.normpath(extension) if os.path.isabs(extension) else os.path.normpath(os.path.join(related_dir, extension))
-                assert os.path.exists(extension_path), _raise(FileNotFoundError(f"YAML file '{extension_path}' does not exist."))
-                assert extension_path.endswith(".yaml"), _raise(FileNotFoundError(f"YAML file '{extension_path}' is not a valid YAML file."))
+                assert os.path.exists(extension_path), raise_error(FileNotFoundError(f"YAML file '{extension_path}' does not exist."))
+                assert extension_path.endswith(".yaml"), raise_error(FileNotFoundError(f"YAML file '{extension_path}' is not a valid YAML file."))
 
                 # read extended yaml file
                 with open(extension_path, "r") as yaml_file:

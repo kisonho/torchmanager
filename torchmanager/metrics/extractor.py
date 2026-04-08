@@ -1,5 +1,5 @@
 from torch.nn.modules.module import Module
-from torchmanager_core import abc, functional as F, torch, view, _raise
+from torchmanager_core import abc, functional as F, torch, view, raise_error
 from torchmanager_core.typing import Any, Callable, Generic, TypeVar
 from torchmanager_core.version import Version
 
@@ -13,6 +13,8 @@ except ImportError:
 
 M = TypeVar("M", bound=Callable[[Any, Any], torch.Tensor] | None)
 Module = TypeVar("Module", bound=torch.nn.Module | None)
+
+__all__ = ["FeatureMetric", "AccumulativeFeatureMetric", "ExtractorScore", "FID", "KID"]
 
 
 class FeatureMetric(Metric[M], Generic[M, Module]):
@@ -193,7 +195,7 @@ class FID(AccumulativeFeatureMetric[None, Module]):
         else:
             sigma = sigma_real @ sigma_gen
             covmean = linalg.sqrtm(sigma.cpu().numpy())
-            assert not isinstance(covmean, tuple), _raise(TypeError("The square root of `covmean` should not contain errest number."))
+            assert not isinstance(covmean, tuple), raise_error(TypeError("The square root of `covmean` should not contain errest number."))
             sigma = torch.from_numpy(covmean.real).to(sigma.device)  # type: ignore  # TODO: fix typing
 
         # Calculate the squared Euclidean distance between the means

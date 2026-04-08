@@ -1,10 +1,12 @@
 from torch.optim.optimizer import Optimizer
-from torchmanager_core import os, torch, view, _raise
+from torchmanager_core import os, torch, view, raise_error
 from torchmanager_core.checkpoint import Checkpoint as Ckpt
 from torchmanager_core.protocols import CkptConvertable, ModelContainer, MonitorType, StateDictLoadable
 from torchmanager_core.typing import Any, Generic, TypeVar, overload
 
 from .callback import Callback
+
+__all__ = ["LastCheckpoint", "BestCheckpoint"]
 
 CKPT = TypeVar('CKPT', bound=StateDictLoadable)
 
@@ -76,7 +78,7 @@ class LastCheckpoint(_Checkpoint[CKPT]):
 
     @freq.setter
     def freq(self, f: int) -> None:
-        assert f > 0, _raise(ValueError(f"Frequency must be a positive number, got {f}. "))
+        assert f > 0, raise_error(ValueError(f"Frequency must be a positive number, got {f}. "))
         self.__freq = f
 
     @overload

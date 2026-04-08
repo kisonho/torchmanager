@@ -2,6 +2,8 @@ from torchmanager.callbacks import FrequencyCallback
 from torchmanager_core import tensorboard, torch
 from torchmanager_core.protocols import Frequency
 
+__all__ = ["TensorBoard"]
+
 SummaryResult = tuple[set[str], dict[str, float], dict[str, float] | None]
 
 

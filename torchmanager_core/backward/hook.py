@@ -1,10 +1,13 @@
 import torch
 from typing import Callable, Union, overload
 
+from torchmanager_core.version import deprecated
 from .protocols import Removable
 
+__all__ = ["add_grad_clip", "backward_hook"]
 
-def add_gard_clip(model: torch.nn.Module, /, min_value: float, max_value: float, *, replace_nan: bool = False) -> list[Removable]:
+
+def add_grad_clip(model: torch.nn.Module, /, min_value: float, max_value: float, *, replace_nan: bool = False) -> list[Removable]:
     """
     Add gradients clip for all trainable parameters to the target model
 
@@ -24,7 +27,6 @@ def add_gard_clip(model: torch.nn.Module, /, min_value: float, max_value: float,
         hook_handler = param.register_hook(grad_clip_fn)
         handlers.append(hook_handler)
     return handlers
-
 
 @overload
 def backward_hook(model: torch.nn.Module, /, hook: Callable[[torch.Tensor], torch.Tensor], *, as_decorator: bool = True) -> Callable[[torch.Tensor], torch.Tensor]:

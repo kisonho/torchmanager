@@ -6,6 +6,8 @@ from torchmanager_core.typing import Any, Collection, Module
 from .basic import BaseManager
 from .data import Dataset
 
+__all__ = ["BaseTestingManager", "Manager"]
+
 
 class BaseTestingManager(BaseManager[Module], abc.ABC):
     """

@@ -6,6 +6,8 @@ from torchmanager_core.typing import Any, Collection, Generic, Mapping, Module, 
 from .losses import Loss, MultiLosses, ParallelLoss
 from .metrics import Metric
 
+__all__ = ["BaseManager"]
+
 
 class BaseManager(Generic[Module]):
     """
@@ -183,9 +185,9 @@ class BaseManager(Generic[Module]):
         """
         # multi gpus support for loss
         if self.loss_fn is not None:
-            assert isinstance(self.raw_loss_fn, Loss), errors._raise(TypeError("The loss function is not a valid `Loss` object."))
+            assert isinstance(self.raw_loss_fn, Loss), errors.raise_error(TypeError("The loss function is not a valid `Loss` object."))
             paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.raw_loss_fn, devices=target_devices, parallel_type=ParallelLoss)
-            assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), errors._raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
+            assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), errors.raise_error(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
             self.loss_fn = paralleled_loss_fn
 
         # multi gpus support for model
@@ -250,7 +252,7 @@ class BaseManager(Generic[Module]):
                 manager.model = manager.model.module
             if manager.loss_fn is not None and hasattr(manager.loss_fn, "_metric_fn"):
                 if isinstance(manager.loss_fn._metric_fn, torch.nn.parallel.DataParallel):
-                    assert isinstance(manager.loss_fn._metric_fn.module, Loss), errors._raise(TypeError("Loss function is not a valid `Loss`."))
+                    assert isinstance(manager.loss_fn._metric_fn.module, Loss), errors.raise_error(TypeError("Loss function is not a valid `Loss`."))
                     manager.loss_fn = manager.loss_fn._metric_fn.module
             else:
                 manager.loss_fn = None
@@ -273,10 +275,10 @@ class BaseManager(Generic[Module]):
 
     def load_state_dict(self, state_dict: Mapping[str, Any], *args, **kwargs) -> None:
         # load state dict elements
-        assert "model" in state_dict, errors._raise(KeyError("The given dictionary does not have 'model' element."))
-        assert "optimizer" in state_dict, errors._raise(KeyError("The given dictionary does not have 'optimizer' element."))
-        assert "loss_fn" in state_dict, errors._raise(KeyError("The given dictionary does not have 'loss_fn' element."))
-        assert "metrics" in state_dict, errors._raise(KeyError("The given dictionary does not have 'metrics' element."))
+        assert "model" in state_dict, errors.raise_error(KeyError("The given dictionary does not have 'model' element."))
+        assert "optimizer" in state_dict, errors.raise_error(KeyError("The given dictionary does not have 'optimizer' element."))
+        assert "loss_fn" in state_dict, errors.raise_error(KeyError("The given dictionary does not have 'loss_fn' element."))
+        assert "metrics" in state_dict, errors.raise_error(KeyError("The given dictionary does not have 'metrics' element."))
         model: OrderedDict[str, Any] = state_dict["model"]
         optimizer: dict[str, Any] | None = state_dict["optimizer"]
         loss_fn: OrderedDict[str, Any] | None = state_dict["loss_fn"]
@@ -285,13 +287,13 @@ class BaseManager(Generic[Module]):
         # load state dict to current model, optimizer, loss_fn, and metrics
         self.model.load_state_dict(model, *args, **kwargs)
         if optimizer is not None:
-            assert self.optimizer is not None, errors._raise(ValueError("The manager has not been compiled with 'optimizer' given."))
+            assert self.optimizer is not None, errors.raise_error(ValueError("The manager has not been compiled with 'optimizer' given."))
             self.optimizer.load_state_dict(optimizer)
         if loss_fn is not None:
-            assert self.loss_fn is not None, errors._raise(ValueError("The manager has not been compiled with 'loss_fn' given."))
+            assert self.loss_fn is not None, errors.raise_error(ValueError("The manager has not been compiled with 'loss_fn' given."))
             self.loss_fn.load_state_dict(state_dict=loss_fn, *args, **kwargs)
         for k, m in metrics.items():
-            assert k in self.metric_fns, errors._raise(KeyError(f"The manager does not have a metric named '{k}'."))
+            assert k in self.metric_fns, errors.raise_error(KeyError(f"The manager does not have a metric named '{k}'."))
             self.metric_fns[k].load_state_dict(state_dict=m, *args, **kwargs)
 
     def reset(self, cpu: torch.device = devices.CPU) -> None:

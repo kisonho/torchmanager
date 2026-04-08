@@ -1,5 +1,7 @@
-from torchmanager_core import argparse, abc, errors, os, platform, shutil, sys, torch, view, _raise, DESCRIPTION
+from torchmanager_core import argparse, abc, errors, os, platform, shutil, sys, torch, view, raise_error, DESCRIPTION
 from torchmanager_core.typing import Optional, Union, overload
+
+__all__ = ["BaseConfigs", "Configs"]
 
 
 class BaseConfigs(argparse.Namespace, abc.ABC):
@@ -46,7 +48,7 @@ class BaseConfigs(argparse.Namespace, abc.ABC):
         exp = os.path.normpath(f"{exp}.exp") if not exp.endswith(".exp") else os.path.normpath(exp)
         cfg_path = os.path.join(exp, "configs.cfg")
         cfg = torch.load(cfg_path)
-        assert isinstance(cfg, BaseConfigs), _raise(TypeError(f"Saved object at path {cfg_path} is not a valid `Configs`."))
+        assert isinstance(cfg, BaseConfigs), raise_error(TypeError(f"Saved object at path {cfg_path} is not a valid `Configs`."))
         return cfg
 
     @overload

@@ -4,6 +4,8 @@ from torchmanager_core.typing import Any, Callable, TypeVar
 
 from .loss import Loss
 
+__all__ = ["MAE", "MSE"]
+
 LossFn = TypeVar("LossFn", bound=Callable[[Any, Any], torch.Tensor] | None)
 
 

@@ -1,7 +1,9 @@
 from torch.utils.data import Dataset as _Dataset, DataLoader, Sampler
 from torch.utils.data.distributed import DistributedSampler
-from torchmanager_core import abc, devices, errors, math, os, torch, _raise
+from torchmanager_core import abc, devices, errors, math, os, torch, raise_error
 from torchmanager_core.typing import Any, Callable, Iterable, Iterator, Sequence, TypeVar, cast
+
+__all__ = ["Dataset", "PreprocessedDataset", "batched", "distribute"]
 
 D = TypeVar("D", bound=DataLoader)
 T = TypeVar("T")
@@ -240,7 +242,7 @@ def batched(fn: Callable[..., _Dataset], loader_type: type[D] = DataLoader) -> C
 
         # load dataset
         loaded_dataset = fn(*args, **kwargs)
-        assert isinstance(loaded_dataset, Dataset), _raise(RuntimeError("The loaded dataset is a `torchmanager.data.Dataset` which has already been wrapped with batch loader during iteration."))
+        assert isinstance(loaded_dataset, Dataset), raise_error(RuntimeError("The loaded dataset is a `torchmanager.data.Dataset` which has already been wrapped with batch loader during iteration."))
         data_loader = loader_type(loaded_dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last, num_workers=num_workers, pin_memory=pin_memory, pin_memory_device=f"{targeted_devices[0].type}:{targeted_devices.index}")
         return data_loader
     return wrapped_fn
@@ -264,7 +266,7 @@ def distribute(dataset: type[Dataset] | Callable[..., Dataset], *, world_size: i
         - rank: An `int` of the rank of the current process
     - Returns: A distributed `Dataset` with `DistributedSampler` injected"""
     def inject_sampler(loaded_dataset: Dataset) -> Dataset:
-        assert isinstance(loaded_dataset, Dataset), _raise(RuntimeError("The loaded dataset is not a `torchmanager.data.Dataset`."))
+        assert isinstance(loaded_dataset, Dataset), raise_error(RuntimeError("The loaded dataset is not a `torchmanager.data.Dataset`."))
         sampler = DistributedSampler(loaded_dataset, num_replicas=world_size, rank=rank, shuffle=loaded_dataset.shuffle, drop_last=loaded_dataset.drop_last)
         loaded_dataset.sampler = sampler
         loaded_dataset.shuffle = False
@@ -272,7 +274,7 @@ def distribute(dataset: type[Dataset] | Callable[..., Dataset], *, world_size: i
 
     def decorator(ds: type[Dataset] | Callable[..., Dataset]) -> Callable[..., Dataset]:
         if isinstance(ds, type):
-            assert issubclass(ds, Dataset), _raise(RuntimeError("The given dataset type is not a `torchmanager.data.Dataset`."))
+            assert issubclass(ds, Dataset), raise_error(RuntimeError("The given dataset type is not a `torchmanager.data.Dataset`."))
 
             class DistributedDataset(ds):
                 def __init__(self, *args: Any, **kwargs: Any) -> None:

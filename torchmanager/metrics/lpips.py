@@ -1,7 +1,9 @@
-from torchmanager_core import functional as F, torch, _raise
-from torchmanager_core.typing import Enum, Protocol
+from torchmanager_core import functional as F, torch, raise_error
+from torchmanager_core.typing import Enum
 
 from .extractor import FeatureMetric
+
+__all__ = ["LPIPSNetType", "LPIPS"]
 
 
 def _load_alexnet(model: torch.nn.Sequential) -> torch.nn.ModuleList:
@@ -119,10 +121,10 @@ class LPIPS(FeatureMetric[None, _LPIPSModule | None]):
     def __init__(self, feature_extractor: torch.nn.Sequential | None = None, net_type: LPIPSNetType | None = None, *, target: str | None = None) -> None:
         # check extractor and net type
         if feature_extractor is None:
-            assert net_type is None, _raise(TypeError("The pretrained net type must be `None` if feature extractor is not given."))
+            assert net_type is None, raise_error(TypeError("The pretrained net type must be `None` if feature extractor is not given."))
             lpips_module = None
         else:
-            assert net_type is not None, _raise(TypeError("The pretrained net type must be given if feature extractor is given."))
+            assert net_type is not None, raise_error(TypeError("The pretrained net type must be given if feature extractor is given."))
 
             # load lpips extractor
             lpips_module = _LPIPSModule(net_type.load(feature_extractor))
