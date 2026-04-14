@@ -48,3 +48,7 @@ __all__ = [
     "deprecated",
     "raise_error"
 ]
+
+@deprecated("v1.5", "v2.0")
+def _raise(e: Exception) -> None:
+    raise_error(e)
