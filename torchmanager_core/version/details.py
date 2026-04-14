@@ -1,5 +1,5 @@
 from .version import Version
 
 API = Version("v1.5")
-CURRENT = Version("v1.5a4")
+CURRENT = Version("v1.5b1")
 DESCRIPTION: str = f"PyTorch Training/Testing Manager {CURRENT}"
