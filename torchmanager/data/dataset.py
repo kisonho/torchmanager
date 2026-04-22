@@ -41,6 +41,8 @@ class Dataset(_Dataset[T], abc.ABC):
 
     __batch_size: int
     __device: torch.device
+    __loader: DataLoader[T] | None
+    __loader_config: tuple[torch.device, int, bool, bool, int, int | None] | None
     drop_last: bool
     num_workers: int
     sampler: Sampler[list[T]] | Iterable[list[T]] | None
@@ -88,7 +90,9 @@ class Dataset(_Dataset[T], abc.ABC):
             - shuffle: A `bool` flag of if shuffling the data
         """
         super().__init__()
+        self.__loader = None
         self.__device = device
+        self.__loader_config = None
         self.batch_size = batch_size
         self.drop_last = drop_last
         self.sampler = sampler
@@ -100,6 +104,38 @@ class Dataset(_Dataset[T], abc.ABC):
             self.num_workers = 0 if cpu_count is None else cpu_count
         else:
             self.num_workers = num_workers
+
+    def _loader_config(self) -> tuple[torch.device, int, bool, bool, int, int | None]:
+        device = self.device
+        sampler_id = id(self.sampler) if self.sampler is not None else None
+        return device, self.batch_size, self.drop_last, self.shuffle, self.num_workers, sampler_id
+
+    def _get_data_loader(self) -> DataLoader[T]:
+        loader_config = self._loader_config()
+        if self.__loader is None or self.__loader_config != loader_config:
+            device, _, _, _, _, _ = loader_config
+            if device != devices.CPU:
+                self.__loader = DataLoader(
+                    self,
+                    batch_size=self.batch_size,
+                    drop_last=self.drop_last,
+                    shuffle=self.shuffle,
+                    num_workers=self.num_workers,
+                    pin_memory=True,
+                    pin_memory_device=str(device),
+                    sampler=self.sampler,
+                )
+            else:
+                self.__loader = DataLoader(
+                    self,
+                    batch_size=self.batch_size,
+                    drop_last=self.drop_last,
+                    shuffle=self.shuffle,
+                    num_workers=self.num_workers,
+                    sampler=self.sampler,
+                )
+            self.__loader_config = loader_config
+        return self.__loader
 
     def __contains__(self, value: Any) -> bool:
         for i in range(len(self)):
@@ -119,11 +155,7 @@ class Dataset(_Dataset[T], abc.ABC):
         return NotImplemented
 
     def __iter__(self) -> Iterator[tuple[T, T]]:
-        # initialize loader
-        if self.device != devices.CPU:
-            data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=self.num_workers, pin_memory=True, pin_memory_device=str(self.device), sampler=self.sampler)
-        else:
-            data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=self.num_workers, sampler=self.sampler)
+        data_loader = self._get_data_loader()
 
         # yield data
         for data in data_loader:

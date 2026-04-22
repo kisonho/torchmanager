@@ -32,6 +32,14 @@ class BaseLoss(BaseMetric, abc.ABC):
         assert w >= 0, f"Weight must be a non-negative number, got {w}."
         self.__weight = w
 
+    @property
+    def results(self) -> torch.Tensor | None:
+        results = [r * self.weight for r in self._results]
+        if len(results) > 0:
+            return torch.concat(results)
+        else:
+            return None
+
     def __init__(self, target: str | None = None, weight: float = 1) -> None:
         """
         Constructor
@@ -45,7 +53,6 @@ class BaseLoss(BaseMetric, abc.ABC):
 
     def __call__(self, input: Any, target: Any) -> torch.Tensor:
         m: torch.Tensor = super().__call__(input, target) * self.weight
-        self._results[-1] *= self.weight
         assert m.numel() == 1, raise_error(TypeError(f"The returned loss must be a scalar tensor, got shape {m.shape}"))
         return m
 
