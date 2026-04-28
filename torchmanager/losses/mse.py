@@ -4,14 +4,14 @@ from torchmanager_core.typing import Any, Callable, TypeVar
 
 from .loss import Loss
 
-__all__ = ["MAE", "MSE"]
+__all__ = ["Identity", "MAE", "MSE"]
 
 LossFn = TypeVar("LossFn", bound=Callable[[Any, Any], torch.Tensor] | None)
 
 
 class _ReductableLoss(Loss[LossFn]):
     """
-    The MSE loss
+    The loss that reduct its dimension with a specific method.
 
     - Properties:
         - reduction: A `.loss.Reduction` of reduction method
@@ -44,12 +44,22 @@ class _ReductableLoss(Loss[LossFn]):
             loss = loss.nan_to_num(0, posinf=max_value, neginf=-1)
 
         # reduction
-        if self.reduction == Reduction.MEAN:
-            return loss.mean()
-        elif self.reduction == Reduction.SUM:
-            return loss.sum()
-        else:
-            return loss
+        match self.reduction:
+            case Reduction.MEAN:
+                return loss.mean()
+            case Reduction.SUM:
+                return loss.sum()
+            case Reduction.NONE:
+                return loss
+
+
+class Identity(_ReductableLoss[None]):
+    """ An identity loss function that returns the input as the output."""
+    def __init__(self, loss_fn: None = None, *, target: str | None = None, weight: float = 1) -> None:
+        super().__init__(loss_fn, reduction=Reduction.NONE, replace_nan=False, target=target, weight=weight)
+
+    def forward(self, input: torch.Tensor, _: torch.Tensor) -> torch.Tensor:
+        return input
 
 
 class MAE(_ReductableLoss[torch.nn.L1Loss]):
