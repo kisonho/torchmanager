@@ -175,7 +175,8 @@ class Configs(argparse.Namespace, abc.ABC):
         if os.path.exists(log_dir) and configs.replace_experiment:
             shutil.rmtree(log_dir)
         elif os.path.exists(log_dir) and not configs.replace_experiment:
-            raise IOError(f"Path '{log_dir}' has already existed.")
+            print(f"Path '{log_dir}' has already existed, delete or use `--replace_experiment` to overwite it and continue.")
+            exit(1)
 
         # set log path
         os.makedirs(log_dir, exist_ok=True)
