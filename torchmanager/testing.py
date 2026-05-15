@@ -179,7 +179,7 @@ class BaseTestingManager(BaseManager[Module], abc.ABC):
                 x_test, y_test = self.unpack_data(data)
                 if use_multi_gpus is not True:
                     x_test = devices.move_to_device(x_test, device)
-                y_test = devices.move_to_device(y_test, device)
+                    y_test = devices.move_to_device(y_test, device)
 
                 # test for one step
                 step_summary = self.test_step(x_test, y_test)

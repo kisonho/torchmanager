@@ -90,7 +90,7 @@ class BaseTrainingManager(BaseManager[Module], abc.ABC):
             x_train, y_train = self.unpack_data(data)
             if use_multi_gpus is not True:
                 x_train = devices.move_to_device(x_train, device)
-            y_train = devices.move_to_device(y_train, device)
+                y_train = devices.move_to_device(y_train, device)
 
             # train for one step
             summary = self.train_step(x_train, y_train)
