@@ -85,9 +85,9 @@ class BaseConfigs(argparse.Namespace, abc.ABC):
             - description: A `str` to display the description of current app
         """
         view.logger.info(description)
+        view.logger.info(f"platform={platform.platform()}")
         view.logger.info(f"python={sys.version}")
         view.logger.info(f"torch={torch.__version__}")
-        view.logger.info(f"platform={platform.platform()}")
 
     @abc.abstractmethod
     def show_settings(self) -> None:
