@@ -60,6 +60,9 @@ class BaseLoss(BaseMetric, abc.ABC):
     def forward(self, input: Any, target: Any) -> torch.Tensor:
         ...
 
+    def record(self, m: torch.Tensor) -> None:
+        return super().record(m * self.weight)
+
 
 class Loss(BaseLoss, Metric[LossFn]):
     """

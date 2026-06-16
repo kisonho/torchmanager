@@ -120,7 +120,7 @@ class BaseTrainingManager(BaseManager[Module], abc.ABC):
         if self.model.training:
             for name, fn in self.compiled_metrics.items():
                 # skip for validation val
-                if name.startswith("val_") or "loss" in name:
+                if name.startswith("val_") or name == "loss":
                     continue
 
                 # calculate metrics
