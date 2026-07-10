@@ -115,7 +115,9 @@ class BaseManager(Generic[Module]):
             final_loss_fn = MultiLosses([l for l in loss_fn.values()])
             loss_fn_mapping = {f"{name}_loss": copy.deepcopy(fn) for name, fn in loss_fn.items()}
             self.metric_fns.update(loss_fn_mapping)
-        self.loss_fn = final_loss_fn
+            self.loss_fn = final_loss_fn
+        else:
+            self.loss_fn = loss_fn
 
         # initialize metrics
         for name, fn in metrics.items():
