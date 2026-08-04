@@ -1,4 +1,4 @@
-from .accuracy import Accuracy, CategoricalAccuracy, Dice, F1, MAE, PartialDice, Precision, Recall, SparseCategoricalAccuracy
+from .accuracy import Accuracy, CategoricalAccuracy, Dice, F1, HD95, MAE, PartialDice, Precision, Recall, SparseCategoricalAccuracy
 from .conf_mat import BinaryConfusionMatrix, ConfusionMatrix
 from .extractor import AccumulativeFeatureMetric, ExtractorScore, FeatureMetric, FID, KID
 from .lpips import LPIPS, LPIPSNetType
@@ -11,6 +11,7 @@ __all__ = [
     "CategoricalAccuracy",
     "Dice",
     "F1",
+    "HD95",
     "MAE",
     "PartialDice",
     "Precision",
