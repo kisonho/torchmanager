@@ -1,5 +1,5 @@
 from torch.nn.modules.module import Module
-from torchmanager_core import abc, functional as F, torch, view, raise_error
+from torchmanager_core import abc, torch, view, raise_error
 from torchmanager_core.typing import Any, Callable, Generic, TypeVar
 from torchmanager_core.version import Version
 
