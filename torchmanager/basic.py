@@ -1,17 +1,19 @@
 from torch.optim.optimizer import Optimizer
-from torchmanager_core import checkpoint, devices, errors, torch, Version, API_VERSION
+from torchmanager_core import checkpoint, copy, devices, errors, torch, Version, API_VERSION
 from torchmanager_core.protocols import Resulting
-from torchmanager_core.typing import Any, Collection, Generic, Mapping, Module, OrderedDict, Self, cast
+from torchmanager_core.typing import Any, Collection, Generic, Mapping, Module, OrderedDict, Self, cast, overload
 
 from .losses import Loss, MultiLosses, ParallelLoss
 from .metrics import Metric
+
+__all__ = ["BaseManager"]
 
 
 class BaseManager(Generic[Module]):
     """
     The basic manager
 
-    * Implements: `torchmanager_core.devices.DeviceMovable`, `.callbacks.protocols.ModelContainer`
+    * Implements: `DataParallelable`, `DeviceMovable`, `ModelContainer`
 
     Compile a model, optimizer, loss function, and metrics into the manager:
     >>> import torch
@@ -110,10 +112,12 @@ class BaseManager(Generic[Module]):
 
         # initialize loss
         if isinstance(loss_fn, dict):
-            loss_fn_mapping: dict[str, Loss] = {f"{name}_loss": fn for name, fn in loss_fn.items()}
+            final_loss_fn = MultiLosses([l for l in loss_fn.values()])
+            loss_fn_mapping = {f"{name}_loss": copy.deepcopy(fn) for name, fn in loss_fn.items()}
             self.metric_fns.update(loss_fn_mapping)
-            loss_fn = MultiLosses([l for l in loss_fn_mapping.values()])
-        self.loss_fn = loss_fn
+            self.loss_fn = final_loss_fn
+        else:
+            self.loss_fn = loss_fn
 
         # initialize metrics
         for name, fn in metrics.items():
@@ -172,32 +176,42 @@ class BaseManager(Generic[Module]):
             # set version
             self.version = API_VERSION
 
-    def data_parallel(self, target_devices: list[torch.device]) -> bool:
+    def data_parallel(self, target_devices: list[torch.device], *, parallel_type: type[torch.nn.parallel.DataParallel] = torch.nn.parallel.DataParallel) -> bool:
         """
         Data parallel all available models
 
         - Parameters:
             - target_devices: The target multiple devices for data parallel
+            - parallel_type: The `torch.nn.parallel.DataParallel` type for parallel, default to `torch.nn.parallel.DataParallel`
         - Returns: A `bool` flag of if use multi GPUs
         """
         # multi gpus support for loss
         if self.loss_fn is not None:
-            assert isinstance(self.raw_loss_fn, Loss), errors._raise(TypeError("The loss function is not a valid `Loss` object."))
+            assert isinstance(self.raw_loss_fn, Loss), errors.raise_error(TypeError("The loss function is not a valid `Loss` object."))
             paralleled_loss_fn, use_multi_gpus = devices.data_parallel(self.raw_loss_fn, devices=target_devices, parallel_type=ParallelLoss)
-            assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), errors._raise(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
+            assert isinstance(paralleled_loss_fn, ParallelLoss) or isinstance(paralleled_loss_fn, Loss), errors.raise_error(TypeError("Paralleled function is not a valid `ParallelLoss` or `Loss` after parallel."))
             self.loss_fn = paralleled_loss_fn
 
         # multi gpus support for model
-        self.model, use_multi_gpus = devices.data_parallel(self.raw_model, devices=target_devices)
+        self.model, use_multi_gpus = devices.data_parallel(self.raw_model, devices=target_devices, parallel_type=parallel_type)
         return use_multi_gpus
+
+    @overload
+    def forward(self, input: Any, target: None = None, /) -> tuple[Any, None]:
+        ...
+
+    @overload
+    def forward(self, input: Any, target: Any, /) -> tuple[Any, torch.Tensor]:
+        ...
 
     def forward(self, input: Any, target: Any = None, /) -> tuple[Any, torch.Tensor | None]:
         """
         Forward pass function
 
         - Parameters:
-            - x_train: The training data
-        - Returns: `Any` kind of model output
+            - x_train: The input data
+            - target: The target ground truth
+        - Returns: A `tuple` of an `Any` kind of model output and an optional total objective loss in `torch.Tensor`
         """
         # forward model
         y = self.model(input)
@@ -240,7 +254,7 @@ class BaseManager(Generic[Module]):
                 manager.model = manager.model.module
             if manager.loss_fn is not None and hasattr(manager.loss_fn, "_metric_fn"):
                 if isinstance(manager.loss_fn._metric_fn, torch.nn.parallel.DataParallel):
-                    assert isinstance(manager.loss_fn._metric_fn.module, Loss), errors._raise(TypeError("Loss function is not a valid `Loss`."))
+                    assert isinstance(manager.loss_fn._metric_fn.module, Loss), errors.raise_error(TypeError("Loss function is not a valid `Loss`."))
                     manager.loss_fn = manager.loss_fn._metric_fn.module
             else:
                 manager.loss_fn = None
@@ -263,10 +277,10 @@ class BaseManager(Generic[Module]):
 
     def load_state_dict(self, state_dict: Mapping[str, Any], *args, **kwargs) -> None:
         # load state dict elements
-        assert "model" in state_dict, errors._raise(KeyError("The given dictionary does not have 'model' element."))
-        assert "optimizer" in state_dict, errors._raise(KeyError("The given dictionary does not have 'optimizer' element."))
-        assert "loss_fn" in state_dict, errors._raise(KeyError("The given dictionary does not have 'loss_fn' element."))
-        assert "metrics" in state_dict, errors._raise(KeyError("The given dictionary does not have 'metrics' element."))
+        assert "model" in state_dict, errors.raise_error(KeyError("The given dictionary does not have 'model' element."))
+        assert "optimizer" in state_dict, errors.raise_error(KeyError("The given dictionary does not have 'optimizer' element."))
+        assert "loss_fn" in state_dict, errors.raise_error(KeyError("The given dictionary does not have 'loss_fn' element."))
+        assert "metrics" in state_dict, errors.raise_error(KeyError("The given dictionary does not have 'metrics' element."))
         model: OrderedDict[str, Any] = state_dict["model"]
         optimizer: dict[str, Any] | None = state_dict["optimizer"]
         loss_fn: OrderedDict[str, Any] | None = state_dict["loss_fn"]
@@ -275,13 +289,13 @@ class BaseManager(Generic[Module]):
         # load state dict to current model, optimizer, loss_fn, and metrics
         self.model.load_state_dict(model, *args, **kwargs)
         if optimizer is not None:
-            assert self.optimizer is not None, errors._raise(ValueError("The manager has not been compiled with 'optimizer' given."))
+            assert self.optimizer is not None, errors.raise_error(ValueError("The manager has not been compiled with 'optimizer' given."))
             self.optimizer.load_state_dict(optimizer)
         if loss_fn is not None:
-            assert self.loss_fn is not None, errors._raise(ValueError("The manager has not been compiled with 'loss_fn' given."))
+            assert self.loss_fn is not None, errors.raise_error(ValueError("The manager has not been compiled with 'loss_fn' given."))
             self.loss_fn.load_state_dict(state_dict=loss_fn, *args, **kwargs)
         for k, m in metrics.items():
-            assert k in self.metric_fns, errors._raise(KeyError(f"The manager does not have a metric named '{k}'."))
+            assert k in self.metric_fns, errors.raise_error(KeyError(f"The manager does not have a metric named '{k}'."))
             self.metric_fns[k].load_state_dict(state_dict=m, *args, **kwargs)
 
     def reset(self, cpu: torch.device = devices.CPU) -> None:

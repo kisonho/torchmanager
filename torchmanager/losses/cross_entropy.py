@@ -1,8 +1,10 @@
-from torchmanager_core import functional as F, torch, Version, _raise
+from torchmanager_core import functional as F, torch, Version, raise_error
 from torchmanager_core.typing import Any
 
 from .dice import Dice
 from .loss import Loss
+
+__all__ = ["CrossEntropy", "DiceCE", "FocalCrossEntropy", "KLDiv"]
 
 
 class CrossEntropy(Loss):
@@ -41,7 +43,7 @@ class DiceCE(CrossEntropy, Dice):
 
     @ce_lambda.setter
     def ce_lambda(self, value: float) -> None:
-        assert value >= 0, _raise(ValueError(f"CE lambda must be a non-negative number, got {value}."))
+        assert value >= 0, raise_error(ValueError(f"CE lambda must be a non-negative number, got {value}."))
         self.__ce_lambda = value
 
     @property
@@ -51,7 +53,7 @@ class DiceCE(CrossEntropy, Dice):
 
     @dice_lambda.setter
     def dice_lambda(self, value: float) -> None:
-        assert value >= 0, _raise(ValueError(f"Dice lambda must be a non-negative number, got {value}."))
+        assert value >= 0, raise_error(ValueError(f"Dice lambda must be a non-negative number, got {value}."))
         self.__dice_lambda = value
 
     def __init__(self, *args, ce_lambda: float = 1, dice_lambda: float = 1, smooth: int = 1, target: str | None = None, weight: float = 1, **kwargs) -> None:
@@ -94,7 +96,7 @@ class FocalCrossEntropy(Loss):
 
     @alpha.setter
     def alpha(self, value: float) -> None:
-        assert value >= 0, _raise(ValueError(f"Alpha must be a non-negative number, got {value}."))
+        assert value >= 0, raise_error(ValueError(f"Alpha must be a non-negative number, got {value}."))
         self.__alpha = value
 
     def __init__(self, alpha: float = 1, gamma: float = 1, calculate_average: bool = True, ignore_index: int = 255, **kwargs: Any):
@@ -160,7 +162,7 @@ class KLDiv(Loss):
     
     @softmax_temperature.setter
     def softmax_temperature(self, value: float | None) -> None:
-        assert value is None or value > 0, _raise(ValueError(f"A given temperature must be a positive number, got {value}."))
+        assert value is None or value > 0, raise_error(ValueError(f"A given temperature must be a positive number, got {value}."))
         self.__t = value
 
     def __init__(self, *args: Any, replace_nan: bool = False, softmax_temperature: float | None = None, target: str | None = None, weight: float = 1, **kwargs: Any) -> None:

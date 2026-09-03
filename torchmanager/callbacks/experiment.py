@@ -1,10 +1,12 @@
-from torchmanager_core import os, view, _raise
+from torchmanager_core import os, view, raise_error
 from torchmanager_core.typing import Generic, TypeVar
 from torchmanager_core.protocols import MonitorType, StateDictLoadable
 
 from .callback import MultiCallbacks
 from .ckpt import BestCheckpoint, LastCheckpoint
 from .tensorboard import TensorBoard
+
+__all__ = ["Experiment"]
 
 T = TypeVar('T', bound=StateDictLoadable)
 
@@ -30,7 +32,7 @@ class Experiment(MultiCallbacks, Generic[T]):
             view.warnings.warn("`show_verbose` has been deprecated in v1.3 and will be removed in v1.4, it will not take affect of the display anymore.", DeprecationWarning)
             del kwargs['show_verbose']
         else:
-            assert len(kwargs) == 0, _raise(TypeError(f"Unknown arguments: {kwargs.keys()}"))
+            assert len(kwargs) == 0, raise_error(TypeError(f"Unknown arguments: {kwargs.keys()}"))
 
         # call super constructor
         experiment = os.path.normpath(experiment)

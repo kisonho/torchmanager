@@ -1,5 +1,7 @@
-from torchmanager_core import argparse, abc, errors, os, platform, shutil, sys, torch, view, _raise, DESCRIPTION
+from torchmanager_core import argparse, abc, errors, os, platform, shutil, sys, torch, view, raise_error, DESCRIPTION
 from torchmanager_core.typing import Optional, Union, overload
+
+__all__ = ["BaseConfigs", "Configs"]
 
 
 class BaseConfigs(argparse.Namespace, abc.ABC):
@@ -46,7 +48,7 @@ class BaseConfigs(argparse.Namespace, abc.ABC):
         exp = os.path.normpath(f"{exp}.exp") if not exp.endswith(".exp") else os.path.normpath(exp)
         cfg_path = os.path.join(exp, "configs.cfg")
         cfg = torch.load(cfg_path)
-        assert isinstance(cfg, BaseConfigs), _raise(TypeError(f"Saved object at path {cfg_path} is not a valid `Configs`."))
+        assert isinstance(cfg, BaseConfigs), raise_error(TypeError(f"Saved object at path {cfg_path} is not a valid `Configs`."))
         return cfg
 
     @overload
@@ -83,9 +85,9 @@ class BaseConfigs(argparse.Namespace, abc.ABC):
             - description: A `str` to display the description of current app
         """
         view.logger.info(description)
+        view.logger.info(f"platform={platform.platform()}")
         view.logger.info(f"python={sys.version}")
         view.logger.info(f"torch={torch.__version__}")
-        view.logger.info(f"platform={platform.platform()}")
 
     @abc.abstractmethod
     def show_settings(self) -> None:
@@ -173,7 +175,8 @@ class Configs(argparse.Namespace, abc.ABC):
         if os.path.exists(log_dir) and configs.replace_experiment:
             shutil.rmtree(log_dir)
         elif os.path.exists(log_dir) and not configs.replace_experiment:
-            raise IOError(f"Path '{log_dir}' has already existed.")
+            print(f"Path '{log_dir}' has already existed, delete or use `--replace_experiment` to overwite it and continue.")
+            exit(1)
 
         # set log path
         os.makedirs(log_dir, exist_ok=True)

@@ -2,6 +2,8 @@ from torchmanager_core import errors, sys
 
 from .ckpt import Callback, MonitorType
 
+__all__ = ["EarlyStop"]
+
 
 class EarlyStop(Callback):
     '''

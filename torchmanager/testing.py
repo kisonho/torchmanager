@@ -6,6 +6,8 @@ from torchmanager_core.typing import Any, Collection, Module
 from .basic import BaseManager
 from .data import Dataset
 
+__all__ = ["BaseTestingManager", "Manager"]
+
 
 class BaseTestingManager(BaseManager[Module], abc.ABC):
     """
@@ -20,7 +22,7 @@ class BaseTestingManager(BaseManager[Module], abc.ABC):
     """
     @property
     def compiled_metrics(self) -> dict[str, Resulting]:
-        return {name: m for name, m in self.metric_fns.items() if "loss" not in name}
+        return {name: m for name, m in self.metric_fns.items()}
 
     @property
     def summary(self) -> dict[str, float]:
@@ -57,7 +59,7 @@ class BaseTestingManager(BaseManager[Module], abc.ABC):
         for name, fn in self.compiled_metrics.items():
             if name.startswith("val_"):
                 name = name.replace("val_", "")
-            elif "loss" in name:
+            elif name == "loss":
                 continue
             try:
                 _ = fn(input, target)

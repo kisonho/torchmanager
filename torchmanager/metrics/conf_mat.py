@@ -1,9 +1,11 @@
-from torchmanager_core import Version, abc, torch, _raise
+from torchmanager_core import Version, abc, torch, deprecated, raise_error
 
 from .metric import Metric
 
+__all__ = ["BinaryConfusionMatrix", "ConfusionMatrix"]
 
-class BinaryConfusionMetric(Metric, abc.ABC):
+
+class BinaryConfusionMatrix(Metric, abc.ABC):
     """
     The binary confusion metrics that calculates TP, FP, and FN and forward further to calculate the final metric
 
@@ -70,6 +72,11 @@ class BinaryConfusionMetric(Metric, abc.ABC):
         return NotImplemented
 
 
+@deprecated("v1.5", "v2.0")
+class BinaryConfusionMetric(BinaryConfusionMatrix):
+    ...
+
+
 class ConfusionMatrix(Metric):
     """
     The confusion matrix metric
@@ -103,7 +110,7 @@ class ConfusionMatrix(Metric):
             - target: A `str` of target name in `input` and `target` during direct calling
         """
         super().__init__(target=target)
-        assert num_classes > 0, _raise(ValueError(f"The number of classes must be a positive number, got {num_classes}."))
+        assert num_classes > 0, raise_error(ValueError(f"The number of classes must be a positive number, got {num_classes}."))
         self.__num_classes = num_classes
 
     def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:

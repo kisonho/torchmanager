@@ -1,8 +1,10 @@
-from torchmanager_core import functional as F, torch, _raise
+from torchmanager_core import functional as F, torch, raise_error
 from torchmanager_core.typing import Any
 from torchmanager_core.version.version import Version
 
 from .loss import Loss
+
+__all__ = ["Dice"]
 
 
 class Dice(Loss):
@@ -30,7 +32,7 @@ class Dice(Loss):
 
     @dim.setter
     def dim(self, value: int) -> None:
-        assert value >= 0, _raise(ValueError(f"The dimension must be a positive number, got {value}."))
+        assert value >= 0, raise_error(ValueError(f"The dimension must be a positive number, got {value}."))
         self.__dim = value
 
     @property
@@ -40,7 +42,7 @@ class Dice(Loss):
 
     @smooth.setter
     def smooth(self, value: float) -> None:
-        assert value >= 0, _raise(ValueError(f"The smooth value must be a non-negative number, got {value}."))
+        assert value >= 0, raise_error(ValueError(f"The smooth value must be a non-negative number, got {value}."))
         self.__smooth = value
 
     def __init__(self, dim: int = 1, smooth: float = 1e-6, *, softmax_input: bool = True, **kwargs: Any) -> None:

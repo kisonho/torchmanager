@@ -1,6 +1,9 @@
 from torch.utils.data import Dataset as _Dataset, DataLoader, Sampler
-from torchmanager_core import abc, devices, errors, math, os, torch, _raise
+from torch.utils.data.distributed import DistributedSampler
+from torchmanager_core import abc, devices, errors, math, os, torch, raise_error
 from torchmanager_core.typing import Any, Callable, Iterable, Iterator, Sequence, TypeVar, cast
+
+__all__ = ["Dataset", "PreprocessedDataset", "batched", "distribute"]
 
 D = TypeVar("D", bound=DataLoader)
 T = TypeVar("T")
@@ -38,6 +41,8 @@ class Dataset(_Dataset[T], abc.ABC):
 
     __batch_size: int
     __device: torch.device
+    __loader: DataLoader[T] | None
+    __loader_config: tuple[torch.device, int, bool, bool, int, int | None] | None
     drop_last: bool
     num_workers: int
     sampler: Sampler[list[T]] | Iterable[list[T]] | None
@@ -62,6 +67,7 @@ class Dataset(_Dataset[T], abc.ABC):
     @property
     @abc.abstractmethod
     def unbatched_len(self) -> int:
+        """Returns the total length of unbatched dataset."""
         return NotImplemented
 
     @property
@@ -84,7 +90,9 @@ class Dataset(_Dataset[T], abc.ABC):
             - shuffle: A `bool` flag of if shuffling the data
         """
         super().__init__()
+        self.__loader = None
         self.__device = device
+        self.__loader_config = None
         self.batch_size = batch_size
         self.drop_last = drop_last
         self.sampler = sampler
@@ -97,6 +105,38 @@ class Dataset(_Dataset[T], abc.ABC):
         else:
             self.num_workers = num_workers
 
+    def _loader_config(self) -> tuple[torch.device, int, bool, bool, int, int | None]:
+        device = self.device
+        sampler_id = id(self.sampler) if self.sampler is not None else None
+        return device, self.batch_size, self.drop_last, self.shuffle, self.num_workers, sampler_id
+
+    def _get_data_loader(self) -> DataLoader[T]:
+        loader_config = self._loader_config()
+        if self.__loader is None or self.__loader_config != loader_config:
+            device, _, _, _, _, _ = loader_config
+            if device != devices.CPU:
+                self.__loader = DataLoader(
+                    self,
+                    batch_size=self.batch_size,
+                    drop_last=self.drop_last,
+                    shuffle=self.shuffle,
+                    num_workers=self.num_workers,
+                    pin_memory=True,
+                    pin_memory_device=str(device),
+                    sampler=self.sampler,
+                )
+            else:
+                self.__loader = DataLoader(
+                    self,
+                    batch_size=self.batch_size,
+                    drop_last=self.drop_last,
+                    shuffle=self.shuffle,
+                    num_workers=self.num_workers,
+                    sampler=self.sampler,
+                )
+            self.__loader_config = loader_config
+        return self.__loader
+
     def __contains__(self, value: Any) -> bool:
         for i in range(len(self)):
             if self[i] == value:
@@ -105,15 +145,17 @@ class Dataset(_Dataset[T], abc.ABC):
 
     @abc.abstractmethod
     def __getitem__(self, index: Any) -> Any:
-        """Returns an unbatched item"""
+        """
+        Returns an unbatched item
+
+        - Parameters:
+            - index: `Any` kind of index object
+        - Returns: `Any` kind of unbatched object
+        """
         return NotImplemented
 
     def __iter__(self) -> Iterator[tuple[T, T]]:
-        # initialize loader
-        if self.device != devices.CPU:
-            data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=self.num_workers, pin_memory=True, pin_memory_device=str(self.device), sampler=self.sampler)
-        else:
-            data_loader = DataLoader(self, batch_size=self.batch_size, drop_last=self.drop_last, shuffle=self.shuffle, num_workers=self.num_workers, sampler=self.sampler)
+        data_loader = self._get_data_loader()
 
         # yield data
         for data in data_loader:
@@ -232,7 +274,48 @@ def batched(fn: Callable[..., _Dataset], loader_type: type[D] = DataLoader) -> C
 
         # load dataset
         loaded_dataset = fn(*args, **kwargs)
-        assert isinstance(loaded_dataset, Dataset), _raise(RuntimeError("The loaded dataset is a `torchmanager.data.Dataset` which has already been wrapped with batch loader during iteration."))
+        assert isinstance(loaded_dataset, Dataset), raise_error(RuntimeError("The loaded dataset is a `torchmanager.data.Dataset` which has already been wrapped with batch loader during iteration."))
         data_loader = loader_type(loaded_dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last, num_workers=num_workers, pin_memory=pin_memory, pin_memory_device=f"{targeted_devices[0].type}:{targeted_devices.index}")
         return data_loader
     return wrapped_fn
+
+
+def distribute(dataset: type[Dataset] | Callable[..., Dataset], *, world_size: int, rank: int) -> Callable[..., Dataset]:
+    """
+    Distributes a dataset for distributed training/testing.
+
+    - Usage:
+    >>> wold_size = ...  # total number of processes
+    >>> rank = ...  # rank of the current process
+    >>> @distribute(world_size=world_size, rank=rank)
+    >>> class SomeDataset(Dataset):
+    ...     ...
+    >>> some_dataset = SomeDataset(...)
+
+    - Parameters:
+        - dataset: A type of or a function that generates the `Dataset` to be distributed
+        - world_size: An `int` of total number of processes
+        - rank: An `int` of the rank of the current process
+    - Returns: A distributed `Dataset` with `DistributedSampler` injected"""
+    def inject_sampler(loaded_dataset: Dataset) -> Dataset:
+        assert isinstance(loaded_dataset, Dataset), raise_error(RuntimeError("The loaded dataset is not a `torchmanager.data.Dataset`."))
+        sampler = DistributedSampler(loaded_dataset, num_replicas=world_size, rank=rank, shuffle=loaded_dataset.shuffle, drop_last=loaded_dataset.drop_last)
+        loaded_dataset.sampler = sampler
+        loaded_dataset.shuffle = False
+        return loaded_dataset
+
+    def decorator(ds: type[Dataset] | Callable[..., Dataset]) -> Callable[..., Dataset]:
+        if isinstance(ds, type):
+            assert issubclass(ds, Dataset), raise_error(RuntimeError("The given dataset type is not a `torchmanager.data.Dataset`."))
+
+            class DistributedDataset(ds):
+                def __init__(self, *args: Any, **kwargs: Any) -> None:
+                    super().__init__(*args, **kwargs)
+                    inject_sampler(self)
+
+            return DistributedDataset
+
+        def wrapped_fn(*args: Any, **kwargs: Any) -> Dataset:
+            return inject_sampler(ds(*args, **kwargs))
+        return wrapped_fn
+    return decorator(dataset)

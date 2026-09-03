@@ -1,4 +1,4 @@
-from torchmanager_core import _raise
+from torchmanager_core import raise_error
 from torchmanager_core.protocols import Frequency
 from torchmanager_core.typing import Any, Callable, TypeAlias
 
@@ -6,6 +6,8 @@ from .callback import Callback
 
 PreCallbackFn: TypeAlias = Callable[[int], None]
 PostCallbackFn: TypeAlias = Callable[[int, dict[str, Any]], None]
+
+__all__ = ["LambdaCallback", "on_batch_end", "on_batch_start", "on_epoch_end", "on_epoch_start"]
 
 
 class LambdaCallback(Callback):
@@ -30,7 +32,7 @@ class LambdaCallback(Callback):
     @freq.setter
     def freq(self, f: Frequency) -> None:
         # check if the frequency is valid
-        assert f in [Frequency.BATCH, Frequency.EPOCH], _raise(TypeError(f"The frequency must be either `Frequency.BATCH` or `Frequency.EPOCH`, {f} is not supported."))
+        assert f in [Frequency.BATCH, Frequency.EPOCH], raise_error(TypeError(f"The frequency must be either `Frequency.BATCH` or `Frequency.EPOCH`, {f} is not supported."))
         self.__freq = f
 
     def __init__(self, pre_fn: PreCallbackFn | None = None, post_fn: PostCallbackFn | None = None, *, freq: Frequency = Frequency.EPOCH) -> None:

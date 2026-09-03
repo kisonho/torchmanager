@@ -1,10 +1,12 @@
 from torch.optim.optimizer import Optimizer
-from torchmanager_core import os, torch, view, _raise
+from torchmanager_core import os, torch, view, raise_error
 from torchmanager_core.checkpoint import Checkpoint as Ckpt
 from torchmanager_core.protocols import CkptConvertable, ModelContainer, MonitorType, StateDictLoadable
 from torchmanager_core.typing import Any, Generic, TypeVar, overload
 
 from .callback import Callback
+
+__all__ = ["LastCheckpoint", "BestCheckpoint"]
 
 CKPT = TypeVar('CKPT', bound=StateDictLoadable)
 
@@ -20,6 +22,7 @@ class _Checkpoint(Callback, Generic[CKPT]):
     """
     __ckpt_path: str
     __checkpoint: Ckpt[CKPT]
+    show_verbose: bool
 
     @property
     def ckpt_path(self) -> str:
@@ -38,10 +41,10 @@ class _Checkpoint(Callback, Generic[CKPT]):
         ...
 
     @overload
-    def __init__(self, model: CKPT, ckpt_path: str, *, last_epoch: int = 0, optimizer: Optimizer | None = None, loss_fn: StateDictLoadable | None = None, metrics: dict[str, StateDictLoadable] | None = None, save_weights_only: bool = False) -> None:
+    def __init__(self, model: CKPT, ckpt_path: str, *, last_epoch: int = 0, optimizer: Optimizer | None = None, loss_fn: StateDictLoadable | None = None, metrics: dict[str, StateDictLoadable] | None = None, save_weights_only: bool = False, show_verbose: bool = False) -> None:
         ...
 
-    def __init__(self, model: CKPT, ckpt_path: str, **kwargs: Any) -> None:
+    def __init__(self, model: CKPT, ckpt_path: str, *, show_verbose: bool = False, **kwargs: Any) -> None:
         """
         Constructor
 
@@ -53,10 +56,13 @@ class _Checkpoint(Callback, Generic[CKPT]):
         super().__init__()
         self.__checkpoint = model.to_checkpoint() if isinstance(model, CkptConvertable) else Ckpt(model, **kwargs)
         self.ckpt_path = os.path.normpath(ckpt_path)
+        self.show_verbose = show_verbose
 
     def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: dict[str, float] | None = None) -> None:
         self.checkpoint.last_epoch = epoch
         self.checkpoint.save(epoch, self.ckpt_path)
+        if self.show_verbose:
+            view.logger.info(f"Checkpoint saved to {self.ckpt_path}")
 
 
 class LastCheckpoint(_Checkpoint[CKPT]):
@@ -76,7 +82,7 @@ class LastCheckpoint(_Checkpoint[CKPT]):
 
     @freq.setter
     def freq(self, f: int) -> None:
-        assert f > 0, _raise(ValueError(f"Frequency must be a positive number, got {f}. "))
+        assert f > 0, raise_error(ValueError(f"Frequency must be a positive number, got {f}. "))
         self.__freq = f
 
     @overload
@@ -112,7 +118,6 @@ class BestCheckpoint(_Checkpoint[CKPT]):
     load_best: bool
     monitor: str
     monitor_type: MonitorType
-    show_verbose: bool
 
     @property
     def best_score(self) -> float:
@@ -134,12 +139,11 @@ class BestCheckpoint(_Checkpoint[CKPT]):
             - monitor: A `str` of monitored metric
             - monitor_type: A `MonitorType` of either `MIN` of `MAX` mode for the best model
         """
-        super().__init__(model, ckpt_path, **kwargs)
+        super().__init__(model, ckpt_path, show_verbose=show_verbose, **kwargs)
         self.best_summary = {monitor: monitor_type.init_score}
         self.load_best = load_best
         self.monitor = monitor
         self.monitor_type = monitor_type
-        self.show_verbose = show_verbose
 
     def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: dict[str, float] | None = None) -> None:
         # initialize

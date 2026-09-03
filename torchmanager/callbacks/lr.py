@@ -1,3 +1,4 @@
+from torchmanager_core import deprecated
 from torchmanager_core.protocols import Frequency, SummaryWriteble
 from torchmanager_core.typing import Any, Generic, TypeVar
 
@@ -9,11 +10,12 @@ except ImportError:
     from torch.optim.lr_scheduler import _LRScheduler as LRScheduler
 _LrScheduler = LRScheduler
 
+__all__ = ["LrScheduler"]
 
-Scheduler = TypeVar("Scheduler", bound=_LrScheduler)
+S = TypeVar("S", bound=_LrScheduler)
 
 
-class LrSchedueler(FrequencyCallback, Generic[Scheduler]):
+class LrScheduler(FrequencyCallback, Generic[S]):
     """
     The callback to step learning rate scheduler
 
@@ -23,7 +25,7 @@ class LrSchedueler(FrequencyCallback, Generic[Scheduler]):
     - Parameters:
         - freq: An `..train.learning_rate.LrScheduleFreq` of the frequency to update learning rate
     """
-    __lr_scheduler: Scheduler
+    __lr_scheduler: S
     __name: str
     __writer: SummaryWriteble | None
 
@@ -32,14 +34,14 @@ class LrSchedueler(FrequencyCallback, Generic[Scheduler]):
         return self.__name
 
     @property
-    def _scheduler(self) -> Scheduler:
+    def _scheduler(self) -> S:
         return self.__lr_scheduler
 
     @property
     def _writer(self) -> SummaryWriteble | None:
         return self.__writer
 
-    def __init__(self, scheduler: Scheduler, freq: Frequency = Frequency.EPOCH, name: str = 'lr', tf_board_writer: SummaryWriteble | None = None) -> None:
+    def __init__(self, scheduler: S, freq: Frequency = Frequency.EPOCH, name: str = 'lr', tf_board_writer: SummaryWriteble | None = None) -> None:
         super().__init__(freq)
         self.__lr_scheduler = scheduler
         self.__name = name
@@ -72,3 +74,8 @@ class LrSchedueler(FrequencyCallback, Generic[Scheduler]):
 
     def step(self, *args: Any, **kwargs: Any) -> Any:
         self._scheduler.step()
+
+
+@deprecated("v1.5", "v2.0")
+class LrSchedueler(LrScheduler):
+    ...

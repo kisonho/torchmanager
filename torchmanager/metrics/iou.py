@@ -1,7 +1,9 @@
-from torchmanager_core import torch, _raise
+from torchmanager_core import torch, raise_error
 
 from .conf_mat import ConfusionMatrix
 from .metric import Metric
+
+__all__ = ["InstanceIoU", "MeanIoU"]
 
 
 class InstanceIoU(ConfusionMatrix):
@@ -43,8 +45,8 @@ class MeanIoU(Metric):
             - target: A `str` of target name in `input` and `target` during direct calling
         """
         super().__init__(target=target)
-        assert dim > 0, _raise(ValueError(f"The dimension must be a positive number, got {dim}."))
-        assert threshold >= 0 and threshold <= 1, _raise(ValueError(f"The threshold must be in range [0,1], got {threshold}."))
+        assert dim > 0, raise_error(ValueError(f"The dimension must be a positive number, got {dim}."))
+        assert threshold >= 0 and threshold <= 1, raise_error(ValueError(f"The threshold must be in range [0,1], got {threshold}."))
         self._dim = dim
         self._smooth = smooth
         self._threshold = threshold

@@ -1,6 +1,8 @@
-from torchmanager_core import torch, view, _raise
+from torchmanager_core import torch, view, raise_error
 
 from .callback import Callback
+
+__all__ = ["ProgressBar"]
 
 
 class ProgressBar(Callback):
@@ -34,7 +36,7 @@ class ProgressBar(Callback):
 
     def on_epoch_end(self, epoch: int, summary: dict[str, float] = {}, val_summary: dict[str, float] | None = None) -> None:
         # close progress bar
-        assert self.progress_bar is not None, _raise(TypeError("Progress bar is not initialized."))
+        assert self.progress_bar is not None, raise_error(TypeError("Progress bar is not initialized."))
         self.progress_bar.close()
         self.progress_bar = None
 
@@ -50,7 +52,7 @@ class ProgressBar(Callback):
             raise TypeError(f"Verbose type {self.verbose_type} is not supported.")
 
         # update progress bar
-        assert self.progress_bar is not None, _raise(TypeError("Progress bar is not initialized."))
+        assert self.progress_bar is not None, raise_error(TypeError("Progress bar is not initialized."))
         self.progress_bar.set_postfix(progress_summary)
         self.progress_bar.update()
 

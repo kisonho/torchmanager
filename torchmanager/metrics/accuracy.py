@@ -1,8 +1,10 @@
-from torchmanager_core import torch, Version, _raise
+from torchmanager_core import torch, Version, raise_error
 from torchmanager_core.protocols import Reduction
 
-from .conf_mat import BinaryConfusionMetric
+from .conf_mat import BinaryConfusionMatrix
 from .metric import Metric
+
+__all__ = ["Accuracy", "SparseCategoricalAccuracy", "CategoricalAccuracy", "Dice", "F1", "HD95", "MAE", "PartialDice", "Precision", "Recall"]
 
 
 class Accuracy(Metric):
@@ -55,7 +57,7 @@ class SparseCategoricalAccuracy(Accuracy):
 
     @dim.setter
     def dim(self, value: int) -> None:
-        assert value >= 0, _raise(ValueError(f"Dim must be a non-negative number, got {value}."))
+        assert value >= 0, raise_error(ValueError(f"Dim must be a non-negative number, got {value}."))
         self.__dim = value
 
     def __init__(self, dim: int = -1, *, target: str | None = None) -> None:
@@ -108,7 +110,7 @@ class Dice(Metric):
 
     @dim.setter
     def dim(self, value: int) -> None:
-        assert value >= 0, _raise(ValueError(f"Dim must be a non-negative number, got {value}."))
+        assert value >= 0, raise_error(ValueError(f"Dim must be a non-negative number, got {value}."))
         self.__dim = value
 
     @property
@@ -118,7 +120,7 @@ class Dice(Metric):
 
     @num_classes.setter
     def num_classes(self, value: int) -> None:
-        assert value > 0, _raise(ValueError(f"Num classes must be a positive number, got {value}."))
+        assert value > 0, raise_error(ValueError(f"Num classes must be a positive number, got {value}."))
         self.__num_classes = value
 
     def __init__(self, num_classes: int, /, dim: int = 1, *, eps: float = 1e-7, target: str | None = None) -> None:
@@ -165,7 +167,7 @@ class Dice(Metric):
         return dice.mean()
 
 
-class F1(BinaryConfusionMetric):
+class F1(BinaryConfusionMatrix):
     """The F1 metrics"""
 
     def forward_metric(self, tp: torch.Tensor, tn: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
@@ -176,6 +178,56 @@ class F1(BinaryConfusionMetric):
         # calculate F1
         f1 = 2 * precision * recall / (precision + recall + self._eps)
         return f1.mean()
+
+
+class HD95(Metric):
+    """
+    The 95th-percentile Hausdorff distance between two binary masks.
+
+    HD95 measures the separation between the non-zero points in ``input`` and
+    ``target``. For every point in either mask, the distance to its nearest
+    point in the other mask is calculated. The returned value is the 95th
+    percentile of these bidirectional nearest-neighbor distances, making the
+    metric less sensitive to isolated outliers than the maximum Hausdorff
+    distance.
+
+    Coordinates are expressed in tensor-index units, so the result is measured
+    in pixels/voxels unless the caller scales the coordinate system beforehand.
+    Equal empty masks have distance zero; if only one mask is empty, the
+    distance is infinite because no correspondence exists.
+
+    * extends: `.metrics.Metric`
+    """
+
+    def __init__(self, *, target: str | None = None) -> None:
+        """
+        Constructor
+
+        - Parameters:
+            - target: An optional `str` of target name in `input` and `target`
+              during direct calling
+        """
+        super().__init__(target=target)
+
+    @torch.no_grad()
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        """Calculate HD95 between the non-zero points of two masks."""
+        # Convert each mask directly to its non-zero coordinates.
+        input_points = input.nonzero().to(dtype=torch.float32)
+        target_points = target.nonzero().to(dtype=torch.float32)
+
+        # Define the otherwise ambiguous empty-set cases without constructing an invalid, empty pairwise-distance matrix.
+        if (input_points.numel() == 0 or target_points.numel() == 0) and input_points.numel() == target_points.numel():
+            return torch.zeros((), device=input.device)
+        elif input_points.numel() == 0 or target_points.numel() == 0:
+            return torch.full((), float("inf"), device=input.device)
+
+        # Compute the pairwise distances once, then obtain both directed nearest-neighbor distances by reducing across its two dimensions.
+        distances = torch.cdist(input_points, target_points)
+        directed_distances = torch.cat((distances.amin(dim=1), distances.amin(dim=0)))
+
+        # Combining both directions makes the result symmetric.
+        return torch.quantile(directed_distances, 0.95)
 
 
 class MAE(Metric):
@@ -247,7 +299,7 @@ class PartialDice(Dice):
         return dice.mean()
 
 
-class Precision(BinaryConfusionMetric):
+class Precision(BinaryConfusionMatrix):
     """The Precision metrics"""
 
     def forward_metric(self, tp: torch.Tensor, tn: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:
@@ -255,7 +307,7 @@ class Precision(BinaryConfusionMetric):
         return precision.mean()
 
 
-class Recall(BinaryConfusionMetric):
+class Recall(BinaryConfusionMatrix):
     """The Recall metrics"""
 
     def forward_metric(self, tp: torch.Tensor, tn: torch.Tensor, fp: torch.Tensor, fn: torch.Tensor) -> torch.Tensor:

@@ -1,9 +1,9 @@
 from torch.optim.optimizer import Optimizer
 from torch.utils.data import DataLoader
-from torchmanager_core import abc, devices, errors, math, torch, view, _raise
+from torchmanager_core import abc, devices, errors, math, torch, view, raise_error
 from torchmanager_core.checkpoint import Checkpoint
 from torchmanager_core.protocols import Resulting
-from torchmanager_core.typing import Any, Collection, Module, Self, overload
+from torchmanager_core.typing import Any, Collection, Module, Self, Sequence, overload
 
 from .callbacks import Callback, ProgressBar
 from .data import Dataset
@@ -11,13 +11,15 @@ from .losses import Loss
 from .metrics import Metric
 from .testing import BaseTestingManager as BaseManager, Manager as TestingManager
 
+__all__ = ["BaseTrainingManager", "Manager"]
+
 
 class BaseTrainingManager(BaseManager[Module], abc.ABC):
     """
     A basic training manager
 
     * extends: `.testing.BasicTestingManager`
-    * abstract methods: `backward`, `optimize`, `train_step`, `test_step
+    * abstract methods: `backward`, `optimize`, `train_step`, `test_step`
 
     Train using fit method:
     >>> from torchmanager.data import Dataset
@@ -49,12 +51,12 @@ class BaseTrainingManager(BaseManager[Module], abc.ABC):
 
     @property
     def compiled_losses(self) -> Resulting:
-        assert self.loss_fn is not None, errors._raise(NotImplementedError("The manager is not compiled properly, `loss_fn` is missing."))
+        assert self.loss_fn is not None, errors.raise_error(NotImplementedError("The manager is not compiled properly, `loss_fn` is missing."))
         return self.loss_fn
 
     @property
     def compiled_optimizer(self) -> Optimizer:
-        assert self.optimizer is not None, errors._raise(NotImplementedError("The manager is not compiled properly, `optimizer` is missing."))
+        assert self.optimizer is not None, errors.raise_error(NotImplementedError("The manager is not compiled properly, `optimizer` is missing."))
         return self.optimizer
 
     def __init__(self, model: Module, optimizer: Optimizer | None = None, loss_fn: Loss | dict[str, Loss] | None = None, metrics: dict[str, Metric] = {}) -> None:
@@ -103,12 +105,13 @@ class BaseTrainingManager(BaseManager[Module], abc.ABC):
         return self.summary
 
     @abc.abstractmethod
-    def backward(self, loss: torch.Tensor, /) -> None:
+    def backward(self, loss: torch.Tensor, /, inputs: Sequence[torch.Tensor] | None = None) -> None:
         """
         Backward function to calculate the gradients
         
         - Parameters:
             - loss: A `torch.Tensor` of loss value
+            - inputs: An optional `Sequence` of `torch.Tensor` for calculating gradients, only used for some special backward functions like `torch.autograd.backward`
         """
         ...
 
@@ -117,7 +120,7 @@ class BaseTrainingManager(BaseManager[Module], abc.ABC):
         if self.model.training:
             for name, fn in self.compiled_metrics.items():
                 # skip for validation val
-                if name.startswith("val_") or "loss" in name:
+                if name.startswith("val_") or name == "loss":
                     continue
 
                 # calculate metrics
@@ -167,22 +170,22 @@ class BaseTrainingManager(BaseManager[Module], abc.ABC):
         """
         # arguments checking
         dataset_len = training_dataset.batched_len if isinstance(training_dataset, Dataset) else len(training_dataset)
-        assert self.compiled is True, errors._raise(ValueError("Manager has not yet been compiled. Either loss_fn or optimizer, or both, are not given."))
+        assert self.compiled is True, errors.raise_error(ValueError("Manager has not yet been compiled. Either loss_fn or optimizer, or both, are not given."))
 
         # check for epochs and iterations
         if epochs is not None:
-            assert epochs > 0, errors._raise(ValueError(f"The epochs must be a positive integer, got {epochs}."))
-            assert iterations is None, errors._raise(ValueError(f"The iterations must be given as `None` when epochs is given, got {iterations}."))
+            assert epochs > 0, errors.raise_error(ValueError(f"The epochs must be a positive integer, got {epochs}."))
+            assert iterations is None, errors.raise_error(ValueError(f"The iterations must be given as `None` when epochs is given, got {iterations}."))
         else:
-            assert iterations is not None, errors._raise(ValueError(f"The iterations must be given if epochs is not given."))
-            assert iterations > 0, errors._raise(ValueError(f"The iterations must be a positive integer, got {iterations}."))
-            assert epochs is None, errors._raise(ValueError(f"The epochs must be given as `None` when iterations is given, got {epochs}."))
+            assert iterations is not None, errors.raise_error(ValueError(f"The iterations must be given if epochs is not given."))
+            assert iterations > 0, errors.raise_error(ValueError(f"The iterations must be a positive integer, got {iterations}."))
+            assert epochs is None, errors.raise_error(ValueError(f"The epochs must be given as `None` when iterations is given, got {epochs}."))
             epochs = math.ceil(iterations / dataset_len)
 
         # initialize initial epoch
         if initial_epoch is not None:
-            assert initial_epoch >= 0, errors._raise(ValueError(f"The initial_epoch must be a non_negative integer, got {initial_epoch}."))
-            assert initial_epoch < epochs, errors._raise(ValueError(f"The initial_epoch must be smaller than total epochs, got epochs={epochs} but initial_epoch={initial_epoch}."))
+            assert initial_epoch >= 0, errors.raise_error(ValueError(f"The initial_epoch must be a non_negative integer, got {initial_epoch}."))
+            assert initial_epoch < epochs, errors.raise_error(ValueError(f"The initial_epoch must be smaller than total epochs, got epochs={epochs} but initial_epoch={initial_epoch}."))
             self.current_epoch = initial_epoch
         elif self.current_epoch > 0:
             initial_epoch = self.current_epoch + 1  # skip the latest current epoch when resuming training
@@ -314,7 +317,6 @@ class Manager(BaseTrainingManager[Module], TestingManager[Module]):
     A generic training manager
 
     * extends: `BaseTrainingTestingManager`, `.testing.Manager`
-    * [Deprecation Warning]: Method `train` has been set as protected from v1.0.2, the public method will be removed from v1.2.0. Override `_train` method instead.
 
     Train using fit method:
     >>> from torchmanager.data import Dataset
@@ -326,32 +328,17 @@ class Manager(BaseTrainingManager[Module], TestingManager[Module]):
         - current_epoch: The `int` index of current training epoch
         - compiled_optimizer: The `Optimizer` that must be exist
     """
-    def backward(self, loss: torch.Tensor, /) -> None:
-        """
-        Backward function to calculate the gradients
-        
-        - Parameters:
-            - loss: A `torch.Tensor` of loss value
-        """
-        loss.backward()
+    def backward(self, loss: torch.Tensor, /, inputs: Sequence[torch.Tensor] | None = None) -> None:
+        loss.backward(inputs=inputs)
 
     def optimize(self) -> None:
-        """Optimize the model with `compiled_optimizer`"""
         self.compiled_optimizer.step()
         self.compiled_optimizer.zero_grad()
 
     def train_step(self, x_train: Any, y_train: Any) -> dict[str, float]:
-        """
-        A single training step
-
-        - Parameters:
-            - x_train: The training data
-            - y_train: The training label
-        - Returns: A summary of `dict` with keys as `str` and values as `float`
-        """
         # forward pass
         y, loss = self.forward(x_train, y_train)
-        assert loss is not None, _raise(TypeError("Loss cannot be fetched."))
+        assert loss is not None, raise_error(TypeError("Loss cannot be fetched."))
 
         # backward pass
         self.backward(loss)

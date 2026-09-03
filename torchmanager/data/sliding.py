@@ -1,6 +1,8 @@
 from itertools import product
 
-from torchmanager_core import torch, _raise
+from torchmanager_core import torch, raise_error
+
+__all__ = ["sliding_window", "reversed_sliding_window"]
 
 def sliding_window(image: torch.Tensor, /, window_size: tuple[int, ...], stride: tuple[int, ...]) -> torch.Tensor:
     """
@@ -24,7 +26,7 @@ def sliding_window(image: torch.Tensor, /, window_size: tuple[int, ...], stride:
     ```
     """
     # initialize
-    assert len(window_size) == len(stride), _raise(ValueError(f"Window size dimension ({len(window_size)}) and stride dimension ({stride}) must be the same."))
+    assert len(window_size) == len(stride), raise_error(ValueError(f"Window size dimension ({len(window_size)}) and stride dimension ({stride}) must be the same."))
     stride_dims: list[int] = []
     windows: list[torch.Tensor] = []
     window_dims: list[int] = []
@@ -85,7 +87,7 @@ def reversed_sliding_window(windows: torch.Tensor, /, image_size: tuple[int, ...
     output = torch.zeros(output_shape, dtype=windows.dtype, device=windows.device)
     overlap = torch.zeros(output_shape, dtype=torch.int, device=windows.device)
     window_starts = list(product(*[range(num_windows) for num_windows in window_dims]))
-    assert len(window_starts) == windows.shape[0], _raise(ValueError(f"Number of windows ({windows.shape[0]}) must match the number of windows calculated ({len(window_starts)})."))
+    assert len(window_starts) == windows.shape[0], raise_error(ValueError(f"Number of windows ({windows.shape[0]}) must match the number of windows calculated ({len(window_starts)})."))
 
     # Iterate over windows
     for i, indices in enumerate(window_starts):

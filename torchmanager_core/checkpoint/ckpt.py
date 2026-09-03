@@ -1,8 +1,8 @@
 import os, torch, warnings
 from torch.optim.optimizer import Optimizer
-from typing import Any, Generic, Mapping, OrderedDict, TypeVar
+from typing import Any, Generic, Mapping, OrderedDict, Self, Type, TypeVar, cast
 
-from .protocols import ModelContainer, StateDictLoadable, WrappedFn
+from .protocols import CkptDict, ModelContainer, StateDictLoadable, WrappedFn
 
 T = TypeVar("T", bound=StateDictLoadable | Mapping[str, Any])
 
@@ -74,12 +74,13 @@ class Checkpoint(Generic[T]):
                     self.metrics[name] = metric
 
     @classmethod
-    def from_saved(cls, ckpt_path: str, map_location: torch.device | None = None, model: StateDictLoadable | None = None):
+    def from_saved(cls: Type[Self], ckpt_path: str, map_location: torch.device | None = None, model: StateDictLoadable | None = None) -> Self:
         """
         Load checkpoint from a saved checkpoint file
 
         - Parameters:
             - ckpt_path: A `str` of file path
+            - map_location: An optional `torch.device` to map the loaded checkpoint
             - model: Any object to be loaded
         """
         # load checkpint dictionary
@@ -116,7 +117,7 @@ class Checkpoint(Generic[T]):
         self.last_epoch = epoch
 
         # initialize checkpoint dictionary
-        ckpt = self.__dict__
+        ckpt = cast(CkptDict, self.__dict__)
 
         # check if save weights only
         if self.save_weights_only is True:

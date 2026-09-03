@@ -1,8 +1,10 @@
 import torch.nn.functional as F
-from torchmanager_core import torch, Version, _raise
+from torchmanager_core import torch, Version, raise_error
 from torchmanager_core.typing import Callable
 
 from .metric import Metric
+
+__all__ = ["CosineSimilarity", "PSNR", "SSIM", "MS_SSIM"]
 
 _DEFAULT_MS_SSIM_WEIGHTS = [0.0448, 0.2856, 0.3001, 0.2363, 0.1333]
 
@@ -29,7 +31,7 @@ class PSNR(Metric):
 
     @max_value.setter
     def max_value(self, value: float | None) -> None:
-        assert value is None or value > 0, _raise(ValueError("Max value must be positive."))
+        assert value is None or value > 0, raise_error(ValueError("Max value must be positive."))
         self.__max_value = value
 
     def __init__(self, *, denormalize_fn: Callable[[torch.Tensor], torch.Tensor] | None = None, max_value: float | None = 1, target: str | None = None) -> None:
@@ -76,7 +78,7 @@ class SSIM(Metric):
 
     @pixel_range.setter
     def pixel_range(self, value: float) -> None:
-        assert value > 0, _raise(ValueError("Pixel range must be greater than 0."))
+        assert value > 0, raise_error(ValueError("Pixel range must be greater than 0."))
         self.__pixel_range = value
 
     @property
@@ -153,7 +155,7 @@ class MS_SSIM(SSIM):
 
     @weights.setter
     def weights(self, value: list[float]) -> None:
-        assert len(value) > 0, _raise(ValueError("Weights must be a non-empty list."))
+        assert len(value) > 0, raise_error(ValueError("Weights must be a non-empty list."))
         self.__weights = value
 
     @property

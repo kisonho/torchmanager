@@ -1,10 +1,9 @@
-from torchmanager_core import abc, torch, API_VERSION, Version, _raise
+from torchmanager_core import abc, torch, API_VERSION, Version, raise_error
 from torchmanager_core.typing import Any, Callable, Generic, TypeVar
-
 
 MetricFn = TypeVar("MetricFn", bound=Callable[[Any, Any], torch.Tensor] | None)
 
-
+__all__ = ["BaseMetric", "Metric", "metric", "metric_fn"]
 class BaseMetric(torch.nn.Module, abc.ABC):
     """
     The basic metric class
@@ -18,14 +17,16 @@ class BaseMetric(torch.nn.Module, abc.ABC):
         - result: The `torch.Tensor` of average metric results
         - results: An optional `torch.Tensor` of all metric results
     """
+    __count: int
     __result: torch.Tensor | float
     _results: list[torch.Tensor]
     _target: str | None
 
     @property
     def result(self) -> torch.Tensor:
-        if len(self._results) > 0:
-            return torch.tensor(self.__result / len(self._results))
+        if self.__count > 0:
+            result = self.__result / self.__count
+            return result if isinstance(result, torch.Tensor) else torch.tensor(result)
         else:
             return torch.tensor(torch.nan)
 
@@ -45,9 +46,17 @@ class BaseMetric(torch.nn.Module, abc.ABC):
             - target: A `str` of target name in `input` and `target` during direct calling
         """
         super().__init__()
+        self.__count = 0
         self.__result = 0
         self._results = []
         self._target = target
+
+    def __getstate__(self) -> dict[str, Any]:
+        return self.__dict__.copy()
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        for key, value in state.items():
+            setattr(self, key, value)
 
     def __call__(self, input: Any, target: Any) -> torch.Tensor:
         # unpack input and target
@@ -56,12 +65,12 @@ class BaseMetric(torch.nn.Module, abc.ABC):
 
         # call
         m: torch.Tensor = super().__call__(input, target)
-        self._results.append(m.unsqueeze(0).cpu().detach())
-        self.__result += self._results[-1]
+        self.record(m)
         return m
 
     def convert(self, from_version: Version) -> None:
         if from_version < API_VERSION:
+            self.__count = 0
             self.__result = 0
         pass
 
@@ -77,8 +86,21 @@ class BaseMetric(torch.nn.Module, abc.ABC):
         """
         ...
 
+    def record(self, m: torch.Tensor) -> None:
+        """
+        Record the metric value.
+
+        - Parameters:
+            - m: A metric value in `torch.Tensor`
+        """
+        metric = m.detach()
+        self.__result = metric if self.__count == 0 else self.__result + metric
+        self.__count += 1
+        self._results.append(metric.unsqueeze(0).cpu())
+
     def reset(self) -> None:
         """Reset the current results list"""
+        self.__count = 0
         self.__result = 0
         self._results.clear()
 
@@ -124,7 +146,7 @@ WrappedMetricFn = TypeVar("WrappedMetricFn", bound=Callable[[Any, Any], torch.Te
 class _WrappedMetric(Metric[WrappedMetricFn]):
     @property
     def wrapped_metric_fn(self) -> WrappedMetricFn:
-        assert self._metric_fn is not None, _raise(AttributeError("Metric function is not given."))
+        assert self._metric_fn is not None, raise_error(AttributeError("Metric function is not given."))
         return self._metric_fn
 
     def __init__(self, metric_fn: WrappedMetricFn, target: str | None = None) -> None:
