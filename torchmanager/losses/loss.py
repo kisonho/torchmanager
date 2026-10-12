@@ -159,7 +159,20 @@ class MultiLosses(Loss[None]):
 
 
 L = TypeVar("L", bound=Loss)
-P = TypeVar("P", bound=torch.nn.DataParallel)
+
+
+class _LossDataParallel(torch.nn.DataParallel):
+    """Gather replica losses without PyTorch's scalar/CPU gather warnings."""
+
+    def gather(self, outputs: Any, output_device: Any) -> torch.Tensor:
+        # Loss.__call__ guarantees one value per replica. Tensor copies and
+        # stacking preserve autograd, including when gathering onto the CPU.
+        if isinstance(output_device, int):
+            output_device = devices.CPU if output_device == -1 else torch.device("cuda", output_device)
+        return torch.stack([output.to(output_device).reshape(()) for output in outputs])
+
+
+P = TypeVar("P", bound=_LossDataParallel)
 
 
 class ParallelLoss(Loss, Generic[L, P]):
@@ -175,7 +188,7 @@ class ParallelLoss(Loss, Generic[L, P]):
     _metric_fn: P
     module: L
 
-    def __init__(self, module: L, device_ids: list[int] | None = None, output_device: torch.device | None = None, dim: int = 0, *, parallel_type: type[P] = torch.nn.DataParallel) -> None:
+    def __init__(self, module: L, device_ids: list[int] | None = None, output_device: torch.device | None = None, dim: int = 0, *, parallel_type: type[P] = _LossDataParallel) -> None:
         super().__init__(parallel_type(module, device_ids, output_device, dim=dim))
         self.module = module
 
